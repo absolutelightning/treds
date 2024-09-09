@@ -1,0 +1,41 @@
+package server
+
+import (
+	"fmt"
+	"github.com/tidwall/evio"
+)
+
+func Serve() {
+	// Define server events
+	var events evio.Events
+
+	// This should always be One
+	events.NumLoops = 1 // Single-threaded
+
+	// Handle new connections
+	events.Serving = func(s evio.Server) (action evio.Action) {
+		fmt.Printf("Server started on %s\n", s.Addrs[0])
+		return
+	}
+
+	// Handle data read from clients
+	events.Data = func(c evio.Conn, in []byte) (out []byte, action evio.Action) {
+		fmt.Printf("Received data: %s\n", string(in))
+
+		// Simple command handling: reply with PONG to PING command
+		if string(in) == "PING\n" {
+			out = []byte("PONG\n")
+		} else {
+			out = []byte("UNKNOWN COMMAND\n")
+		}
+		return
+	}
+
+	// Define the address to listen on
+	address := "tcp://localhost:7997"
+
+	// Start the server
+	if err := evio.Serve(events, address); err != nil {
+		fmt.Printf("Error starting server: %v\n", err)
+	}
+}
