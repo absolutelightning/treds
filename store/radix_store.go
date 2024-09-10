@@ -4,11 +4,12 @@ import (
 	radix_tree "treds/datastructures/radix-tree"
 )
 
+const NilResp = "(nil)"
+
 type radixStore struct {
 	tree *radix_tree.Tree
 }
 
-// A simple store that is based out of golang maps
 func NewRadixStore() Store {
 	return &radixStore{
 		tree: radix_tree.New(),
@@ -18,7 +19,7 @@ func NewRadixStore() Store {
 func (rs *radixStore) Get(k string) (string, error) {
 	v, ok := rs.tree.Get([]byte(k))
 	if !ok {
-		return "(nil)", nil
+		return NilResp, nil
 	}
 	return v.(string), nil
 }
