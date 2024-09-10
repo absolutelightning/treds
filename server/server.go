@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"github.com/tidwall/evio"
-	"strconv"
 	"strings"
 	"treds/commands"
 	"treds/store"
@@ -38,12 +37,6 @@ func (s *Server) Init() {
 	events.Serving = func(s evio.Server) (action evio.Action) {
 		fmt.Printf("Server started on %s\n", s.Addrs[0])
 		return
-	}
-
-	setCommand, _ := commandRegistry.Retrieve("SET")
-
-	for i := 0; i <= 1000000; i++ {
-		setCommand.Execute([]string{"user:" + strconv.Itoa(i), "value_" + strconv.Itoa(i)}, s.TredsStore)
 	}
 
 	// Handle data read from clients
