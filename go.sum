@@ -1,12 +1,8 @@
-github.com/absolutelightning/radix v1.0.4 h1:EEqtEeUyHcBkUfIfYaKWXJAp7NPjbMbsOf03Vc6/w+U=
-github.com/absolutelightning/radix v1.0.4/go.mod h1:uCoYno228/E/lyklQ0jBde1CZ+R0imKrTSpZTGVUJVk=
-github.com/absolutelightning/radix v1.0.5 h1:SO4F4nDXIlIbrG3qsLJUOlj8NsaZuyYaZJEEoH17Ahc=
-github.com/absolutelightning/radix v1.0.5/go.mod h1:uCoYno228/E/lyklQ0jBde1CZ+R0imKrTSpZTGVUJVk=
 github.com/absolutelightning/radix v1.0.6 h1:+zEgwDS/UYwGXOgtcyQ7VhQ7eiCqzGGuy6ZimXY8jFs=
 github.com/absolutelightning/radix v1.0.6/go.mod h1:uCoYno228/E/lyklQ0jBde1CZ+R0imKrTSpZTGVUJVk=
-github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
-github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/kavu/go_reuseport v1.5.0 h1:UNuiY2OblcqAtVDE8Gsg1kZz8zbBWg907sP1ceBV+bk=
 github.com/kavu/go_reuseport v1.5.0/go.mod h1:CG8Ee7ceMFSMnx/xr25Vm0qXaj2Z4i5PWoUx+JZ5/CU=
 github.com/tidwall/evio v1.0.8 h1:+M7lh83rL4KwEObDGtXP3J1wE5utH80LeaAhrKCGVfE=
 github.com/tidwall/evio v1.0.8/go.mod h1:MJhRp4iVVqx/n/5mJk77oKmSABVhC7yYykcJiKaFYYw=
+golang.org/x/sync v0.8.0 h1:3NFvSEYkUoMifnESzZl15y791HH1qU2xm6eCJU5ZPXQ=
+golang.org/x/sync v0.8.0/go.mod h1:Czt+wKu1gCyEFDUtn0jG5QVvpJ6rzVqr5aXyt9drQfk=
