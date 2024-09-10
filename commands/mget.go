@@ -72,6 +72,6 @@ func executeMGet() ExecutionHook {
 			response.WriteString(fmt.Sprintf("%v\n", res))
 		}
 
-		return fmt.Sprintf("%v\n", response.String()), nil
+		return response.String(), nil
 	}
 }
