@@ -4,22 +4,18 @@ import (
 	"bytes"
 	"fmt"
 	radix_tree "github.com/absolutelightning/radix"
-	tree_map "github.com/emirpasic/gods/maps/treemap"
-	"github.com/emirpasic/gods/utils"
 	"strconv"
 )
 
 const NilResp = "(nil)"
 
 type TredsStore struct {
-	tree    *radix_tree.Tree
-	treeMap *tree_map.Map
+	tree *radix_tree.Tree
 }
 
 func NewTredsStore() *TredsStore {
 	return &TredsStore{
-		tree:    radix_tree.New(),
-		treeMap: tree_map.NewWith(utils.Float64Comparator),
+		tree: radix_tree.New(),
 	}
 }
 
