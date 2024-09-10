@@ -21,7 +21,8 @@ func New(port int) *Server {
 func (s *Server) Init() {
 	var events evio.Events
 
-	// This should always be One
+	// numLoops should always be 1 because datastructures do not support MVCC.
+	// This is single threaded operation
 	events.NumLoops = 1 // Single-threaded
 
 	// Handle new connections

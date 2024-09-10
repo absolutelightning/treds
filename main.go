@@ -30,8 +30,6 @@ func main() {
 		panic(err)
 	}
 
-	// numLoops should always be 1 because datastructures do not support MVCC.
-	// This is single threaded operation
 	trieDataStructureServer := server.New(portInt)
 
 	go trieDataStructureServer.Init()
