@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/tidwall/evio"
+	"strconv"
 	"strings"
 	"treds/commands"
 	"treds/store"
@@ -39,10 +40,19 @@ func (s *Server) Init() {
 		return
 	}
 
+	setCommand, _ := commandRegistry.Retrieve("SET")
+
+	for i := 0; i <= 1000000; i++ {
+		setCommand.Execute([]string{"user:" + strconv.Itoa(i), "value_" + strconv.Itoa(i)}, s.TredsStore)
+	}
+
 	// Handle data read from clients
 	events.Data = func(c evio.Conn, in []byte) (out []byte, action evio.Action) {
 		// Simple command handling: reply with PONG to PING command
 		inp := string(in)
+		if inp == "" {
+			return
+		}
 		if strings.ToUpper(inp) == "PING\n" {
 			out = []byte("PONG\n")
 		} else {
@@ -63,7 +73,7 @@ func (s *Server) Init() {
 				out = []byte(fmt.Sprintf("Error Executing command - %v\n", err.Error()))
 				return
 			}
-			out = []byte(fmt.Sprintf("%s", res))
+			out = []byte(fmt.Sprintf("%d\n%s", len(res), res))
 		}
 		return
 	}
