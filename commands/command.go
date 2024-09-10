@@ -5,4 +5,5 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterSetCommand(r)
 	RegisterDeleteCommand(r)
 	RegisterPrefixScan(r)
+	RegisterDeletePrefixCommand(r)
 }

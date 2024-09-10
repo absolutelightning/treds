@@ -5,4 +5,5 @@ type Store interface {
 	Set(string, string) error
 	Delete(string) error
 	PrefixScan(string, string, string) (string, error)
+	DeletePrefix(string) error
 }

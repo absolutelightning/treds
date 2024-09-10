@@ -71,3 +71,9 @@ func (rs *radixStore) PrefixScan(cursor, prefix, count string) (string, error) {
 	}
 	return result.String(), nil
 }
+
+func (rs *radixStore) DeletePrefix(prefix string) error {
+	newTree, _ := rs.tree.DeletePrefix([]byte(prefix))
+	rs.tree = newTree
+	return nil
+}
