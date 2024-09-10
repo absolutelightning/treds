@@ -1,13 +1,13 @@
 package main
 
 import (
-	"dserv/server"
 	"log"
 	"os"
 	"os/signal"
 	"strconv"
 	"sync"
 	"syscall"
+	"treds/server"
 )
 
 const DefaultPort = "7997"
