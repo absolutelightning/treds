@@ -9,16 +9,16 @@ import (
 )
 
 type Server struct {
-	Port  int
-	ErrCh chan error
-	Store store.Store
+	Port       int
+	ErrCh      chan error
+	TredsStore store.Store
 }
 
 func New(port int) *Server {
 	return &Server{
-		ErrCh: make(chan error),
-		Port:  port,
-		Store: store.NewRadixStore(),
+		ErrCh:      make(chan error),
+		Port:       port,
+		TredsStore: store.NewTredsStore(),
 	}
 }
 
@@ -58,7 +58,7 @@ func (s *Server) Init() {
 				out = []byte(fmt.Sprintf("Error Validating command - %v\n", err.Error()))
 				return
 			}
-			res, err := commandReg.Execute(commandStringParts[1:], s.Store)
+			res, err := commandReg.Execute(commandStringParts[1:], s.TredsStore)
 			if err != nil {
 				out = []byte(fmt.Sprintf("Error Executing command - %v\n", err.Error()))
 				return

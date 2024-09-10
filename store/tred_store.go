@@ -3,23 +3,26 @@ package store
 import (
 	"bytes"
 	"fmt"
+	tree_map "github.com/absolutelightning/gods/maps/treemap"
+	radix_tree "github.com/absolutelightning/radix"
 	"strconv"
-	radix_tree "treds/datastructures/radix-tree"
 )
 
 const NilResp = "(nil)"
 
-type radixStore struct {
-	tree *radix_tree.Tree
+type TredsStore struct {
+	tree    *radix_tree.Tree
+	treeMap *tree_map.Map[float64, string]
 }
 
-func NewRadixStore() Store {
-	return &radixStore{
-		tree: radix_tree.New(),
+func NewTredsStore() *TredsStore {
+	return &TredsStore{
+		tree:    radix_tree.New(),
+		treeMap: tree_map.New[float64, string](),
 	}
 }
 
-func (rs *radixStore) Get(k string) (string, error) {
+func (rs *TredsStore) Get(k string) (string, error) {
 	v, ok := rs.tree.Get([]byte(k))
 	if !ok {
 		return NilResp, nil
@@ -27,19 +30,19 @@ func (rs *radixStore) Get(k string) (string, error) {
 	return v.(string), nil
 }
 
-func (rs *radixStore) Set(k string, v string) error {
+func (rs *TredsStore) Set(k string, v string) error {
 	newTree, _, _ := rs.tree.Insert([]byte(k), v)
 	rs.tree = newTree
 	return nil
 }
 
-func (rs *radixStore) Delete(k string) error {
+func (rs *TredsStore) Delete(k string) error {
 	newTree, _, _ := rs.tree.Delete([]byte(k))
 	rs.tree = newTree
 	return nil
 }
 
-func (rs *radixStore) PrefixScan(cursor, prefix, count string) (string, error) {
+func (rs *TredsStore) PrefixScan(cursor, prefix, count string) (string, error) {
 	startIndex, err := strconv.Atoi(cursor)
 	if err != nil {
 		return "", err
@@ -72,7 +75,7 @@ func (rs *radixStore) PrefixScan(cursor, prefix, count string) (string, error) {
 	return result.String(), nil
 }
 
-func (rs *radixStore) DeletePrefix(prefix string) error {
+func (rs *TredsStore) DeletePrefix(prefix string) error {
 	newTree, _ := rs.tree.DeletePrefix([]byte(prefix))
 	rs.tree = newTree
 	return nil
