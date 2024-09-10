@@ -8,4 +8,6 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterDeletePrefixCommand(r)
 	RegisterKeysCommand(r)
 	RegisterKVSCommand(r)
+	RegisterMGetCommand(r)
+	RegisterPrefixScanKeys(r)
 }

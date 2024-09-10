@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"github.com/tidwall/evio"
-	"strconv"
 	"strings"
 	"treds/commands"
 	"treds/store"

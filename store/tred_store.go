@@ -72,6 +72,39 @@ func (rs *TredsStore) PrefixScan(cursor, prefix, count string) (string, error) {
 	return result.String(), nil
 }
 
+func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) (string, error) {
+	startIndex, err := strconv.Atoi(cursor)
+	if err != nil {
+		return "", err
+	}
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return "", err
+	}
+	iterator := rs.tree.Root().Iterator()
+	iterator.SeekPrefix([]byte(prefix))
+
+	index := 0
+
+	var result bytes.Buffer
+
+	for {
+		key, _, found := iterator.Next()
+		if !found {
+			break
+		}
+		if index >= startIndex && countInt > 0 {
+			result.WriteString(fmt.Sprintf("%v\n", string(key)))
+			countInt--
+		}
+		if countInt == 0 {
+			break
+		}
+		index += 1
+	}
+	return result.String(), nil
+}
+
 func (rs *TredsStore) DeletePrefix(prefix string) error {
 	newTree, _ := rs.tree.DeletePrefix([]byte(prefix))
 	rs.tree = newTree
