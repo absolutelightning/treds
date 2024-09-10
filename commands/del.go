@@ -31,6 +31,6 @@ func executeDel() ExecutionHook {
 		if err != nil {
 			return "", err
 		}
-		return "OK", nil
+		return "OK\n", nil
 	}
 }

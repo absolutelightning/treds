@@ -63,7 +63,7 @@ func (s *Server) Init() {
 				out = []byte(fmt.Sprintf("Error Executing command - %v\n", err.Error()))
 				return
 			}
-			out = []byte(fmt.Sprintf("%s\n", res))
+			out = []byte(fmt.Sprintf("%s", res))
 		}
 		return
 	}

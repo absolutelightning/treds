@@ -10,12 +10,12 @@ const GetCommand = "GET"
 func RegisterGetCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
 		Name:     GetCommand,
-		Validate: validate(),
-		Execute:  execute(),
+		Validate: validateGet(),
+		Execute:  executeGet(),
 	})
 }
 
-func validate() ValidationHook {
+func validateGet() ValidationHook {
 	return func(args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("expected 1 argument, got %d", len(args))
@@ -25,12 +25,12 @@ func validate() ValidationHook {
 	}
 }
 
-func execute() ExecutionHook {
+func executeGet() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
 		v, err := store.Get(args[0])
 		if err != nil {
 			return "", err
 		}
-		return v, nil
+		return fmt.Sprintf("%v\n", v), nil
 	}
 }
