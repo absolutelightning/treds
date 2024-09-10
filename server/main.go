@@ -3,10 +3,22 @@ package server
 import (
 	"fmt"
 	"github.com/tidwall/evio"
+	"strings"
 )
 
-func Serve() {
-	// Define server events
+type Server struct {
+	Port  int
+	ErrCh chan error
+}
+
+func New(port int) *Server {
+	return &Server{
+		ErrCh: make(chan error),
+		Port:  port,
+	}
+}
+
+func (s *Server) Init() {
 	var events evio.Events
 
 	// This should always be One
@@ -20,10 +32,8 @@ func Serve() {
 
 	// Handle data read from clients
 	events.Data = func(c evio.Conn, in []byte) (out []byte, action evio.Action) {
-		fmt.Printf("Received data: %s\n", string(in))
-
 		// Simple command handling: reply with PONG to PING command
-		if string(in) == "PING\n" {
+		if strings.ToUpper(string(in)) == "PING\n" {
 			out = []byte("PONG\n")
 		} else {
 			out = []byte("UNKNOWN COMMAND\n")
@@ -32,7 +42,7 @@ func Serve() {
 	}
 
 	// Define the address to listen on
-	address := "tcp://localhost:7997"
+	address := fmt.Sprintf("tcp://0.0.0.0:%d", s.Port)
 
 	// Start the server
 	if err := evio.Serve(events, address); err != nil {
