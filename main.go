@@ -10,6 +10,8 @@ import (
 	"syscall"
 )
 
+const DefaultPort = "7997"
+
 func main() {
 	var sigs chan os.Signal = make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
@@ -19,7 +21,7 @@ func main() {
 	port := os.Getenv("TREDS_PORT")
 
 	if len(port) == 0 {
-		port = "7997"
+		port = DefaultPort
 	}
 
 	portInt, err := strconv.Atoi(port)
