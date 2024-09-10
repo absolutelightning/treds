@@ -27,10 +27,6 @@ func validateGet() ValidationHook {
 
 func executeGet() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
-		v, err := store.Get(args[0])
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%v\n", v), nil
+		return store.Get(args[0])
 	}
 }

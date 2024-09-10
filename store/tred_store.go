@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	radix_tree "github.com/absolutelightning/radix"
+	"golang.org/x/sync/errgroup"
 	"strconv"
+	"sync"
 )
 
 const NilResp = "(nil)"
@@ -25,6 +27,35 @@ func (rs *TredsStore) Get(k string) (string, error) {
 		return NilResp, nil
 	}
 	return v.(string), nil
+}
+
+func (rs *TredsStore) MGet(args []string) (string, error) {
+	results := make([]string, len(args))
+	var g errgroup.Group
+	var mu sync.Mutex
+	for i, arg := range args {
+		index := i
+		key := arg
+		g.Go(func() error {
+			res, err := rs.Get(key)
+			if err != nil {
+				return err
+			}
+			mu.Lock()
+			results[index] = res
+			mu.Unlock()
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return "", err
+	}
+	var response bytes.Buffer
+	for _, res := range results {
+		response.WriteString(fmt.Sprintf("%v\n", res))
+	}
+	return response.String(), nil
 }
 
 func (rs *TredsStore) Set(k string, v string) error {
