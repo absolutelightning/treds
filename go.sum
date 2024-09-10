@@ -1,9 +1,11 @@
-github.com/absolutelightning/gods v1.0.2 h1:NSs5pNlDrOyf03Vji7Bua0Z4zAyZEgbhY3xix3IjsRw=
-github.com/absolutelightning/gods v1.0.2/go.mod h1:AwaR6ic6HdnivOzW2Rqt3h2xDXhLk8JxvzKOSeNOugo=
-github.com/absolutelightning/radix v1.0.0 h1:+IS/kbuly0sqLY70VpcGTfLvGGHrG9UFsalH6TudxsI=
-github.com/absolutelightning/radix v1.0.0/go.mod h1:uCoYno228/E/lyklQ0jBde1CZ+R0imKrTSpZTGVUJVk=
-github.com/emirpasic/gods/v2 v2.0.0-alpha h1:dwFlh8pBg1VMOXWGipNMRt8v96dKAIvBehtCt6OtunU=
-github.com/emirpasic/gods/v2 v2.0.0-alpha/go.mod h1:W0y4M2dtBB9U5z3YlghmpuUhiaZT2h6yoeE+C1sCp6A=
+github.com/absolutelightning/radix v1.0.4 h1:EEqtEeUyHcBkUfIfYaKWXJAp7NPjbMbsOf03Vc6/w+U=
+github.com/absolutelightning/radix v1.0.4/go.mod h1:uCoYno228/E/lyklQ0jBde1CZ+R0imKrTSpZTGVUJVk=
+github.com/absolutelightning/radix v1.0.5 h1:SO4F4nDXIlIbrG3qsLJUOlj8NsaZuyYaZJEEoH17Ahc=
+github.com/absolutelightning/radix v1.0.5/go.mod h1:uCoYno228/E/lyklQ0jBde1CZ+R0imKrTSpZTGVUJVk=
+github.com/absolutelightning/radix v1.0.6 h1:+zEgwDS/UYwGXOgtcyQ7VhQ7eiCqzGGuy6ZimXY8jFs=
+github.com/absolutelightning/radix v1.0.6/go.mod h1:uCoYno228/E/lyklQ0jBde1CZ+R0imKrTSpZTGVUJVk=
+github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
+github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/kavu/go_reuseport v1.5.0 h1:UNuiY2OblcqAtVDE8Gsg1kZz8zbBWg907sP1ceBV+bk=
 github.com/kavu/go_reuseport v1.5.0/go.mod h1:CG8Ee7ceMFSMnx/xr25Vm0qXaj2Z4i5PWoUx+JZ5/CU=
 github.com/tidwall/evio v1.0.8 h1:+M7lh83rL4KwEObDGtXP3J1wE5utH80LeaAhrKCGVfE=

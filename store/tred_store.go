@@ -3,8 +3,9 @@ package store
 import (
 	"bytes"
 	"fmt"
-	tree_map "github.com/absolutelightning/gods/maps/treemap"
 	radix_tree "github.com/absolutelightning/radix"
+	tree_map "github.com/emirpasic/gods/maps/treemap"
+	"github.com/emirpasic/gods/utils"
 	"strconv"
 )
 
@@ -12,13 +13,13 @@ const NilResp = "(nil)"
 
 type TredsStore struct {
 	tree    *radix_tree.Tree
-	treeMap *tree_map.Map[float64, string]
+	treeMap *tree_map.Map
 }
 
 func NewTredsStore() *TredsStore {
 	return &TredsStore{
 		tree:    radix_tree.New(),
-		treeMap: tree_map.New[float64, string](),
+		treeMap: tree_map.NewWith(utils.Float64Comparator),
 	}
 }
 
@@ -79,4 +80,38 @@ func (rs *TredsStore) DeletePrefix(prefix string) error {
 	newTree, _ := rs.tree.DeletePrefix([]byte(prefix))
 	rs.tree = newTree
 	return nil
+}
+
+func (rs *TredsStore) Keys(regex string) (string, error) {
+	iterator := rs.tree.Root().Iterator()
+	iterator.PatternMatch(regex)
+
+	var result bytes.Buffer
+
+	for {
+		key, _, found := iterator.Next()
+		if !found {
+			break
+		}
+		result.WriteString(fmt.Sprintf("%v\n", string(key)))
+	}
+
+	return result.String(), nil
+}
+
+func (rs *TredsStore) KVS(regex string) (string, error) {
+	iterator := rs.tree.Root().Iterator()
+	iterator.PatternMatch(regex)
+
+	var result bytes.Buffer
+
+	for {
+		key, value, found := iterator.Next()
+		if !found {
+			break
+		}
+		result.WriteString(fmt.Sprintf("%v\n%v\n", string(key), value.(string)))
+	}
+
+	return result.String(), nil
 }
