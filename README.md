@@ -8,7 +8,7 @@ Implemented using modified Radix trees where leaf nodes are connected by Linkedl
 
 LinkedList of leaf nodes are updated at the time of create/delete and udpate of keys optimally.
 
-## Comamnds 
+## Commands 
 * `set key value` - Sets a key value pair
 * `get key` - Get a value for a key
 * `mget key1 key2`- Get values for multiple keys
