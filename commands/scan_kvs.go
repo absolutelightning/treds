@@ -7,7 +7,7 @@ import (
 	"treds/store"
 )
 
-const PrefixScanCommand = "SCAN"
+const PrefixScanCommand = "SCANKVS"
 
 func RegisterPrefixScan(r CommandRegistry) {
 	r.Add(&CommandRegistration{
