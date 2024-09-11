@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"regexp"
 	"treds/store"
 )
 
@@ -17,6 +18,12 @@ func RegisterKeysCommand(r CommandRegistry) {
 
 func validateKeys() ValidationHook {
 	return func(args []string) error {
+		if len(args) != 1 {
+			_, err := regexp.Compile(args[0])
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 }
