@@ -1,4 +1,4 @@
-# TREDS - Radix Trie Based Data Structure Server
+# TREDS - Radix Tree Based Data Structure Server
 
 This is a Radix Trie Based Data Structure Server with primary focus of getting keys in sorted or quickly matching a common prefix.
 
