@@ -1,7 +1,3 @@
-github.com/absolutelightning/radix v1.0.6 h1:+zEgwDS/UYwGXOgtcyQ7VhQ7eiCqzGGuy6ZimXY8jFs=
-github.com/absolutelightning/radix v1.0.6/go.mod h1:uCoYno228/E/lyklQ0jBde1CZ+R0imKrTSpZTGVUJVk=
-github.com/absolutelightning/radix v1.0.7 h1:Z4IMy7bab0kIFbo+AjMRQnHio1b+kFGBof2BIjuaJ7Q=
-github.com/absolutelightning/radix v1.0.7/go.mod h1:uCoYno228/E/lyklQ0jBde1CZ+R0imKrTSpZTGVUJVk=
 github.com/kavu/go_reuseport v1.5.0 h1:UNuiY2OblcqAtVDE8Gsg1kZz8zbBWg907sP1ceBV+bk=
 github.com/kavu/go_reuseport v1.5.0/go.mod h1:CG8Ee7ceMFSMnx/xr25Vm0qXaj2Z4i5PWoUx+JZ5/CU=
 github.com/tidwall/evio v1.0.8 h1:+M7lh83rL4KwEObDGtXP3J1wE5utH80LeaAhrKCGVfE=
