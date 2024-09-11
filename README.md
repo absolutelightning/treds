@@ -4,7 +4,9 @@ This is a Radix Trie Based Data Structure Server with primary focus of getting k
 
 It is single threaded and has event loop.
 
-Leaf nodes are connected by Linkedlist in Radix Trie to faciliate the quick lookup of keys/values in sorted order. 
+Implemented using modified Radix trees where leaf nodes are connected by Linkedlist in Radix Trie to faciliate the quick lookup of keys/values in sorted order.
+
+LinkedList of leaf nodes are updated at the time of create/delete and udpate of keys optimally.
 
 ## Comamnds 
 * `set key value` - Sets a key value pair
