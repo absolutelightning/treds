@@ -7,17 +7,17 @@ import (
 	"treds/store"
 )
 
-const PrefixScanCommand = "PREFIXSCAN"
+const PrefixScanKeysCommand = "SCANKEYS"
 
-func RegisterPrefixScan(r CommandRegistry) {
+func RegisterPrefixScanKeys(r CommandRegistry) {
 	r.Add(&CommandRegistration{
-		Name:     PrefixScanCommand,
-		Validate: validatePrefixScan(),
-		Execute:  executePrefixScan(),
+		Name:     PrefixScanKeysCommand,
+		Validate: validatePrefixScanKeys(),
+		Execute:  executePrefixScanKeys(),
 	})
 }
 
-func validatePrefixScan() ValidationHook {
+func validatePrefixScanKeys() ValidationHook {
 	return func(args []string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("expected minimum 2 argument, got %d", len(args))
@@ -29,13 +29,13 @@ func validatePrefixScan() ValidationHook {
 	}
 }
 
-func executePrefixScan() ExecutionHook {
+func executePrefixScanKeys() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
 		count := strconv.Itoa(math.MaxInt64)
 		if len(args) == 3 {
 			count = args[2]
 		}
-		v, err := store.PrefixScan(args[0], args[1], count)
+		v, err := store.PrefixScanKeys(args[0], args[1], count)
 		if err != nil {
 			return "", err
 		}
