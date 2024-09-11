@@ -13,7 +13,7 @@ LinkedList of leaf nodes are updated at the time of create/delete and udpate of 
 * `get key` - Get a value for a key
 * `mget key1 key2`- Get values for multiple keys
 * `scankeys startindex prefix count` - Returns the count number of keys matching prefix starting from an index 
-* `scan startindex prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index
+* `scankvs startindex prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index
 * `keys regex` - Returns all keys matching a regex - (Not suitable to production usecases with huge number of keys)
 * `kvs regex` - Returns all keys/values in which keys match a regex - (Not suitable to production usecases with huge number of keys)
 
