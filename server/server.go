@@ -42,7 +42,7 @@ func (s *Server) Init() {
 
 	setCommand, _ := commandRegistry.Retrieve("SET")
 
-	for i := 0; i <= 5000000; i++ {
+	for i := 0; i <= 10000000; i++ {
 		setCommand.Execute([]string{"user:" + strconv.Itoa(i), "value_" + strconv.Itoa(i)}, s.TredsStore)
 	}
 
