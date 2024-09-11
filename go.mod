@@ -3,7 +3,6 @@ module treds
 go 1.22
 
 require (
-	github.com/absolutelightning/radix v1.0.7
 	github.com/tidwall/evio v1.0.8
 	golang.org/x/sync v0.8.0
 )

@@ -3,10 +3,10 @@ package store
 import (
 	"bytes"
 	"fmt"
-	radix_tree "github.com/absolutelightning/radix"
 	"golang.org/x/sync/errgroup"
 	"strconv"
 	"sync"
+	radix_tree "treds/datastructures/radix"
 )
 
 const NilResp = "(nil)"
