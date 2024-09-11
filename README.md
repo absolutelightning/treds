@@ -1,6 +1,6 @@
 # TREDS - Radix Trie Based Data Structure Server
 
-This is a Radix Trie Based Data Structure Server with primary focus of getting keys in sorted or quickly.
+This is a Radix Trie Based Data Structure Server with primary focus of getting keys in sorted or quickly matching a common prefix.
 
 It is single threaded and has event loop.
 
