@@ -122,3 +122,18 @@ func (m *MockStore) KVS(regex string) (string, error) {
 	}
 	return res, nil
 }
+
+func (m *MockStore) Size() (string, error) {
+	return "", nil
+}
+
+func (m *MockStore) ZAdd([]string) (bool, error) {
+	return true, nil
+}
+
+func (m *MockStore) ZRangeByLexKVS(string, string, string, string) (string, error) {
+	return "", nil
+}
+func (m *MockStore) ZRangeByLexKeys(string, string, string, string) (string, error) {
+	return "", nil
+}
