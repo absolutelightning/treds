@@ -11,7 +11,9 @@ type Store interface {
 	Keys(string) (string, error)
 	KVS(string) (string, error)
 	Size() (string, error)
-	ZAdd([]string) (bool, error)
+	ZAdd([]string) error
+	ZRem([]string) error
+	ZScore([]string) (string, error)
 	ZRangeByLexKVS(string, string, string, string) (string, error)
 	ZRangeByLexKeys(string, string, string, string) (string, error)
 	ZRangeByScoreKeys(string, string, string, string, string, bool) (string, error)

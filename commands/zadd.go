@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"strconv"
 	"treds/store"
 )
 
@@ -27,10 +26,10 @@ func validateZAddCommand() ValidationHook {
 
 func executeZAddCommand() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
-		added, err := store.ZAdd(args)
+		err := store.ZAdd(args)
 		if err != nil {
 			return "", err
 		}
-		return strconv.FormatBool(added), nil
+		return "OK\n", nil
 	}
 }

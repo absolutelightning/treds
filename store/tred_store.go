@@ -18,12 +18,14 @@ const Epsilon = 1e-9
 type TredsStore struct {
 	tree       *radix_tree.Tree
 	sortedMaps map[string]*treemap.Map
+	scoreMaps  map[string]*radix_tree.Tree
 }
 
 func NewTredsStore() *TredsStore {
 	return &TredsStore{
 		tree:       radix_tree.New(),
 		sortedMaps: make(map[string]*treemap.Map),
+		scoreMaps:  make(map[string]*radix_tree.Tree),
 	}
 }
 
@@ -186,18 +188,21 @@ func (rs *TredsStore) Size() (string, error) {
 	return strconv.Itoa(rs.tree.Len() + len(rs.sortedMaps)), nil
 }
 
-func (rs *TredsStore) ZAdd(args []string) (bool, error) {
-	key := []byte(args[0])
-	rs.tree.Insert(key, nil)
+func (rs *TredsStore) ZAdd(args []string) error {
 	tm := treemap.NewWith(utils.Float64Comparator)
 	if storedTm, ok := rs.sortedMaps[args[0]]; ok {
 		tm = storedTm
 	}
+	sm := radix_tree.New()
+	if storedSm, ok := rs.scoreMaps[args[0]]; ok {
+		sm = storedSm
+	}
 	for itr := 1; itr < len(args); itr += 3 {
 		score, err := strconv.ParseFloat(args[itr], 64)
 		if err != nil {
-			return false, err
+			return err
 		}
+		sm.Insert([]byte(args[itr+1]), score)
 		radixTree := radix_tree.New()
 		storedRadixTree, found := tm.Get(score)
 		if found {
@@ -225,7 +230,53 @@ func (rs *TredsStore) ZAdd(args []string) (bool, error) {
 		}
 	}
 	rs.sortedMaps[args[0]] = tm
-	return true, nil
+	rs.scoreMaps[args[0]] = sm
+	return nil
+}
+
+func (rs *TredsStore) ZRem(args []string) error {
+	storedTm, ok := rs.sortedMaps[args[0]]
+	if !ok {
+		return nil
+	}
+	for _, arg := range args[1:] {
+		rs.scoreMaps[args[0]].Delete([]byte(arg))
+	}
+	itertor := storedTm.Iterator()
+	for itertor.Next() {
+		radixTree := radix_tree.New()
+		score := itertor.Key().(float64)
+		storedRadixTree := itertor.Value()
+		radixTree = storedRadixTree.(*radix_tree.Tree)
+		for itr := 1; itr < len(args); itr += 1 {
+			radixTree, _, _ = radixTree.Delete([]byte(args[itr]))
+		}
+		if radixTree.Len() == 0 {
+			storedTm.Remove(score)
+		} else {
+			storedTm.Put(score, radixTree)
+		}
+		_, radixTreeFloor := storedTm.Floor(score - Epsilon)
+		if radixTreeFloor != nil {
+			tree := radixTreeFloor.(*radix_tree.Tree)
+			maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
+			minLeaf, foundMinLeaf := radixTree.Root().MinimumLeaf()
+			if foundMaxLeaf && foundMinLeaf {
+				maxLeaf.SetNextLeaf(minLeaf)
+			}
+		}
+		_, radixTreeCeiling := storedTm.Ceiling(score + Epsilon)
+		if radixTreeCeiling != nil {
+			tree := radixTreeCeiling.(*radix_tree.Tree)
+			minLeaf, foundMaxLeaf := tree.Root().MinimumLeaf()
+			maxLeaf, foundMinLeaf := radixTree.Root().MaximumLeaf()
+			if foundMaxLeaf && foundMinLeaf {
+				maxLeaf.SetNextLeaf(minLeaf)
+			}
+		}
+	}
+	rs.sortedMaps[args[0]] = storedTm
+	return nil
 }
 
 func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string, error) {
@@ -412,4 +463,17 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 		minFloat = scoreFloat + Epsilon
 	}
 	return result.String(), nil
+}
+
+func (rs *TredsStore) ZScore(args []string) (string, error) {
+	store, ok := rs.scoreMaps[args[0]]
+	if ok {
+		score, found := store.Get([]byte(args[1]))
+		if found {
+			if num, ok := score.(float64); ok {
+				return strconv.FormatFloat(num, 'f', -1, 64), nil
+			}
+		}
+	}
+	return "", nil
 }
