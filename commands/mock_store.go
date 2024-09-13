@@ -127,13 +127,28 @@ func (m *MockStore) Size() (string, error) {
 	return "", nil
 }
 
-func (m *MockStore) ZAdd([]string) (bool, error) {
-	return true, nil
+func (m *MockStore) ZAdd([]string) error {
+	return nil
+}
+
+func (m *MockStore) ZRem([]string) error {
+	return nil
 }
 
 func (m *MockStore) ZRangeByLexKVS(string, string, string, string) (string, error) {
 	return "", nil
 }
 func (m *MockStore) ZRangeByLexKeys(string, string, string, string) (string, error) {
+	return "", nil
+}
+
+func (m *MockStore) ZRangeByScoreKeys(string, string, string, string, string, bool) (string, error) {
+	return "", nil
+}
+
+func (m *MockStore) ZRangeByScoreKVS(string, string, string, string, string, bool) (string, error) {
+	return "", nil
+}
+func (m *MockStore) ZScore([]string) (string, error) {
 	return "", nil
 }
