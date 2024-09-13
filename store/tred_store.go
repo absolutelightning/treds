@@ -260,17 +260,17 @@ func (rs *TredsStore) ZRem(args []string) error {
 		if radixTreeFloor != nil {
 			tree := radixTreeFloor.(*radix_tree.Tree)
 			maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
-			minLeaf, foundMinLeaf := radixTree.Root().MinimumLeaf()
-			if foundMaxLeaf && foundMinLeaf {
+			minLeaf, _ := radixTree.Root().MinimumLeaf()
+			if foundMaxLeaf {
 				maxLeaf.SetNextLeaf(minLeaf)
 			}
 		}
 		_, radixTreeCeiling := storedTm.Ceiling(score + Epsilon)
 		if radixTreeCeiling != nil {
 			tree := radixTreeCeiling.(*radix_tree.Tree)
-			minLeaf, foundMaxLeaf := tree.Root().MinimumLeaf()
-			maxLeaf, foundMinLeaf := radixTree.Root().MaximumLeaf()
-			if foundMaxLeaf && foundMinLeaf {
+			minLeaf, _ := tree.Root().MinimumLeaf()
+			maxLeaf, foundMaxLeaf := radixTree.Root().MaximumLeaf()
+			if foundMaxLeaf {
 				maxLeaf.SetNextLeaf(minLeaf)
 			}
 		}

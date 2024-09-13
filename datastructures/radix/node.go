@@ -3,8 +3,6 @@ package radix
 import (
 	"bytes"
 	"sort"
-	"sync/atomic"
-	"unsafe"
 )
 
 // WalkFn is used when walking the tree. Takes a
@@ -16,7 +14,7 @@ type WalkFn func(k []byte, v interface{}) bool
 type LeafNode struct {
 	key      []byte
 	val      interface{}
-	nextLeaf unsafe.Pointer
+	nextLeaf *LeafNode
 }
 
 func (n *LeafNode) Key() []byte {
@@ -28,11 +26,11 @@ func (n *LeafNode) Value() interface{} {
 }
 
 func (n *LeafNode) SetNextLeaf(l *LeafNode) {
-	atomic.StorePointer(&n.nextLeaf, unsafe.Pointer(l))
+	n.nextLeaf = l
 }
 
 func (n *LeafNode) GetNextLeaf() *LeafNode {
-	return (*LeafNode)(atomic.LoadPointer(&n.nextLeaf))
+	return n.nextLeaf
 }
 
 // edge is used to represent an edge node
