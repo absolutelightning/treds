@@ -3,21 +3,27 @@ package store
 import (
 	"bytes"
 	"fmt"
+	"github.com/emirpasic/gods/maps/treemap"
+	"github.com/emirpasic/gods/utils"
 	"golang.org/x/sync/errgroup"
 	"strconv"
+	"strings"
 	"sync"
 	radix_tree "treds/datastructures/radix"
 )
 
 const NilResp = "(nil)"
+const Epsilon = 1e-9
 
 type TredsStore struct {
-	tree *radix_tree.Tree
+	tree       *radix_tree.Tree
+	sortedMaps map[string]*treemap.Map
 }
 
 func NewTredsStore() *TredsStore {
 	return &TredsStore{
-		tree: radix_tree.New(),
+		tree:       radix_tree.New(),
+		sortedMaps: make(map[string]*treemap.Map),
 	}
 }
 
@@ -177,5 +183,79 @@ func (rs *TredsStore) KVS(regex string) (string, error) {
 }
 
 func (rs *TredsStore) Size() (string, error) {
-	return strconv.Itoa(rs.tree.Len()), nil
+	return strconv.Itoa(rs.tree.Len() + len(rs.sortedMaps)), nil
+}
+
+func (rs *TredsStore) ZAdd(args []string) (bool, error) {
+	key := []byte(args[0])
+	rs.tree.Insert(key, nil)
+	tm := treemap.NewWith(utils.Float64Comparator)
+	if storedTm, ok := rs.sortedMaps[args[0]]; ok {
+		tm = storedTm
+	}
+	for itr := 1; itr < len(args); itr += 3 {
+		score, err := strconv.ParseFloat(args[itr], 64)
+		if err != nil {
+			return false, err
+		}
+		radixTree := radix_tree.New()
+		storedRadixTree, found := tm.Get(score)
+		if found {
+			radixTree = storedRadixTree.(*radix_tree.Tree)
+		}
+		radixTree, _, _ = radixTree.Insert([]byte(args[itr+1]), args[itr+2])
+		tm.Put(score, radixTree)
+		_, radixTreeFloor := tm.Floor(score - Epsilon)
+		if radixTreeFloor != nil {
+			tree := radixTreeFloor.(*radix_tree.Tree)
+			maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
+			minLeaf, foundMinLeaf := radixTree.Root().MinimumLeaf()
+			if foundMaxLeaf && foundMinLeaf {
+				maxLeaf.SetNextLeaf(minLeaf)
+			}
+		}
+		_, radixTreeCeiling := tm.Ceiling(score + Epsilon)
+		if radixTreeCeiling != nil {
+			tree := radixTreeCeiling.(*radix_tree.Tree)
+			minLeaf, foundMaxLeaf := tree.Root().MinimumLeaf()
+			maxLeaf, foundMinLeaf := radixTree.Root().MaximumLeaf()
+			if foundMaxLeaf && foundMinLeaf {
+				maxLeaf.SetNextLeaf(minLeaf)
+			}
+		}
+	}
+	rs.sortedMaps[args[0]] = tm
+	return true, nil
+}
+
+func (rs *TredsStore) ZRangeByLex(key, cursor, prefix, count string) (string, error) {
+	sortedMap := rs.sortedMaps[key]
+	_, minValue := sortedMap.Min()
+	radixTreeMin := minValue.(*radix_tree.Tree)
+	iterator := radixTreeMin.Root().Iterator()
+	startIndex, err := strconv.Atoi(cursor)
+	if err != nil {
+		return "", err
+	}
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return "", err
+	}
+	index := 0
+	var result bytes.Buffer
+	for {
+		storedKey, value, found := iterator.Next()
+		if !found {
+			break
+		}
+		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
+			result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
+			countInt--
+		}
+		if countInt == 0 {
+			break
+		}
+		index += 1
+	}
+	return result.String(), nil
 }

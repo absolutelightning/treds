@@ -11,4 +11,6 @@ type Store interface {
 	Keys(string) (string, error)
 	KVS(string) (string, error)
 	Size() (string, error)
+	ZAdd([]string) (bool, error)
+	ZRangeByLex(string, string, string, string) (string, error)
 }

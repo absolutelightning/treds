@@ -19,11 +19,11 @@ type LeafNode struct {
 	nextLeaf unsafe.Pointer
 }
 
-func (n *LeafNode) setNextLeaf(l *LeafNode) {
+func (n *LeafNode) SetNextLeaf(l *LeafNode) {
 	atomic.StorePointer(&n.nextLeaf, unsafe.Pointer(l))
 }
 
-func (n *LeafNode) getNextLeaf() *LeafNode {
+func (n *LeafNode) GetNextLeaf() *LeafNode {
 	return (*LeafNode)(atomic.LoadPointer(&n.nextLeaf))
 }
 
@@ -74,7 +74,7 @@ func (n *Node) computeLinks() {
 	n.updateMinMaxLeaves()
 	if len(n.edges) > 0 {
 		if n.minLeaf != n.edges[0].node.minLeaf {
-			n.minLeaf.setNextLeaf(n.edges[0].node.minLeaf)
+			n.minLeaf.SetNextLeaf(n.edges[0].node.minLeaf)
 		}
 	}
 	for itr := 0; itr < len(n.edges); itr++ {
@@ -84,7 +84,7 @@ func (n *Node) computeLinks() {
 			minLSecond, _ = n.edges[itr+1].node.MinimumLeaf()
 		}
 		if maxLFirst != nil && minLSecond != nil {
-			maxLFirst.setNextLeaf(minLSecond)
+			maxLFirst.SetNextLeaf(minLSecond)
 		}
 	}
 }
