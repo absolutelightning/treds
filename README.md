@@ -16,6 +16,9 @@ LinkedList of leaf nodes are updated at the time of create/delete and udpate of 
 * `scankvs startindex prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index
 * `keys regex` - Returns all keys matching a regex - (Not suitable to production usecases with huge number of keys)
 * `kvs regex` - Returns all keys/values in which keys match a regex - (Not suitable to production usecases with huge number of keys)
+* `zadd key score member_key member_value [member_key member_value ....]` - Add member_key with member value with score to a sorted map in key
+* `zrangelexkeys key startindex prefix count` - Returns the count number of keys matching prefix starting from an index in a sorted map  
+* `zrangelexkvs key startindex prefix count` - Returns the count number of key/value pair n which keys match prefix starting from an index in a sorted map
 
 ## Future Work
 * Add Raft for HA
