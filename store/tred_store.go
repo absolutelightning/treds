@@ -392,15 +392,19 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 				}
 				countInt--
 			}
+			index++
 			minKV = minKV.GetNextLeaf()
 		}
 		if countInt > 0 {
-			if withScore {
-				result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", score, string(lastKV.Key()), lastKV.Value().(string)))
-			} else {
-				result.WriteString(fmt.Sprintf("%v\n%v\n", string(lastKV.Key()), lastKV.Value().(string)))
+			if index >= offsetInt {
+				if withScore {
+					result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", score, string(lastKV.Key()), lastKV.Value().(string)))
+				} else {
+					result.WriteString(fmt.Sprintf("%v\n%v\n", string(lastKV.Key()), lastKV.Value().(string)))
+				}
+				countInt--
 			}
-			countInt--
+			index++
 		}
 		minFloat = scoreFloat + Epsilon
 	}
@@ -450,15 +454,19 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 				}
 				countInt--
 			}
+			index++
 			minKV = minKV.GetNextLeaf()
 		}
 		if countInt > 0 {
-			if withScore {
-				result.WriteString(fmt.Sprintf("%v\n%v\n", score, string(lastKV.Key())))
-			} else {
-				result.WriteString(fmt.Sprintf("%v\n", string(lastKV.Key())))
+			if index >= offsetInt {
+				if withScore {
+					result.WriteString(fmt.Sprintf("%v\n%v\n", score, string(lastKV.Key())))
+				} else {
+					result.WriteString(fmt.Sprintf("%v\n", string(lastKV.Key())))
+				}
+				countInt--
 			}
-			countInt--
+			index++
 		}
 		minFloat = scoreFloat + Epsilon
 	}
