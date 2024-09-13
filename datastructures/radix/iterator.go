@@ -211,7 +211,7 @@ func (i *Iterator) Next() ([]byte, interface{}, bool) {
 	} else {
 
 		for i.leafNode != nil {
-			if i.leafNode != nil && bytes.HasPrefix(i.leafNode.key, i.key) {
+			if bytes.HasPrefix(i.leafNode.key, i.key) {
 				res := i.leafNode
 				i.leafNode = i.leafNode.getNextLeaf()
 				if i.leafNode == nil {

@@ -270,12 +270,6 @@ func (n *Node) Iterator() *Iterator {
 	return &Iterator{node: n}
 }
 
-// ReverseIterator is used to return an iterator at
-// the given node to walk the tree backwards
-func (n *Node) ReverseIterator() *ReverseIterator {
-	return NewReverseIterator(n)
-}
-
 // Walk is used to walk the tree
 func (n *Node) Walk(fn WalkFn) {
 	recursiveWalk(n, fn)
