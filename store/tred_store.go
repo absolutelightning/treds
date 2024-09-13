@@ -228,8 +228,11 @@ func (rs *TredsStore) ZAdd(args []string) (bool, error) {
 	return true, nil
 }
 
-func (rs *TredsStore) ZRangeByLex(key, cursor, prefix, count string) (string, error) {
+func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string, error) {
 	sortedMap := rs.sortedMaps[key]
+	if sortedMap == nil {
+		return "", nil
+	}
 	_, minValue := sortedMap.Min()
 	radixTreeMin := minValue.(*radix_tree.Tree)
 	iterator := radixTreeMin.Root().Iterator()
@@ -250,6 +253,41 @@ func (rs *TredsStore) ZRangeByLex(key, cursor, prefix, count string) (string, er
 		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
+			countInt--
+		}
+		if countInt == 0 {
+			break
+		}
+		index += 1
+	}
+	return result.String(), nil
+}
+
+func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string) (string, error) {
+	sortedMap := rs.sortedMaps[key]
+	if sortedMap == nil {
+		return "", nil
+	}
+	_, minValue := sortedMap.Min()
+	radixTreeMin := minValue.(*radix_tree.Tree)
+	iterator := radixTreeMin.Root().Iterator()
+	startIndex, err := strconv.Atoi(cursor)
+	if err != nil {
+		return "", err
+	}
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return "", err
+	}
+	index := 0
+	var result bytes.Buffer
+	for {
+		storedKey, _, found := iterator.Next()
+		if !found {
+			break
+		}
+		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
+			result.WriteString(fmt.Sprintf("%v\n", string(storedKey)))
 			countInt--
 		}
 		if countInt == 0 {

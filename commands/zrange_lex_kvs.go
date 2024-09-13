@@ -7,11 +7,11 @@ import (
 	"treds/store"
 )
 
-const ZRANGELEX = "ZRANGELEX"
+const ZRANGELEXKVS = "ZRANGELEXKVS"
 
 func RegisterZRangeLexCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
-		Name:     ZRANGELEX,
+		Name:     ZRANGELEXKVS,
 		Validate: validateZRangeLex(),
 		Execute:  executeZRangeLex(),
 	})
@@ -39,7 +39,7 @@ func executeZRangeLex() ExecutionHook {
 		if len(args) > 2 {
 			prefix = args[2]
 		}
-		v, err := store.ZRangeByLex(args[0], args[1], prefix, count)
+		v, err := store.ZRangeByLexKVS(args[0], args[1], prefix, count)
 		if err != nil {
 			return "", err
 		}
