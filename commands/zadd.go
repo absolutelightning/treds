@@ -18,7 +18,7 @@ func RegisterZAddCommand(r CommandRegistry) {
 
 func validateZAddCommand() ValidationHook {
 	return func(args []string) error {
-		if (((len(args)) % 2) != 0) || len(args) < 3 {
+		if len(args) < 3 {
 			return fmt.Errorf("expected 3 or multiple of 3 arguments, got %d", len(args))
 		}
 		return nil

@@ -19,6 +19,14 @@ type LeafNode struct {
 	nextLeaf unsafe.Pointer
 }
 
+func (n *LeafNode) Key() []byte {
+	return n.key
+}
+
+func (n *LeafNode) Value() interface{} {
+	return n.val
+}
+
 func (n *LeafNode) SetNextLeaf(l *LeafNode) {
 	atomic.StorePointer(&n.nextLeaf, unsafe.Pointer(l))
 }

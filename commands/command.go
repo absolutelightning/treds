@@ -14,4 +14,6 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterZAddCommand(r)
 	RegisterZRangeLexCommand(r)
 	RegisterZRangeLexKeysCommand(r)
+	RegisterZRangeScoreCommand(r)
+	RegisterZRangeScoreKVSCommand(r)
 }

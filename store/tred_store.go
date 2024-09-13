@@ -297,3 +297,119 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string) (string
 	}
 	return result.String(), nil
 }
+
+func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, withScore bool) (string, error) {
+	sortedMap := rs.sortedMaps[key]
+	if sortedMap == nil {
+		return "", nil
+	}
+	minFloat, err := strconv.ParseFloat(min, 64)
+	if err != nil {
+		return "", err
+	}
+	maxFloat, err := strconv.ParseFloat(max, 64)
+	if err != nil {
+		return "", err
+	}
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		return "", err
+	}
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return "", err
+	}
+	var result bytes.Buffer
+	index := 0
+	for {
+		score, radixTree := sortedMap.Ceiling(minFloat)
+		if radixTree == nil || score == nil {
+			break
+		}
+		scoreFloat := score.(float64)
+		if scoreFloat > maxFloat {
+			break
+		}
+		lastKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
+		minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
+		for minKV != lastKV {
+			if index >= offsetInt && countInt > 0 {
+				if withScore {
+					result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", score, string(minKV.Key()), minKV.Value().(string)))
+				} else {
+					result.WriteString(fmt.Sprintf("%v\n%v\n", string(minKV.Key()), minKV.Value().(string)))
+				}
+				countInt--
+			}
+			minKV = minKV.GetNextLeaf()
+		}
+		if countInt > 0 {
+			if withScore {
+				result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", score, string(lastKV.Key()), lastKV.Value().(string)))
+			} else {
+				result.WriteString(fmt.Sprintf("%v\n%v\n", string(lastKV.Key()), lastKV.Value().(string)))
+			}
+			countInt--
+		}
+		minFloat = scoreFloat + Epsilon
+	}
+	return result.String(), nil
+}
+
+func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, withScore bool) (string, error) {
+	sortedMap := rs.sortedMaps[key]
+	if sortedMap == nil {
+		return "", nil
+	}
+	minFloat, err := strconv.ParseFloat(min, 64)
+	if err != nil {
+		return "", err
+	}
+	maxFloat, err := strconv.ParseFloat(max, 64)
+	if err != nil {
+		return "", err
+	}
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		return "", err
+	}
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return "", err
+	}
+	var result bytes.Buffer
+	index := 0
+	for {
+		score, radixTree := sortedMap.Ceiling(minFloat)
+		if radixTree == nil || score == nil {
+			break
+		}
+		scoreFloat := score.(float64)
+		if scoreFloat > maxFloat {
+			break
+		}
+		lastKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
+		minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
+		for minKV != lastKV {
+			if index >= offsetInt && countInt > 0 {
+				if withScore {
+					result.WriteString(fmt.Sprintf("%v\n%v\n", score, string(minKV.Key())))
+				} else {
+					result.WriteString(fmt.Sprintf("%v\n", string(minKV.Key())))
+				}
+				countInt--
+			}
+			minKV = minKV.GetNextLeaf()
+		}
+		if countInt > 0 {
+			if withScore {
+				result.WriteString(fmt.Sprintf("%v\n%v\n", score, string(lastKV.Key())))
+			} else {
+				result.WriteString(fmt.Sprintf("%v\n", string(lastKV.Key())))
+			}
+			countInt--
+		}
+		minFloat = scoreFloat + Epsilon
+	}
+	return result.String(), nil
+}

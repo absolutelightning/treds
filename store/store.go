@@ -14,4 +14,6 @@ type Store interface {
 	ZAdd([]string) (bool, error)
 	ZRangeByLexKVS(string, string, string, string) (string, error)
 	ZRangeByLexKeys(string, string, string, string) (string, error)
+	ZRangeByScoreKeys(string, string, string, string, string, bool) (string, error)
+	ZRangeByScoreKVS(string, string, string, string, string, bool) (string, error)
 }
