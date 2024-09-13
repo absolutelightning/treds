@@ -2,10 +2,10 @@ package commands
 
 import "testing"
 
-// TestRegisterPrefixScanKeys tests the RegisterPrefixScanKeys function.
+// TestRegisterPrefixScanKeys tests the RegisterScanKeysCommand function.
 func TestRegisterPrefixScanKeys(t *testing.T) {
 	registry := NewRegistry()
-	RegisterPrefixScanKeys(registry)
+	RegisterScanKeysCommand(registry)
 
 	if _, exists := registry.(*commandRegistry).commands[PrefixScanKeysCommand]; !exists {
 		t.Errorf("command %s not registered", PrefixScanKeysCommand)

@@ -175,3 +175,7 @@ func (rs *TredsStore) KVS(regex string) (string, error) {
 
 	return result.String(), nil
 }
+
+func (rs *TredsStore) Size() (string, error) {
+	return strconv.Itoa(rs.tree.Len()), nil
+}

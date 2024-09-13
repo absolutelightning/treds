@@ -10,4 +10,5 @@ type Store interface {
 	DeletePrefix(string) error
 	Keys(string) (string, error)
 	KVS(string) (string, error)
+	Size() (string, error)
 }

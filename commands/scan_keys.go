@@ -9,7 +9,7 @@ import (
 
 const PrefixScanKeysCommand = "SCANKEYS"
 
-func RegisterPrefixScanKeys(r CommandRegistry) {
+func RegisterScanKeysCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
 		Name:     PrefixScanKeysCommand,
 		Validate: validatePrefixScanKeys(),
