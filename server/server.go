@@ -55,6 +55,15 @@ func (s *Server) Init() {
 	}
 	setCommand.Execute(args, s.TredsStore)
 
+	setCommand, _ = commandRegistry.Retrieve("ZADD")
+
+	args = make([]string, 0)
+	args = append(args, "ss_diff_score")
+	for i := 0; i <= 10000000; i++ {
+		args = append(args, strings.Split(fmt.Sprintf("%v user:%v %v", i, i, i), " ")...)
+	}
+	setCommand.Execute(args, s.TredsStore)
+
 	// Handle data read from clients
 	events.Data = func(c evio.Conn, in []byte) (out []byte, action evio.Action) {
 		// Simple command handling: reply with PONG to PING command
