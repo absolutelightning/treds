@@ -291,7 +291,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 	return nil
 }
 
-func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string, error) {
+func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string, withScore bool) (string, error) {
 	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
 		return "", nil
@@ -313,7 +313,12 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string,
 			break
 		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
-			result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
+			if withScore {
+				keyScore, _ := rs.sortedMapsScore[key].Get(storedKey)
+				result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", keyScore, string(storedKey), value.(string)))
+			} else {
+				result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
+			}
 			countInt--
 		}
 		if countInt == 0 {
@@ -324,7 +329,7 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string,
 	return result.String(), nil
 }
 
-func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string) (string, error) {
+func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string, withScore bool) (string, error) {
 	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
 		return "", nil
@@ -345,8 +350,16 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string) (string
 		if !found {
 			break
 		}
+		if withScore {
+
+		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
-			result.WriteString(fmt.Sprintf("%v\n", string(storedKey)))
+			if withScore {
+				keyScore, _ := rs.sortedMapsScore[key].Get(storedKey)
+				result.WriteString(fmt.Sprintf("%v\n%v\n", keyScore, string(storedKey)))
+			} else {
+				result.WriteString(fmt.Sprintf("%v\n", string(storedKey)))
+			}
 			countInt--
 		}
 		if countInt == 0 {

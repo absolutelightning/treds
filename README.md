@@ -20,8 +20,8 @@ LinkedList of leaf nodes are updated at the time of create/delete and udpate of 
 * `ZREM key member [member..]` - Removes a member from sorted map in key
 * `ZCARD key` - Returns the count of key/value pairs in sorted map in key
 * `ZSCORE key member` - Returns the score of a member in sorted map in key
-* `ZRANGELEXKEYS key startindex prefix count` - Returns the count number of keys matching prefix starting from an index in a sorted map
-* `ZRANGELEXKVS key startindex prefix count` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map
+* `ZRANGELEXKEYS key startindex count withscore prefix` - Returns the count number of keys matching prefix starting from an index in a sorted map
+* `ZRANGELEXKVS key startindex count withscore prefix` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map
 * `ZRANGESCOREKEYS key min max startindex count withscore` - Returns the count number of keys with the score between min/max in sorted order
 * `ZRANGESCOREKVS key min max startindex count withscore` - Returns the count number of key/value pair with the score between min/max in sorted order
 
