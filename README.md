@@ -12,22 +12,22 @@ LinkedList of leaf nodes are updated at the time of create/delete and udpate of 
 * `SET key value` - Sets a key value pair
 * `GET key` - Get a value for a key
 * `MGET key1 key2`- Get values for multiple keys
-* `SCANKEYS startindex prefix count` - Returns the count number of keys matching prefix starting from an index in lex order
-* `SCANKVS startindex prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order
+* `SCANKEYS offset prefix count` - Returns the count number of keys matching prefix starting from an index in lex order
+* `SCANKVS offset prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order
 * `KEYS regex` - Returns all keys matching a regex in lex order - (Not suitable to production use cases with huge number of keys)
 * `KVS regex` - Returns all keys/values in which keys match a regex in lex order - (Not suitable to production use cases with huge number of keys)
 * `ZADD key score member_key member_value [member_key member_value ....]` - Add member_key with member value with score to a sorted map in key
 * `ZREM key member [member..]` - Removes a member from sorted map in key
 * `ZCARD key` - Returns the count of key/value pairs in sorted map in key
 * `ZSCORE key member` - Returns the score of a member in sorted map in key
-* `ZRANGELEXKEYS key startindex count withscore prefix` - Returns the count number of keys matching prefix starting from an index in a sorted map in lex order. WithScore can be true or false
-* `ZRANGELEXKVS key startindex count withscore prefix` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map in lex order. WithScore can be true or false
-* `ZRANGESCOREKEYS key min max startindex count withscore` - Returns the count number of keys with the score between min/max in sorted order of score. WithScore can be true or false
-* `ZRANGESCOREKVS key min max startindex count withscore` - Returns the count number of key/value pair with the score between min/max in sorted order of score. WithScore can be true or false
-* `ZREVRANGELEXKEYS key startindex count withscore prefix` - Returns the count number of keys matching prefix starting from an index in a sorted map in lex order. WithScore can be true or false
-* `ZREVRANGELEXKVS key startindex count withscore prefix` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map in lex order. WithScore can be true or false
-* `ZREVRANGESCOREKEYS key min max startindex count withscore` - Returns the count number of keys with the score between min/max in reverser sorted order of score. WithScore can be true or false
-* `ZREVRANGESCOREKVS key min max startindex count withscore` - Returns the count number of key/value pair with the score between min/max in reverse sorted order of score. WithScore can be true or false
+* `ZRANGELEXKEYS key offset count withscore prefix` - Returns the count number of keys matching prefix starting from an index in a sorted map in lex order. WithScore can be true or false
+* `ZRANGELEXKVS key offset count withscore prefix` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map in lex order. WithScore can be true or false
+* `ZRANGESCOREKEYS key min max offset count withscore` - Returns the count number of keys with the score between min/max in sorted order of score. WithScore can be true or false
+* `ZRANGESCOREKVS key min max offset count withscore` - Returns the count number of key/value pair with the score between min/max in sorted order of score. WithScore can be true or false
+* `ZREVRANGELEXKEYS key offset count withscore prefix` - Returns the count number of keys matching prefix starting from an index in a sorted map in lex order. WithScore can be true or false
+* `ZREVRANGELEXKVS key offset count withscore prefix` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map in lex order. WithScore can be true or false
+* `ZREVRANGESCOREKEYS key min max offset count withscore` - Returns the count number of keys with the score between min/max in reverser sorted order of score. WithScore can be true or false
+* `ZREVRANGESCOREKVS key min max offset count withscore` - Returns the count number of key/value pair with the score between min/max in reverse sorted order of score. WithScore can be true or false
 
 ## Run 
 
