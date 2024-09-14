@@ -253,6 +253,8 @@ func (rs *TredsStore) ZRem(args []string) error {
 		if !found {
 			continue
 		}
+		newSortedMapTree, _, _ := rs.sortedMapsKeys[args[0]].Delete([]byte(args[itr]))
+		rs.sortedMapsScore[args[0]] = newSortedMapTree
 		scoreFloat := score.(float64)
 		storedRadixTree, found := storedTm.Get(scoreFloat)
 		if !found {
