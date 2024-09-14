@@ -239,24 +239,25 @@ func (rs *TredsStore) ZRem(args []string) error {
 	if !ok {
 		return nil
 	}
-	for _, arg := range args[1:] {
-		rs.scoreMaps[args[0]].Delete([]byte(arg))
-	}
-	itertor := storedTm.Iterator()
-	for itertor.Next() {
-		radixTree := radix_tree.New()
-		score := itertor.Key().(float64)
-		storedRadixTree := itertor.Value()
-		radixTree = storedRadixTree.(*radix_tree.Tree)
-		for itr := 1; itr < len(args); itr += 1 {
-			radixTree, _, _ = radixTree.Delete([]byte(args[itr]))
+	for itr := 1; itr < len(args); itr += 1 {
+		key := []byte(args[itr])
+		score, found := rs.scoreMaps[args[0]].Get(key)
+		if !found {
+			continue
 		}
+		scoreFloat := score.(float64)
+		storedRadixTree, found := storedTm.Get(scoreFloat)
+		if !found {
+			continue
+		}
+		radixTree := storedRadixTree.(*radix_tree.Tree)
+		radixTree, _, _ = radixTree.Delete([]byte(args[itr]))
 		if radixTree.Len() == 0 {
 			storedTm.Remove(score)
 		} else {
 			storedTm.Put(score, radixTree)
 		}
-		_, radixTreeFloor := storedTm.Floor(score - Epsilon)
+		_, radixTreeFloor := storedTm.Floor(scoreFloat - Epsilon)
 		if radixTreeFloor != nil {
 			tree := radixTreeFloor.(*radix_tree.Tree)
 			maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
@@ -265,7 +266,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 				maxLeaf.SetNextLeaf(minLeaf)
 			}
 		}
-		_, radixTreeCeiling := storedTm.Ceiling(score + Epsilon)
+		_, radixTreeCeiling := storedTm.Ceiling(scoreFloat + Epsilon)
 		if radixTreeCeiling != nil {
 			tree := radixTreeCeiling.(*radix_tree.Tree)
 			minLeaf, _ := tree.Root().MinimumLeaf()
@@ -276,6 +277,9 @@ func (rs *TredsStore) ZRem(args []string) error {
 		}
 	}
 	rs.sortedMaps[args[0]] = storedTm
+	for _, arg := range args[1:] {
+		rs.scoreMaps[args[0]].Delete([]byte(arg))
+	}
 	return nil
 }
 
