@@ -177,13 +177,13 @@ func (i *Iterator) Next() ([]byte, interface{}, bool) {
 			}
 			if i.leafNode != nil && matched {
 				res := i.leafNode
-				i.leafNode = i.leafNode.getNextLeaf()
+				i.leafNode = i.leafNode.GetNextLeaf()
 				if i.leafNode == nil {
 					i.node = nil
 				}
 				return res.key, res.val, true
 			} else {
-				i.leafNode = i.leafNode.getNextLeaf()
+				i.leafNode = i.leafNode.GetNextLeaf()
 				if i.leafNode == nil {
 					i.node = nil
 				}
@@ -195,13 +195,13 @@ func (i *Iterator) Next() ([]byte, interface{}, bool) {
 		for i.leafNode != nil {
 			if bytes.Compare(i.leafNode.key, i.key) >= 0 {
 				res := i.leafNode
-				i.leafNode = i.leafNode.getNextLeaf()
+				i.leafNode = i.leafNode.GetNextLeaf()
 				if i.leafNode == nil {
 					i.node = nil
 				}
 				return res.key, res.val, true
 			} else {
-				i.leafNode = i.leafNode.getNextLeaf()
+				i.leafNode = i.leafNode.GetNextLeaf()
 				if i.leafNode == nil {
 					i.node = nil
 				}
@@ -213,7 +213,7 @@ func (i *Iterator) Next() ([]byte, interface{}, bool) {
 		for i.leafNode != nil {
 			if bytes.HasPrefix(i.leafNode.key, i.key) {
 				res := i.leafNode
-				i.leafNode = i.leafNode.getNextLeaf()
+				i.leafNode = i.leafNode.GetNextLeaf()
 				if i.leafNode == nil {
 					i.node = nil
 				}

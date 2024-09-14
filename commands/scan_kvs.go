@@ -9,7 +9,7 @@ import (
 
 const PrefixScanCommand = "SCANKVS"
 
-func RegisterPrefixScan(r CommandRegistry) {
+func RegisterScanKVSCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
 		Name:     PrefixScanCommand,
 		Validate: validatePrefixScan(),

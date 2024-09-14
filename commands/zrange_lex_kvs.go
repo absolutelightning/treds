@@ -7,35 +7,39 @@ import (
 	"treds/store"
 )
 
-const PrefixScanKeysCommand = "SCANKEYS"
+const ZRANGELEXKVS = "ZRANGELEXKVS"
 
-func RegisterScanKeysCommand(r CommandRegistry) {
+func RegisterZRangeLexCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
-		Name:     PrefixScanKeysCommand,
-		Validate: validatePrefixScanKeys(),
-		Execute:  executePrefixScanKeys(),
+		Name:     ZRANGELEXKVS,
+		Validate: validateZRangeLex(),
+		Execute:  executeZRangeLex(),
 	})
 }
 
-func validatePrefixScanKeys() ValidationHook {
+func validateZRangeLex() ValidationHook {
 	return func(args []string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("expected minimum 2 argument, got %d", len(args))
 		}
-		if len(args) > 3 {
+		if len(args) > 4 {
 			return fmt.Errorf("expected maximum 3 argument, got %d", len(args))
 		}
 		return nil
 	}
 }
 
-func executePrefixScanKeys() ExecutionHook {
+func executeZRangeLex() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
 		count := strconv.Itoa(math.MaxInt64)
-		if len(args) == 3 {
-			count = args[2]
+		if len(args) > 3 {
+			count = args[3]
 		}
-		v, err := store.PrefixScanKeys(args[0], args[1], count)
+		prefix := ""
+		if len(args) > 2 {
+			prefix = args[2]
+		}
+		v, err := store.ZRangeByLexKVS(args[0], args[1], prefix, count)
 		if err != nil {
 			return "", err
 		}

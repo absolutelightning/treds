@@ -4,10 +4,10 @@ import (
 	"testing"
 )
 
-// TestRegisterPrefixScan tests the RegisterPrefixScan function.
+// TestRegisterPrefixScan tests the RegisterScanKVSCommand function.
 func TestRegisterPrefixScan(t *testing.T) {
 	registry := NewRegistry()
-	RegisterPrefixScan(registry)
+	RegisterScanKVSCommand(registry)
 
 	if _, exists := registry.(*commandRegistry).commands[PrefixScanCommand]; !exists {
 		t.Errorf("command %s not registered", PrefixScanCommand)

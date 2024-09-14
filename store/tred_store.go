@@ -3,21 +3,31 @@ package store
 import (
 	"bytes"
 	"fmt"
+	"github.com/emirpasic/gods/maps/treemap"
+	"github.com/emirpasic/gods/utils"
 	"golang.org/x/sync/errgroup"
 	"strconv"
+	"strings"
 	"sync"
 	radix_tree "treds/datastructures/radix"
 )
 
 const NilResp = "(nil)"
+const Epsilon = 1e-9
 
 type TredsStore struct {
-	tree *radix_tree.Tree
+	tree          *radix_tree.Tree
+	sortedMaps    map[string]*treemap.Map
+	scoreMaps     map[string]*radix_tree.Tree
+	sortedKeysMap map[string]*radix_tree.Tree
 }
 
 func NewTredsStore() *TredsStore {
 	return &TredsStore{
-		tree: radix_tree.New(),
+		tree:          radix_tree.New(),
+		sortedMaps:    make(map[string]*treemap.Map),
+		scoreMaps:     make(map[string]*radix_tree.Tree),
+		sortedKeysMap: make(map[string]*radix_tree.Tree),
 	}
 }
 
@@ -174,4 +184,312 @@ func (rs *TredsStore) KVS(regex string) (string, error) {
 	}
 
 	return result.String(), nil
+}
+
+func (rs *TredsStore) Size() (string, error) {
+	return strconv.Itoa(rs.tree.Len() + len(rs.sortedMaps)), nil
+}
+
+func (rs *TredsStore) ZAdd(args []string) error {
+	tm := treemap.NewWith(utils.Float64Comparator)
+	if storedTm, ok := rs.sortedMaps[args[0]]; ok {
+		tm = storedTm
+	}
+	sm := radix_tree.New()
+	if storedSm, ok := rs.scoreMaps[args[0]]; ok {
+		sm = storedSm
+	}
+	sortedKeyMap, ok := rs.sortedKeysMap[args[0]]
+	if !ok {
+		sortedKeyMap = radix_tree.New()
+	}
+	for itr := 1; itr < len(args); itr += 3 {
+		score, err := strconv.ParseFloat(args[itr], 64)
+		if err != nil {
+			return err
+		}
+		sm.Insert([]byte(args[itr+1]), score)
+		radixTree := radix_tree.New()
+		storedRadixTree, found := tm.Get(score)
+		if found {
+			radixTree = storedRadixTree.(*radix_tree.Tree)
+		}
+		sortedKeyMap, _, _ = sortedKeyMap.Insert([]byte(args[itr+1]), args[itr+2])
+		radixTree, _, _ = radixTree.Insert([]byte(args[itr+1]), args[itr+2])
+		tm.Put(score, radixTree)
+		_, radixTreeFloor := tm.Floor(score - Epsilon)
+		if radixTreeFloor != nil {
+			tree := radixTreeFloor.(*radix_tree.Tree)
+			maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
+			minLeaf, foundMinLeaf := radixTree.Root().MinimumLeaf()
+			if foundMaxLeaf && foundMinLeaf {
+				maxLeaf.SetNextLeaf(minLeaf)
+			}
+		}
+		_, radixTreeCeiling := tm.Ceiling(score + Epsilon)
+		if radixTreeCeiling != nil {
+			tree := radixTreeCeiling.(*radix_tree.Tree)
+			minLeaf, foundMaxLeaf := tree.Root().MinimumLeaf()
+			maxLeaf, foundMinLeaf := radixTree.Root().MaximumLeaf()
+			if foundMaxLeaf && foundMinLeaf {
+				maxLeaf.SetNextLeaf(minLeaf)
+			}
+		}
+	}
+	rs.sortedMaps[args[0]] = tm
+	rs.scoreMaps[args[0]] = sm
+	rs.sortedKeysMap[args[0]] = sortedKeyMap
+	return nil
+}
+
+func (rs *TredsStore) ZRem(args []string) error {
+	storedTm, ok := rs.sortedMaps[args[0]]
+	if !ok {
+		return nil
+	}
+	for itr := 1; itr < len(args); itr += 1 {
+		key := []byte(args[itr])
+		score, found := rs.scoreMaps[args[0]].Get(key)
+		if !found {
+			continue
+		}
+		scoreFloat := score.(float64)
+		storedRadixTree, found := storedTm.Get(scoreFloat)
+		if !found {
+			continue
+		}
+		radixTree := storedRadixTree.(*radix_tree.Tree)
+		radixTree, _, _ = radixTree.Delete([]byte(args[itr]))
+		if radixTree.Len() == 0 {
+			storedTm.Remove(score)
+		} else {
+			storedTm.Put(score, radixTree)
+		}
+		_, radixTreeFloor := storedTm.Floor(scoreFloat - Epsilon)
+		if radixTreeFloor != nil {
+			tree := radixTreeFloor.(*radix_tree.Tree)
+			maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
+			minLeaf, _ := radixTree.Root().MinimumLeaf()
+			if foundMaxLeaf {
+				maxLeaf.SetNextLeaf(minLeaf)
+			}
+		}
+		_, radixTreeCeiling := storedTm.Ceiling(scoreFloat + Epsilon)
+		if radixTreeCeiling != nil {
+			tree := radixTreeCeiling.(*radix_tree.Tree)
+			minLeaf, _ := tree.Root().MinimumLeaf()
+			maxLeaf, foundMaxLeaf := radixTree.Root().MaximumLeaf()
+			if foundMaxLeaf {
+				maxLeaf.SetNextLeaf(minLeaf)
+			}
+		}
+	}
+	rs.sortedMaps[args[0]] = storedTm
+	for _, arg := range args[1:] {
+		rs.scoreMaps[args[0]].Delete([]byte(arg))
+	}
+	return nil
+}
+
+func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string, error) {
+	radixTree, ok := rs.sortedKeysMap[key]
+	if !ok {
+		return "", nil
+	}
+	iterator := radixTree.Root().Iterator()
+	startIndex, err := strconv.Atoi(cursor)
+	if err != nil {
+		return "", err
+	}
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return "", err
+	}
+	index := 0
+	var result bytes.Buffer
+	for {
+		storedKey, value, found := iterator.Next()
+		if !found {
+			break
+		}
+		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
+			result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
+			countInt--
+		}
+		if countInt == 0 {
+			break
+		}
+		index += 1
+	}
+	return result.String(), nil
+}
+
+func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string) (string, error) {
+	radixTree, ok := rs.sortedKeysMap[key]
+	if !ok {
+		return "", nil
+	}
+	iterator := radixTree.Root().Iterator()
+	startIndex, err := strconv.Atoi(cursor)
+	if err != nil {
+		return "", err
+	}
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return "", err
+	}
+	index := 0
+	var result bytes.Buffer
+	for {
+		storedKey, _, found := iterator.Next()
+		if !found {
+			break
+		}
+		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
+			result.WriteString(fmt.Sprintf("%v\n", string(storedKey)))
+			countInt--
+		}
+		if countInt == 0 {
+			break
+		}
+		index += 1
+	}
+	return result.String(), nil
+}
+
+func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, withScore bool) (string, error) {
+	sortedMap := rs.sortedMaps[key]
+	if sortedMap == nil {
+		return "", nil
+	}
+	minFloat, err := strconv.ParseFloat(min, 64)
+	if err != nil {
+		return "", err
+	}
+	maxFloat, err := strconv.ParseFloat(max, 64)
+	if err != nil {
+		return "", err
+	}
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		return "", err
+	}
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return "", err
+	}
+	var result bytes.Buffer
+	index := 0
+	for {
+		score, radixTree := sortedMap.Ceiling(minFloat)
+		if radixTree == nil || score == nil {
+			break
+		}
+		scoreFloat := score.(float64)
+		if scoreFloat > maxFloat {
+			break
+		}
+		lastKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
+		minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
+		for minKV != lastKV {
+			if index >= offsetInt && countInt > 0 {
+				if withScore {
+					result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", score, string(minKV.Key()), minKV.Value().(string)))
+				} else {
+					result.WriteString(fmt.Sprintf("%v\n%v\n", string(minKV.Key()), minKV.Value().(string)))
+				}
+				countInt--
+			}
+			index++
+			minKV = minKV.GetNextLeaf()
+		}
+		if countInt > 0 {
+			if index >= offsetInt {
+				if withScore {
+					result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", score, string(lastKV.Key()), lastKV.Value().(string)))
+				} else {
+					result.WriteString(fmt.Sprintf("%v\n%v\n", string(lastKV.Key()), lastKV.Value().(string)))
+				}
+				countInt--
+			}
+			index++
+		}
+		minFloat = scoreFloat + Epsilon
+	}
+	return result.String(), nil
+}
+
+func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, withScore bool) (string, error) {
+	sortedMap := rs.sortedMaps[key]
+	if sortedMap == nil {
+		return "", nil
+	}
+	minFloat, err := strconv.ParseFloat(min, 64)
+	if err != nil {
+		return "", err
+	}
+	maxFloat, err := strconv.ParseFloat(max, 64)
+	if err != nil {
+		return "", err
+	}
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		return "", err
+	}
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return "", err
+	}
+	var result bytes.Buffer
+	index := 0
+	for {
+		score, radixTree := sortedMap.Ceiling(minFloat)
+		if radixTree == nil || score == nil {
+			break
+		}
+		scoreFloat := score.(float64)
+		if scoreFloat > maxFloat {
+			break
+		}
+		lastKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
+		minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
+		for minKV != lastKV {
+			if index >= offsetInt && countInt > 0 {
+				if withScore {
+					result.WriteString(fmt.Sprintf("%v\n%v\n", score, string(minKV.Key())))
+				} else {
+					result.WriteString(fmt.Sprintf("%v\n", string(minKV.Key())))
+				}
+				countInt--
+			}
+			index++
+			minKV = minKV.GetNextLeaf()
+		}
+		if countInt > 0 {
+			if index >= offsetInt {
+				if withScore {
+					result.WriteString(fmt.Sprintf("%v\n%v\n", score, string(lastKV.Key())))
+				} else {
+					result.WriteString(fmt.Sprintf("%v\n", string(lastKV.Key())))
+				}
+				countInt--
+			}
+			index++
+		}
+		minFloat = scoreFloat + Epsilon
+	}
+	return result.String(), nil
+}
+
+func (rs *TredsStore) ZScore(args []string) (string, error) {
+	store, ok := rs.scoreMaps[args[0]]
+	if ok {
+		score, found := store.Get([]byte(args[1]))
+		if found {
+			if num, ok := score.(float64); ok {
+				return strconv.FormatFloat(num, 'f', -1, 64), nil
+			}
+		}
+	}
+	return "", nil
 }

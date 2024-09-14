@@ -3,8 +3,6 @@ package radix
 import (
 	"bytes"
 	"sort"
-	"sync/atomic"
-	"unsafe"
 )
 
 // WalkFn is used when walking the tree. Takes a
@@ -16,15 +14,23 @@ type WalkFn func(k []byte, v interface{}) bool
 type LeafNode struct {
 	key      []byte
 	val      interface{}
-	nextLeaf unsafe.Pointer
+	nextLeaf *LeafNode
 }
 
-func (n *LeafNode) setNextLeaf(l *LeafNode) {
-	atomic.StorePointer(&n.nextLeaf, unsafe.Pointer(l))
+func (n *LeafNode) Key() []byte {
+	return n.key
 }
 
-func (n *LeafNode) getNextLeaf() *LeafNode {
-	return (*LeafNode)(atomic.LoadPointer(&n.nextLeaf))
+func (n *LeafNode) Value() interface{} {
+	return n.val
+}
+
+func (n *LeafNode) SetNextLeaf(l *LeafNode) {
+	n.nextLeaf = l
+}
+
+func (n *LeafNode) GetNextLeaf() *LeafNode {
+	return n.nextLeaf
 }
 
 // edge is used to represent an edge node
@@ -74,7 +80,7 @@ func (n *Node) computeLinks() {
 	n.updateMinMaxLeaves()
 	if len(n.edges) > 0 {
 		if n.minLeaf != n.edges[0].node.minLeaf {
-			n.minLeaf.setNextLeaf(n.edges[0].node.minLeaf)
+			n.minLeaf.SetNextLeaf(n.edges[0].node.minLeaf)
 		}
 	}
 	for itr := 0; itr < len(n.edges); itr++ {
@@ -84,7 +90,7 @@ func (n *Node) computeLinks() {
 			minLSecond, _ = n.edges[itr+1].node.MinimumLeaf()
 		}
 		if maxLFirst != nil && minLSecond != nil {
-			maxLFirst.setNextLeaf(minLSecond)
+			maxLFirst.SetNextLeaf(minLSecond)
 		}
 	}
 }
