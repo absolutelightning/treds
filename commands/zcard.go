@@ -18,8 +18,8 @@ func RegisterZCardCommand(r CommandRegistry) {
 
 func validateZCard() ValidationHook {
 	return func(args []string) error {
-		if len(args) < 2 {
-			return fmt.Errorf("expected 3 or multiple of 2 arguments, got %d", len(args))
+		if len(args) == 0 {
+			return fmt.Errorf("expected 1 argument, got %d", len(args))
 		}
 		return nil
 	}

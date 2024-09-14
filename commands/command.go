@@ -18,4 +18,5 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterZRangeScoreKVSCommand(r)
 	RegisterZRemCommand(r)
 	RegisterZScore(r)
+	RegisterZCardCommand(r)
 }
