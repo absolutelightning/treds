@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"github.com/tidwall/evio"
-	"strconv"
 	"strings"
 	"treds/commands"
 	"treds/store"
@@ -40,11 +39,14 @@ func (s *Server) Init() {
 		return
 	}
 
-	setCommand, _ := commandRegistry.Retrieve("SET")
+	setCommand, _ := commandRegistry.Retrieve("zadd")
 
-	for i := 0; i <= 10000000; i++ {
-		setCommand.Execute([]string{"user:" + strconv.Itoa(i), "value_" + strconv.Itoa(i)}, s.TredsStore)
+	args := make([]string, 0)
+	args = append(args, "ss")
+	for i := 0; i <= 100000; i++ {
+		args = append(args, strings.Split(fmt.Sprintf("%v user:%v %v", 0, i, i), " ")...)
 	}
+	setCommand.Execute(args, s.TredsStore)
 
 	// Handle data read from clients
 	events.Data = func(c evio.Conn, in []byte) (out []byte, action evio.Action) {
