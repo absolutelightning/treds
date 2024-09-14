@@ -25,5 +25,20 @@ LinkedList of leaf nodes are updated at the time of create/delete and udpate of 
 * `ZRANGESCOREKEYS key min max startindex count withscore` - Returns the count number of keys with the score between min/max in sorted order
 * `ZRANGESCOREKVS key min max startindex count withscore` - Returns the count number of key/value pair with the score between min/max in sorted order
 
+## Run 
+
+To run server run the following command on repository root
+
+```text
+go run main.go 
+```
+
+For cli run the following command in the `client` folder in the repo
+
+```text
+cd ./client
+go run main.go 
+```
+
 ## Future Work
 * Add Raft for HA
