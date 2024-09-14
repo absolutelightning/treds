@@ -395,6 +395,9 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 	var result bytes.Buffer
 	index := 0
 	for {
+		if countInt == 0 {
+			break
+		}
 		score, radixTree := sortedMap.Ceiling(minFloat)
 		if radixTree == nil || score == nil {
 			break
@@ -405,8 +408,8 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 		}
 		lastKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
 		minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
-		for minKV != lastKV {
-			if index >= offsetInt && countInt > 0 {
+		for minKV != lastKV && countInt > 0 {
+			if index >= offsetInt {
 				if withScore {
 					result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", score, string(minKV.Key()), minKV.Value().(string)))
 				} else {
@@ -457,6 +460,9 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 	var result bytes.Buffer
 	index := 0
 	for {
+		if countInt == 0 {
+			break
+		}
 		score, radixTree := sortedMap.Ceiling(minFloat)
 		if radixTree == nil || score == nil {
 			break
@@ -467,8 +473,8 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 		}
 		lastKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
 		minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
-		for minKV != lastKV {
-			if index >= offsetInt && countInt > 0 {
+		for minKV != lastKV && countInt > 0 {
+			if index >= offsetInt {
 				if withScore {
 					result.WriteString(fmt.Sprintf("%v\n%v\n", score, string(minKV.Key())))
 				} else {
