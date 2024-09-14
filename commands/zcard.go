@@ -1,0 +1,36 @@
+package commands
+
+import (
+	"fmt"
+	"strconv"
+	"treds/store"
+)
+
+const ZCardCommand = "ZCARD"
+
+func RegisterZCardCommand(r CommandRegistry) {
+	r.Add(&CommandRegistration{
+		Name:     ZCardCommand,
+		Validate: validateZCard(),
+		Execute:  executeZCardCommand(),
+	})
+}
+
+func validateZCard() ValidationHook {
+	return func(args []string) error {
+		if len(args) < 2 {
+			return fmt.Errorf("expected 3 or multiple of 2 arguments, got %d", len(args))
+		}
+		return nil
+	}
+}
+
+func executeZCardCommand() ExecutionHook {
+	return func(args []string, store store.Store) (string, error) {
+		size, err := store.ZCard(args[0])
+		if err != nil {
+			return "", err
+		}
+		return strconv.Itoa(size), nil
+	}
+}

@@ -13,6 +13,7 @@ type Store interface {
 	Size() (string, error)
 	ZAdd([]string) error
 	ZRem([]string) error
+	ZCard(string) (int, error)
 	ZScore([]string) (string, error)
 	ZRangeByLexKVS(string, string, string, string) (string, error)
 	ZRangeByLexKeys(string, string, string, string) (string, error)

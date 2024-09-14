@@ -18,6 +18,7 @@ LinkedList of leaf nodes are updated at the time of create/delete and udpate of 
 * `KVS regex` - Returns all keys/values in which keys match a regex - (Not suitable to production usecases with huge number of keys)
 * `ZADD key score member_key member_value [member_key member_value ....]` - Add member_key with member value with score to a sorted map in key
 * `ZREM key member [member..]` - Removes a member from sorted map in key
+* `ZCARD key` - Returns the count of key/value pairs in sorted map in key
 * `ZSCORE key member` - Returns the score of a member in sorted map in key
 * `ZRANGELEXKEYS key startindex prefix count` - Returns the count number of keys matching prefix starting from an index in a sorted map
 * `ZRANGELEXKVS key startindex prefix count` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map
