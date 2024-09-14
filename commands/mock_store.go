@@ -152,3 +152,7 @@ func (m *MockStore) ZRangeByScoreKVS(string, string, string, string, string, boo
 func (m *MockStore) ZScore([]string) (string, error) {
 	return "", nil
 }
+
+func (m *MockStore) ZCard(string) (int, error) {
+	return 0, nil
+}
