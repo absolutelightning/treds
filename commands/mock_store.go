@@ -135,10 +135,10 @@ func (m *MockStore) ZRem([]string) error {
 	return nil
 }
 
-func (m *MockStore) ZRangeByLexKVS(string, string, string, string) (string, error) {
+func (m *MockStore) ZRangeByLexKVS(string, string, string, string, bool) (string, error) {
 	return "", nil
 }
-func (m *MockStore) ZRangeByLexKeys(string, string, string, string) (string, error) {
+func (m *MockStore) ZRangeByLexKeys(string, string, string, string, bool) (string, error) {
 	return "", nil
 }
 
