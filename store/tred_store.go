@@ -18,7 +18,7 @@ const Epsilon = 1.19209e-07
 type TredsStore struct {
 	tree            *radix_tree.Tree
 	sortedMaps      map[string]*treemap.Map
-	sortedMapsScore map[string]*radix_tree.Tree
+	sortedMapsScore map[string]map[string]float64
 	sortedMapsKeys  map[string]*radix_tree.Tree
 }
 
@@ -26,7 +26,7 @@ func NewTredsStore() *TredsStore {
 	return &TredsStore{
 		tree:            radix_tree.New(),
 		sortedMaps:      make(map[string]*treemap.Map),
-		sortedMapsScore: make(map[string]*radix_tree.Tree),
+		sortedMapsScore: make(map[string]map[string]float64),
 		sortedMapsKeys:  make(map[string]*radix_tree.Tree),
 	}
 }
@@ -195,7 +195,7 @@ func (rs *TredsStore) ZAdd(args []string) error {
 	if storedTm, ok := rs.sortedMaps[args[0]]; ok {
 		tm = storedTm
 	}
-	sm := radix_tree.New()
+	sm := make(map[string]float64)
 	if storedSm, ok := rs.sortedMapsScore[args[0]]; ok {
 		sm = storedSm
 	}
@@ -208,7 +208,7 @@ func (rs *TredsStore) ZAdd(args []string) error {
 		if err != nil {
 			return err
 		}
-		sm.Insert([]byte(args[itr+1]), score)
+		sm[args[itr+1]] = score
 		radixTree := radix_tree.New()
 		storedRadixTree, found := tm.Get(score)
 		if found {
@@ -249,11 +249,11 @@ func (rs *TredsStore) ZRem(args []string) error {
 	}
 	for itr := 1; itr < len(args); itr += 1 {
 		key := []byte(args[itr])
-		score, found := rs.sortedMapsScore[args[0]].Get(key)
+		score, found := rs.sortedMapsScore[args[0]]
 		if !found {
 			continue
 		}
-		scoreFloat := score.(float64)
+		scoreFloat := score[string(key)]
 		storedRadixTree, found := storedTm.Get(scoreFloat)
 		if !found {
 			continue
@@ -286,7 +286,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 	}
 	rs.sortedMaps[args[0]] = storedTm
 	for _, arg := range args[1:] {
-		rs.sortedMapsScore[args[0]].Delete([]byte(arg))
+		delete(rs.sortedMapsScore[args[0]], arg)
 		rs.sortedMapsKeys[args[0]].Delete([]byte(arg))
 	}
 	return nil
@@ -315,7 +315,7 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string, withScor
 		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
-				keyScore, _ := rs.sortedMapsScore[key].Get(storedKey)
+				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
 				result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", keyScore, string(storedKey), value.(string)))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
@@ -356,7 +356,7 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string, withSco
 		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
-				keyScore, _ := rs.sortedMapsScore[key].Get(storedKey)
+				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
 				result.WriteString(fmt.Sprintf("%v\n%v\n", keyScore, string(storedKey)))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n", string(storedKey)))
@@ -403,9 +403,8 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 		if countInt == 0 {
 			break
 		}
-		score, _ := rs.sortedMapsScore[key].Get(minKV.Key())
-		scoreFloat := score.(float64)
-		if scoreFloat > maxFloat {
+		score, _ := rs.sortedMapsScore[key][string(minKV.Key())]
+		if score > maxFloat {
 			break
 		}
 		if index >= offsetInt {
@@ -454,9 +453,8 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 		if countInt == 0 {
 			break
 		}
-		score, _ := rs.sortedMapsScore[key].Get(minKV.Key())
-		scoreFloat := score.(float64)
-		if scoreFloat > maxFloat {
+		score, _ := rs.sortedMapsScore[key][string(minKV.Key())]
+		if score > maxFloat {
 			break
 		}
 		if index >= offsetInt {
@@ -476,11 +474,9 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 func (rs *TredsStore) ZScore(args []string) (string, error) {
 	store, ok := rs.sortedMapsScore[args[0]]
 	if ok {
-		score, found := store.Get([]byte(args[1]))
+		score, found := store[args[1]]
 		if found {
-			if num, ok := score.(float64); ok {
-				return strconv.FormatFloat(num, 'f', -1, 64), nil
-			}
+			return strconv.FormatFloat(score, 'f', -1, 64), nil
 		}
 	}
 	return "", nil
