@@ -46,7 +46,7 @@ func (s *Server) Init() {
 		setCommand.Execute([]string{"user:" + strconv.Itoa(i), "value_" + strconv.Itoa(i)}, s.TredsStore)
 	}
 
-	setCommand, _ = commandRegistry.Retrieve("zadd")
+	setCommand, _ = commandRegistry.Retrieve("ZADD")
 
 	args := make([]string, 0)
 	args = append(args, "ss")
