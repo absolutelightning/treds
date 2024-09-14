@@ -16,16 +16,18 @@ const NilResp = "(nil)"
 const Epsilon = 1e-9
 
 type TredsStore struct {
-	tree       *radix_tree.Tree
-	sortedMaps map[string]*treemap.Map
-	scoreMaps  map[string]*radix_tree.Tree
+	tree          *radix_tree.Tree
+	sortedMaps    map[string]*treemap.Map
+	scoreMaps     map[string]*radix_tree.Tree
+	sortedKeysMap map[string]*radix_tree.Tree
 }
 
 func NewTredsStore() *TredsStore {
 	return &TredsStore{
-		tree:       radix_tree.New(),
-		sortedMaps: make(map[string]*treemap.Map),
-		scoreMaps:  make(map[string]*radix_tree.Tree),
+		tree:          radix_tree.New(),
+		sortedMaps:    make(map[string]*treemap.Map),
+		scoreMaps:     make(map[string]*radix_tree.Tree),
+		sortedKeysMap: make(map[string]*radix_tree.Tree),
 	}
 }
 
@@ -197,6 +199,10 @@ func (rs *TredsStore) ZAdd(args []string) error {
 	if storedSm, ok := rs.scoreMaps[args[0]]; ok {
 		sm = storedSm
 	}
+	sortedKeyMap, ok := rs.sortedKeysMap[args[0]]
+	if !ok {
+		sortedKeyMap = radix_tree.New()
+	}
 	for itr := 1; itr < len(args); itr += 3 {
 		score, err := strconv.ParseFloat(args[itr], 64)
 		if err != nil {
@@ -208,6 +214,7 @@ func (rs *TredsStore) ZAdd(args []string) error {
 		if found {
 			radixTree = storedRadixTree.(*radix_tree.Tree)
 		}
+		sortedKeyMap, _, _ = sortedKeyMap.Insert([]byte(args[itr+1]), args[itr+2])
 		radixTree, _, _ = radixTree.Insert([]byte(args[itr+1]), args[itr+2])
 		tm.Put(score, radixTree)
 		_, radixTreeFloor := tm.Floor(score - Epsilon)
@@ -231,6 +238,7 @@ func (rs *TredsStore) ZAdd(args []string) error {
 	}
 	rs.sortedMaps[args[0]] = tm
 	rs.scoreMaps[args[0]] = sm
+	rs.sortedKeysMap[args[0]] = sortedKeyMap
 	return nil
 }
 
@@ -284,13 +292,11 @@ func (rs *TredsStore) ZRem(args []string) error {
 }
 
 func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string, error) {
-	sortedMap := rs.sortedMaps[key]
-	if sortedMap == nil {
+	radixTree, ok := rs.sortedKeysMap[key]
+	if !ok {
 		return "", nil
 	}
-	_, minValue := sortedMap.Min()
-	radixTreeMin := minValue.(*radix_tree.Tree)
-	iterator := radixTreeMin.Root().Iterator()
+	iterator := radixTree.Root().Iterator()
 	startIndex, err := strconv.Atoi(cursor)
 	if err != nil {
 		return "", err
@@ -319,13 +325,11 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string,
 }
 
 func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string) (string, error) {
-	sortedMap := rs.sortedMaps[key]
-	if sortedMap == nil {
+	radixTree, ok := rs.sortedKeysMap[key]
+	if !ok {
 		return "", nil
 	}
-	_, minValue := sortedMap.Min()
-	radixTreeMin := minValue.(*radix_tree.Tree)
-	iterator := radixTreeMin.Root().Iterator()
+	iterator := radixTree.Root().Iterator()
 	startIndex, err := strconv.Atoi(cursor)
 	if err != nil {
 		return "", err
