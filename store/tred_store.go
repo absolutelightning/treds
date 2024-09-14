@@ -16,18 +16,18 @@ const NilResp = "(nil)"
 const Epsilon = 1e-9
 
 type TredsStore struct {
-	tree          *radix_tree.Tree
-	sortedMaps    map[string]*treemap.Map
-	scoreMaps     map[string]*radix_tree.Tree
-	sortedKeysMap map[string]*radix_tree.Tree
+	tree            *radix_tree.Tree
+	sortedMaps      map[string]*treemap.Map
+	sortedMapsScore map[string]*radix_tree.Tree
+	sortedMapsKeys  map[string]*radix_tree.Tree
 }
 
 func NewTredsStore() *TredsStore {
 	return &TredsStore{
-		tree:          radix_tree.New(),
-		sortedMaps:    make(map[string]*treemap.Map),
-		scoreMaps:     make(map[string]*radix_tree.Tree),
-		sortedKeysMap: make(map[string]*radix_tree.Tree),
+		tree:            radix_tree.New(),
+		sortedMaps:      make(map[string]*treemap.Map),
+		sortedMapsScore: make(map[string]*radix_tree.Tree),
+		sortedMapsKeys:  make(map[string]*radix_tree.Tree),
 	}
 }
 
@@ -196,10 +196,10 @@ func (rs *TredsStore) ZAdd(args []string) error {
 		tm = storedTm
 	}
 	sm := radix_tree.New()
-	if storedSm, ok := rs.scoreMaps[args[0]]; ok {
+	if storedSm, ok := rs.sortedMapsScore[args[0]]; ok {
 		sm = storedSm
 	}
-	sortedKeyMap, ok := rs.sortedKeysMap[args[0]]
+	sortedKeyMap, ok := rs.sortedMapsKeys[args[0]]
 	if !ok {
 		sortedKeyMap = radix_tree.New()
 	}
@@ -237,8 +237,8 @@ func (rs *TredsStore) ZAdd(args []string) error {
 		}
 	}
 	rs.sortedMaps[args[0]] = tm
-	rs.scoreMaps[args[0]] = sm
-	rs.sortedKeysMap[args[0]] = sortedKeyMap
+	rs.sortedMapsScore[args[0]] = sm
+	rs.sortedMapsKeys[args[0]] = sortedKeyMap
 	return nil
 }
 
@@ -249,7 +249,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 	}
 	for itr := 1; itr < len(args); itr += 1 {
 		key := []byte(args[itr])
-		score, found := rs.scoreMaps[args[0]].Get(key)
+		score, found := rs.sortedMapsScore[args[0]].Get(key)
 		if !found {
 			continue
 		}
@@ -286,13 +286,13 @@ func (rs *TredsStore) ZRem(args []string) error {
 	}
 	rs.sortedMaps[args[0]] = storedTm
 	for _, arg := range args[1:] {
-		rs.scoreMaps[args[0]].Delete([]byte(arg))
+		rs.sortedMapsScore[args[0]].Delete([]byte(arg))
 	}
 	return nil
 }
 
 func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string, error) {
-	radixTree, ok := rs.sortedKeysMap[key]
+	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
 		return "", nil
 	}
@@ -325,7 +325,7 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string) (string,
 }
 
 func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string) (string, error) {
-	radixTree, ok := rs.sortedKeysMap[key]
+	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
 		return "", nil
 	}
@@ -482,7 +482,7 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 }
 
 func (rs *TredsStore) ZScore(args []string) (string, error) {
-	store, ok := rs.scoreMaps[args[0]]
+	store, ok := rs.sortedMapsScore[args[0]]
 	if ok {
 		score, found := store.Get([]byte(args[1]))
 		if found {
@@ -492,4 +492,12 @@ func (rs *TredsStore) ZScore(args []string) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+func (rs *TredsStore) ZCard(key string) (int, error) {
+	store, ok := rs.sortedMapsKeys[key]
+	if !ok {
+		return 0, nil
+	}
+	return store.Len(), nil
 }
