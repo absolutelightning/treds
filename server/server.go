@@ -42,7 +42,7 @@ func (s *Server) Init() {
 
 	setCommand, _ := commandRegistry.Retrieve("SET")
 
-	for i := 0; i <= 10000000; i++ {
+	for i := 0; i <= 50000000; i++ {
 		setCommand.Execute([]string{"user:" + strconv.Itoa(i), "value_" + strconv.Itoa(i)}, s.TredsStore)
 	}
 
@@ -50,7 +50,7 @@ func (s *Server) Init() {
 
 	args := make([]string, 0)
 	args = append(args, "ss")
-	for i := 0; i <= 100000; i++ {
+	for i := 0; i <= 50000000; i++ {
 		args = append(args, strings.Split(fmt.Sprintf("%v user:%v %v", 0, i, i), " ")...)
 	}
 	setCommand.Execute(args, s.TredsStore)
