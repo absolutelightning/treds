@@ -33,7 +33,7 @@ To run server run the following command on repository root
 go run main.go 
 ```
 
-For cli run the following command in the `client` folder in the repo
+For CLI run the following command in the `client` folder in the repo
 
 ```text
 cd ./client
