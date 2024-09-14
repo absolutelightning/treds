@@ -36,6 +36,7 @@ go run main.go
 For cli run the following command in the `client` folder in the repo
 
 ```text
+cd ./client
 go run main.go 
 ```
 
