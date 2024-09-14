@@ -19,4 +19,8 @@ type Store interface {
 	ZRangeByLexKeys(string, string, string, string, bool) (string, error)
 	ZRangeByScoreKeys(string, string, string, string, string, bool) (string, error)
 	ZRangeByScoreKVS(string, string, string, string, string, bool) (string, error)
+	ZRevRangeByLexKVS(string, string, string, string, bool) (string, error)
+	ZRevRangeByLexKeys(string, string, string, string, bool) (string, error)
+	ZRevRangeByScoreKeys(string, string, string, string, string, bool) (string, error)
+	ZRevRangeByScoreKVS(string, string, string, string, string, bool) (string, error)
 }

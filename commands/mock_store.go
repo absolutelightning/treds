@@ -156,3 +156,18 @@ func (m *MockStore) ZScore([]string) (string, error) {
 func (m *MockStore) ZCard(string) (int, error) {
 	return 0, nil
 }
+
+func (m *MockStore) ZRevRangeByLexKVS(string, string, string, string, bool) (string, error) {
+	return "", nil
+}
+func (m *MockStore) ZRevRangeByLexKeys(string, string, string, string, bool) (string, error) {
+	return "", nil
+}
+
+func (m *MockStore) ZRevRangeByScoreKeys(string, string, string, string, string, bool) (string, error) {
+	return "", nil
+}
+
+func (m *MockStore) ZRevRangeByScoreKVS(string, string, string, string, string, bool) (string, error) {
+	return "", nil
+}
