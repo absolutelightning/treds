@@ -13,7 +13,7 @@ import (
 )
 
 const NilResp = "(nil)"
-const Epsilon = 1e-9
+const Epsilon = 1.19209e-07
 
 type TredsStore struct {
 	tree            *radix_tree.Tree
