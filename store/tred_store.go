@@ -287,6 +287,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 	rs.sortedMaps[args[0]] = storedTm
 	for _, arg := range args[1:] {
 		rs.sortedMapsScore[args[0]].Delete([]byte(arg))
+		rs.sortedMapsKeys[args[0]].Delete([]byte(arg))
 	}
 	return nil
 }
