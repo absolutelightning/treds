@@ -15,6 +15,7 @@ type LeafNode struct {
 	key      []byte
 	val      interface{}
 	nextLeaf *LeafNode
+	prevLeaf *LeafNode
 }
 
 func (n *LeafNode) Key() []byte {
@@ -31,6 +32,14 @@ func (n *LeafNode) SetNextLeaf(l *LeafNode) {
 
 func (n *LeafNode) GetNextLeaf() *LeafNode {
 	return n.nextLeaf
+}
+
+func (n *LeafNode) SetPrevLeaf(l *LeafNode) {
+	n.prevLeaf = l
+}
+
+func (n *LeafNode) GetPrevLeaf() *LeafNode {
+	return n.prevLeaf
 }
 
 // edge is used to represent an edge node
@@ -81,6 +90,9 @@ func (n *Node) computeLinks() {
 	if len(n.edges) > 0 {
 		if n.minLeaf != n.edges[0].node.minLeaf {
 			n.minLeaf.SetNextLeaf(n.edges[0].node.minLeaf)
+			if n.edges[0].node.minLeaf != nil {
+				n.edges[0].node.minLeaf.SetPrevLeaf(n.minLeaf)
+			}
 		}
 	}
 	for itr := 0; itr < len(n.edges); itr++ {
@@ -89,8 +101,11 @@ func (n *Node) computeLinks() {
 		if itr+1 < len(n.edges) {
 			minLSecond, _ = n.edges[itr+1].node.MinimumLeaf()
 		}
-		if maxLFirst != nil && minLSecond != nil {
+		if maxLFirst != nil {
 			maxLFirst.SetNextLeaf(minLSecond)
+		}
+		if minLSecond != nil {
+			minLSecond.SetPrevLeaf(maxLFirst)
 		}
 	}
 }
@@ -274,6 +289,12 @@ func (n *Node) Maximum() ([]byte, interface{}, bool) {
 // the given node to walk the tree
 func (n *Node) Iterator() *Iterator {
 	return &Iterator{node: n}
+}
+
+// ReverseIterator is used to return an iterator at
+// the given node to walk the tree
+func (n *Node) ReverseIterator() *ReverseIterator {
+	return NewReverseIterator(n)
 }
 
 // Walk is used to walk the tree
