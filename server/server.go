@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/tidwall/evio"
+	"strconv"
 	"strings"
 	"treds/commands"
 	"treds/store"
@@ -39,7 +40,13 @@ func (s *Server) Init() {
 		return
 	}
 
-	setCommand, _ := commandRegistry.Retrieve("zadd")
+	setCommand, _ := commandRegistry.Retrieve("SET")
+
+	for i := 0; i <= 10000000; i++ {
+		setCommand.Execute([]string{"user:" + strconv.Itoa(i), "value_" + strconv.Itoa(i)}, s.TredsStore)
+	}
+
+	setCommand, _ = commandRegistry.Retrieve("zadd")
 
 	args := make([]string, 0)
 	args = append(args, "ss")
