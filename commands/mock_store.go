@@ -30,6 +30,10 @@ func (m *MockStore) MGet(keys []string) (string, error) {
 	return res, nil
 }
 
+func (m *MockStore) MSet(keys []string) error {
+	return nil
+}
+
 func (m *MockStore) Set(key, value string) error {
 	m.data[key] = value
 	return nil
