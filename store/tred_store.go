@@ -1,7 +1,6 @@
 package store
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/emirpasic/gods/utils"
@@ -61,7 +60,7 @@ func (rs *TredsStore) MGet(args []string) (string, error) {
 	if err := g.Wait(); err != nil {
 		return "", err
 	}
-	var response bytes.Buffer
+	var response strings.Builder
 	for _, res := range results {
 		response.WriteString(fmt.Sprintf("%v\n", res))
 	}
@@ -94,7 +93,7 @@ func (rs *TredsStore) PrefixScan(cursor, prefix, count string) (string, error) {
 
 	index := 0
 
-	var result bytes.Buffer
+	var result strings.Builder
 
 	for {
 		key, value, found := iterator.Next()
@@ -127,7 +126,7 @@ func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) (string, erro
 
 	index := 0
 
-	var result bytes.Buffer
+	var result strings.Builder
 
 	for {
 		key, _, found := iterator.Next()
@@ -156,7 +155,7 @@ func (rs *TredsStore) Keys(regex string) (string, error) {
 	iterator := rs.tree.Root().Iterator()
 	iterator.PatternMatch(regex)
 
-	var result bytes.Buffer
+	var result strings.Builder
 
 	for {
 		key, _, found := iterator.Next()
@@ -173,7 +172,7 @@ func (rs *TredsStore) KVS(regex string) (string, error) {
 	iterator := rs.tree.Root().Iterator()
 	iterator.PatternMatch(regex)
 
-	var result bytes.Buffer
+	var result strings.Builder
 
 	for {
 		key, value, found := iterator.Next()
@@ -319,7 +318,7 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string, withScor
 		return "", err
 	}
 	index := 0
-	var result bytes.Buffer
+	var result strings.Builder
 	for {
 		storedKey, value, found := iterator.Next()
 		if !found {
@@ -357,7 +356,7 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string, withSco
 		return "", err
 	}
 	index := 0
-	var result bytes.Buffer
+	var result strings.Builder
 	for {
 		storedKey, _, found := iterator.Next()
 		if !found {
@@ -401,7 +400,7 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 	if err != nil {
 		return "", err
 	}
-	var result bytes.Buffer
+	var result strings.Builder
 	index := 0
 	_, radixTree := sortedMap.Ceiling(minFloat)
 	if radixTree == nil {
@@ -451,7 +450,7 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 	if err != nil {
 		return "", err
 	}
-	var result bytes.Buffer
+	var result strings.Builder
 	index := 0
 	_, radixTree := sortedMap.Ceiling(minFloat)
 	if radixTree == nil {
@@ -514,7 +513,7 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, prefix, count string, withS
 		return "", err
 	}
 	index := 0
-	var result bytes.Buffer
+	var result strings.Builder
 	for {
 		storedKey, value, found := iterator.Previous()
 		if !found {
@@ -552,7 +551,7 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, prefix, count string, with
 		return "", err
 	}
 	index := 0
-	var result bytes.Buffer
+	var result strings.Builder
 	for {
 		storedKey, _, found := iterator.Previous()
 		if !found {
@@ -596,7 +595,7 @@ func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, w
 	if err != nil {
 		return "", err
 	}
-	var result bytes.Buffer
+	var result strings.Builder
 	index := 0
 	_, radixTree := sortedMap.Floor(maxFloat)
 	if radixTree == nil {
@@ -646,7 +645,7 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 	if err != nil {
 		return "", err
 	}
-	var result bytes.Buffer
+	var result strings.Builder
 	index := 0
 	_, radixTree := sortedMap.Floor(maxFloat)
 	if radixTree == nil {
