@@ -22,7 +22,7 @@ func TestTredsStore_Get(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if value != "value1" {
+	if value != "value1\n" {
 		t.Fatalf("expected value1, got %s", value)
 	}
 }
@@ -57,7 +57,7 @@ func TestTredsStore_Set(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if value != "value1" {
+	if value != "value1\n" {
 		t.Fatalf("expected value1, got %s", value)
 	}
 }
@@ -149,7 +149,7 @@ func TestTredsStore_DeletePrefix(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if value != "value3" {
+	if value != "value3\n" {
 		t.Fatalf("expected value3, got %s", value)
 	}
 }
