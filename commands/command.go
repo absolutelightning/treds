@@ -1,6 +1,7 @@
 package commands
 
 func RegisterCommands(r CommandRegistry) {
+	RegisterPINGCommand(r)
 	RegisterGetCommand(r)
 	RegisterSetCommand(r)
 	RegisterDeleteCommand(r)
