@@ -2,9 +2,10 @@
 
 This is a Radix Trie Based Data Structure Server.
 
-## How it is different from Redis
+## How it is different from Redis?
 * Keys are root level having a common prefix can be queried optimally. Results will be in sorted order 
 * It has Sorted Maps instead of Sorted Sets. So we can create a Sorted Kev/Value pair with associated with a score
+* Currently it only has Key/Value store and Sorted Maps store
 
 ## Internals
 
