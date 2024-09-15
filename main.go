@@ -15,7 +15,7 @@ import (
 const DefaultPort = "7997"
 
 func main() {
-	var sigs chan os.Signal = make(chan os.Signal, 1)
+	var sigs = make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 
 	port := os.Getenv("TREDS_PORT")
