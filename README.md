@@ -4,9 +4,9 @@ This is a Radix Trie Based Data Structure Server with primary focus of getting k
 
 It is single threaded and has event loop.
 
-Implemented using modified Radix trees where leaf nodes are connected by Linked List in Radix Trie to facilitate the quick lookup of keys/values in sorted order.
+Implemented using modified Radix trees where leaf nodes are connected by Doubly Linked List in Radix Trie to facilitate the quick lookup of keys/values in sorted order.
 
-LinkedList of leaf nodes are updated at the time of create/delete and update of keys optimally.
+Doubly LinkedList of leaf nodes are updated at the time of create/delete and update of keys optimally.
 
 This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), but without converting keys to binary.
 
