@@ -328,7 +328,7 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string, withScor
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
 				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
-				result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", keyScore, string(storedKey), value.(string)))
+				result.WriteString(fmt.Sprintf("%f\n%v\n%v\n", keyScore, string(storedKey), value.(string)))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
 			}
@@ -366,7 +366,7 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string, withSco
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
 				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
-				result.WriteString(fmt.Sprintf("%v\n%v\n", keyScore, string(storedKey)))
+				result.WriteString(fmt.Sprintf("%f\n%v\n", keyScore, string(storedKey)))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n", string(storedKey)))
 			}
@@ -418,7 +418,7 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 		}
 		if index >= offsetInt {
 			if withScore {
-				result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", score, string(minKV.Key()), minKV.Value().(string)))
+				result.WriteString(fmt.Sprintf("%f\n%v\n%v\n", score, string(minKV.Key()), minKV.Value().(string)))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n%v\n", string(minKV.Key()), minKV.Value().(string)))
 			}
@@ -468,7 +468,7 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 		}
 		if index >= offsetInt {
 			if withScore {
-				result.WriteString(fmt.Sprintf("%v\n%v\n", score, string(minKV.Key())))
+				result.WriteString(fmt.Sprintf("%f\n%v\n", score, string(minKV.Key())))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n", string(minKV.Key())))
 			}
@@ -523,7 +523,7 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, prefix, count string, withS
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
 				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
-				result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", keyScore, string(storedKey), value.(string)))
+				result.WriteString(fmt.Sprintf("%f\n%v\n%v\n", keyScore, string(storedKey), value.(string)))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
 			}
@@ -561,7 +561,7 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, prefix, count string, with
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
 				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
-				result.WriteString(fmt.Sprintf("%v\n%v\n", keyScore, string(storedKey)))
+				result.WriteString(fmt.Sprintf("%f\n%v\n", keyScore, string(storedKey)))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n", string(storedKey)))
 			}
@@ -613,7 +613,7 @@ func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, w
 		}
 		if index >= offsetInt {
 			if withScore {
-				result.WriteString(fmt.Sprintf("%v\n%v\n%v\n", score, string(maxKV.Key()), maxKV.Value().(string)))
+				result.WriteString(fmt.Sprintf("%f\n%v\n%v\n", score, string(maxKV.Key()), maxKV.Value().(string)))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n%v\n", string(maxKV.Key()), maxKV.Value().(string)))
 			}
@@ -663,7 +663,7 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 		}
 		if index >= offsetInt {
 			if withScore {
-				result.WriteString(fmt.Sprintf("%v\n%v\n", score, string(maxKV.Key())))
+				result.WriteString(fmt.Sprintf("%f\n%v\n", score, string(maxKV.Key())))
 			} else {
 				result.WriteString(fmt.Sprintf("%v\n", string(maxKV.Key())))
 			}
