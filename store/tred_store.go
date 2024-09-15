@@ -363,9 +363,6 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string, withSco
 		if !found {
 			break
 		}
-		if withScore {
-
-		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
 				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
@@ -560,9 +557,6 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, prefix, count string, with
 		storedKey, _, found := iterator.Previous()
 		if !found {
 			break
-		}
-		if withScore {
-
 		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
