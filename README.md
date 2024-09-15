@@ -15,9 +15,12 @@ Doubly Linked List of leaf nodes are updated at the time of create/delete and up
 This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), but without converting keys to binary.
 
 ## Commands 
+* `PING` - Replies with a `PONG`
 * `SET key value` - Sets a key value pair
 * `GET key` - Get a value for a key
+* `DEL key` - Delete a key
 * `MGET key1 key2`- Get values for multiple keys
+* `DELPREFIX` - Delete all keys having a common prefix
 * `DBSIZE` - Get number of keys in the db
 * `SCANKEYS offset prefix count` - Returns the count number of keys matching prefix starting from an index in lex order
 * `SCANKVS offset prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order
