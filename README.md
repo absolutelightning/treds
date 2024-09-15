@@ -1,13 +1,16 @@
 # Treds - Radix Tree Based Data Structure Server  [![Run CI Tests](https://github.com/absolutelightning/treds/actions/workflows/go.yml/badge.svg)](https://github.com/absolutelightning/treds/actions/workflows/go.yml)
 
-This is a Radix Trie Based Data Structure Server with primary focus of getting keys in sorted or quickly matching a common prefix.
+This is a Radix Trie Based Data Structure Server.
+
+## How it is different from Redis
+* Keys are root level having a common prefix can be queried optimally. Results will be in sorted order 
+* It has Sorted Maps instead of Sorted Sets. So we can create a Sorted Kev/Value pair with associated with a score
+
+## Internal Details
 
 It is single threaded and has event loop.
-
 Implemented using modified Radix trees where leaf nodes are connected by Doubly Linked List in Radix Trie to facilitate the quick lookup of keys/values in sorted order.
-
 Doubly Linked List of leaf nodes are updated at the time of create/delete and update of keys optimally.
-
 This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), but without converting keys to binary.
 
 ## Commands 
