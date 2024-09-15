@@ -326,10 +326,25 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string, withScor
 		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
+				// Fetch the score
 				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
-				result.WriteString(fmt.Sprintf("%f\n%v\n%v\n", keyScore, string(storedKey), value.(string)))
+
+				// Convert the floating-point score to a string
+				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // Convert float to string with full precision
+
+				// Append score, key, and value to the result
+				result.WriteString(scoreStr)
+				result.WriteString("\n")
+				result.WriteString(string(storedKey))
+				result.WriteString("\n")
+				result.WriteString(value.(string))
+				result.WriteString("\n")
 			} else {
-				result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
+				// Append only the key and value to the result
+				result.WriteString(string(storedKey))
+				result.WriteString("\n")
+				result.WriteString(value.(string))
+				result.WriteString("\n")
 			}
 			countInt--
 		}
@@ -364,10 +379,21 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string, withSco
 		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
+				// Fetch the score
 				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
-				result.WriteString(fmt.Sprintf("%f\n%v\n", keyScore, string(storedKey)))
+
+				// Convert the floating-point score to a string
+				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // Convert float to string with full precision
+
+				// Append score and key to the result
+				result.WriteString(scoreStr)
+				result.WriteString("\n")
+				result.WriteString(string(storedKey))
+				result.WriteString("\n")
 			} else {
-				result.WriteString(fmt.Sprintf("%v\n", string(storedKey)))
+				// Append only the key to the result
+				result.WriteString(string(storedKey))
+				result.WriteString("\n")
 			}
 			countInt--
 		}
@@ -417,9 +443,22 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 		}
 		if index >= offsetInt {
 			if withScore {
-				result.WriteString(fmt.Sprintf("%f\n%v\n%v\n", score, string(minKV.Key()), minKV.Value().(string)))
+				// Convert the floating-point score to a string
+				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string with full precision
+
+				// Append score, key, and value to the result
+				result.WriteString(scoreStr)
+				result.WriteString("\n")
+				result.WriteString(string(minKV.Key()))
+				result.WriteString("\n")
+				result.WriteString(minKV.Value().(string))
+				result.WriteString("\n")
 			} else {
-				result.WriteString(fmt.Sprintf("%v\n%v\n", string(minKV.Key()), minKV.Value().(string)))
+				// Append only key and value to the result
+				result.WriteString(string(minKV.Key()))
+				result.WriteString("\n")
+				result.WriteString(minKV.Value().(string))
+				result.WriteString("\n")
 			}
 			countInt--
 		}
@@ -467,9 +506,18 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 		}
 		if index >= offsetInt {
 			if withScore {
-				result.WriteString(fmt.Sprintf("%f\n%v\n", score, string(minKV.Key())))
+				// Convert the floating-point score to a string
+				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string
+
+				// Append score and key to the result
+				result.WriteString(scoreStr)
+				result.WriteString("\n")
+				result.WriteString(string(minKV.Key()))
+				result.WriteString("\n")
 			} else {
-				result.WriteString(fmt.Sprintf("%v\n", string(minKV.Key())))
+				// Append only key to the result
+				result.WriteString(string(minKV.Key()))
+				result.WriteString("\n")
 			}
 			countInt--
 		}
@@ -522,9 +570,18 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, prefix, count string, withS
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
 				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
-				result.WriteString(fmt.Sprintf("%f\n%v\n%v\n", keyScore, string(storedKey), value.(string)))
+				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64)
+				result.WriteString(scoreStr)
+				result.WriteString("\n")
+				result.WriteString(string(storedKey))
+				result.WriteString("\n")
+				result.WriteString(value.(string))
+				result.WriteString("\n")
 			} else {
-				result.WriteString(fmt.Sprintf("%v\n%v\n", string(storedKey), value.(string)))
+				result.WriteString(string(storedKey))
+				result.WriteString("\n")
+				result.WriteString(value.(string))
+				result.WriteString("\n")
 			}
 			countInt--
 		}
@@ -559,10 +616,18 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, prefix, count string, with
 		}
 		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
 			if withScore {
+				// Fetch the score
 				keyScore, _ := rs.sortedMapsScore[key][string(storedKey)]
-				result.WriteString(fmt.Sprintf("%f\n%v\n", keyScore, string(storedKey)))
+				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // -1 preserves full precision
+				// Append keyScore and storedKey to the result
+				result.WriteString(scoreStr)
+				result.WriteString("\n")
+				result.WriteString(string(storedKey))
+				result.WriteString("\n")
 			} else {
-				result.WriteString(fmt.Sprintf("%v\n", string(storedKey)))
+				// Append only the storedKey to the result
+				result.WriteString(string(storedKey))
+				result.WriteString("\n")
 			}
 			countInt--
 		}
@@ -612,9 +677,21 @@ func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, w
 		}
 		if index >= offsetInt {
 			if withScore {
-				result.WriteString(fmt.Sprintf("%f\n%v\n%v\n", score, string(maxKV.Key()), maxKV.Value().(string)))
+				// Convert the floating-point score to a string
+				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string
+				// Append score, key, and value to the result
+				result.WriteString(scoreStr)
+				result.WriteString("\n")
+				result.WriteString(string(maxKV.Key()))
+				result.WriteString("\n")
+				result.WriteString(maxKV.Value().(string))
+				result.WriteString("\n")
 			} else {
-				result.WriteString(fmt.Sprintf("%v\n%v\n", string(maxKV.Key()), maxKV.Value().(string)))
+				// Append only key and value to the result
+				result.WriteString(string(maxKV.Key()))
+				result.WriteString("\n")
+				result.WriteString(maxKV.Value().(string))
+				result.WriteString("\n")
 			}
 			countInt--
 		}
@@ -662,9 +739,18 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 		}
 		if index >= offsetInt {
 			if withScore {
-				result.WriteString(fmt.Sprintf("%f\n%v\n", score, string(maxKV.Key())))
+				// Convert the floating-point score to a string
+				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string
+
+				// Append score and key to the result
+				result.WriteString(scoreStr)
+				result.WriteString("\n")
+				result.WriteString(string(maxKV.Key()))
+				result.WriteString("\n")
 			} else {
-				result.WriteString(fmt.Sprintf("%v\n", string(maxKV.Key())))
+				// Append only key to the result
+				result.WriteString(string(maxKV.Key()))
+				result.WriteString("\n")
 			}
 			countInt--
 		}
