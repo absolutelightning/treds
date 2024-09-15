@@ -11,7 +11,7 @@ import (
 	radix_tree "treds/datastructures/radix"
 )
 
-const NilResp = "(nil)"
+const NilResp = "(nil)\n"
 const Epsilon = 1.19209e-07
 
 type TredsStore struct {
