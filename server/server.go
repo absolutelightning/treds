@@ -13,15 +13,19 @@ type Server struct {
 	Addr string
 	Port int
 
-	TredsStore store.Store
+	tredsStore           store.Store
+	tredsCommandRegistry commands.CommandRegistry
 
 	*gnet.BuiltinEventEngine
 }
 
 func New(port int) *Server {
+	commandRegistry := commands.NewRegistry()
+	commands.RegisterCommands(commandRegistry)
 	return &Server{
-		Port:       port,
-		TredsStore: store.NewTredsStore(),
+		Port:                 port,
+		tredsStore:           store.NewTredsStore(),
+		tredsCommandRegistry: commandRegistry,
 	}
 }
 
@@ -31,11 +35,7 @@ func (ts *Server) OnBoot(eng gnet.Engine) gnet.Action {
 }
 
 func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
-	commandRegistry := commands.NewRegistry()
-	commands.RegisterCommands(commandRegistry)
-
 	data, _ := c.Next(-1)
-	// Simple command handling: reply with PONG to PING command
 	inp := string(data)
 	if inp == "" {
 		return gnet.None
@@ -50,7 +50,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	commandString := strings.TrimSpace(inp)
 	commandStringParts := strings.Split(commandString, " ")
 	command := strings.ToUpper(commandStringParts[0])
-	commandReg, err := commandRegistry.Retrieve(command)
+	commandReg, err := ts.tredsCommandRegistry.Retrieve(command)
 	if err != nil {
 		_, err = c.Write([]byte(fmt.Sprintf("Error Executing command - %v\n", err.Error())))
 		if err != nil {
@@ -65,7 +65,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		}
 		return gnet.None
 	}
-	res, err := commandReg.Execute(commandStringParts[1:], ts.TredsStore)
+	res, err := commandReg.Execute(commandStringParts[1:], ts.tredsStore)
 	if err != nil {
 		_, err = c.Write([]byte(fmt.Sprintf("Error Executing command - %v\n", err.Error())))
 		if err != nil {
