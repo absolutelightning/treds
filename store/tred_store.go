@@ -2,13 +2,14 @@ package store
 
 import (
 	"fmt"
-	"github.com/emirpasic/gods/maps/treemap"
-	"github.com/emirpasic/gods/utils"
-	"golang.org/x/sync/errgroup"
 	"hash/fnv"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/emirpasic/gods/maps/treemap"
+	"github.com/emirpasic/gods/utils"
+	"golang.org/x/sync/errgroup"
 	radix_tree "treds/datastructures/radix"
 )
 
