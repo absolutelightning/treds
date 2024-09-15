@@ -7,7 +7,7 @@ import (
 
 const ZScoreCommand = "ZSCORE"
 
-func RegisterZScore(r CommandRegistry) {
+func RegisterZScoreCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
 		Name:     ZScoreCommand,
 		Validate: validateZScore(),
