@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"treds/commands"
 	"treds/store"
@@ -30,6 +31,29 @@ func New(port int) *Server {
 }
 
 func (ts *Server) OnBoot(eng gnet.Engine) gnet.Action {
+	setCommand, _ := ts.tredsCommandRegistry.Retrieve("SET")
+
+	for i := 0; i <= 10000000; i++ {
+		setCommand.Execute([]string{"user:" + strconv.Itoa(i), "value_" + strconv.Itoa(i)}, ts.tredsStore)
+	}
+
+	setCommand, _ = ts.tredsCommandRegistry.Retrieve("ZADD")
+
+	args := make([]string, 0)
+	args = append(args, "ss")
+	for i := 0; i <= 10000000; i++ {
+		args = append(args, strings.Split(fmt.Sprintf("%v user:%v %v", 0, i, i), " ")...)
+	}
+	setCommand.Execute(args, ts.tredsStore)
+
+	setCommand, _ = ts.tredsCommandRegistry.Retrieve("ZADD")
+
+	args = make([]string, 0)
+	args = append(args, "ssd")
+	for i := 0; i <= 10000000; i++ {
+		args = append(args, strings.Split(fmt.Sprintf("%v user:%v %v", i, i, i), " ")...)
+	}
+	setCommand.Execute(args, ts.tredsStore)
 	fmt.Println("Server started on", ts.Port)
 	return gnet.None
 }
