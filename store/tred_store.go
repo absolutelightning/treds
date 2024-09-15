@@ -64,7 +64,7 @@ func (rs *TredsStore) MGet(args []string) (string, error) {
 	}
 	var response strings.Builder
 	for _, res := range results {
-		response.WriteString(fmt.Sprintf("%v\n", res))
+		response.WriteString(res)
 	}
 	return response.String(), nil
 }
