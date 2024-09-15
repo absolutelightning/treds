@@ -36,7 +36,7 @@ func main() {
 		tredsServer,
 		"tcp://0.0.0.0:"+strconv.Itoa(tredsServer.Port),
 		gnet.WithMulticore(false),
-		gnet.WithReusePort(true),
+		gnet.WithReusePort(false),
 		gnet.WithTCPKeepAlive(300*time.Second),
 	))
 

@@ -40,13 +40,6 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	if inp == "" {
 		return gnet.None
 	}
-	if strings.ToUpper(inp) == "PING\n" {
-		_, err := c.Write([]byte("PONG\n"))
-		if err != nil {
-			fmt.Println("Error occurred writing to connection", err)
-		}
-		return gnet.None
-	}
 	commandString := strings.TrimSpace(inp)
 	commandStringParts := strings.Split(commandString, " ")
 	command := strings.ToUpper(commandStringParts[0])
