@@ -5,6 +5,7 @@ import (
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/emirpasic/gods/utils"
 	"golang.org/x/sync/errgroup"
+	"hash/fnv"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,6 +39,27 @@ func (rs *TredsStore) Get(k string) (string, error) {
 	}
 	res.WriteString(fmt.Sprintf("%v\n", v))
 	return res.String(), nil
+}
+
+func (rs *TredsStore) MSet(kvs []string) error {
+	var g errgroup.Group
+	var mu sync.Mutex
+	for itr := 0; itr < len(kvs); itr += 2 {
+		g.Go(func() error {
+			mu.Lock()
+			err := rs.Set(kvs[itr], kvs[itr+1])
+			mu.Unlock()
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (rs *TredsStore) MGet(args []string) (string, error) {
@@ -82,7 +104,7 @@ func (rs *TredsStore) Delete(k string) error {
 }
 
 func (rs *TredsStore) PrefixScan(cursor, prefix, count string) (string, error) {
-	startIndex, err := strconv.Atoi(cursor)
+	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return "", err
 	}
@@ -96,14 +118,33 @@ func (rs *TredsStore) PrefixScan(cursor, prefix, count string) (string, error) {
 	index := 0
 
 	var result strings.Builder
+
+	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
+
+	nextCursor := uint32(0)
 
 	for {
 		key, value, found := iterator.Next()
 		if !found {
 			break
 		}
-		if index >= startIndex && countInt > 0 {
+		hashKey, herr := hash(string(key))
+		if herr != nil {
+			return "", herr
+		}
+		if !seenHash && hashKey == uint32(startHash) {
+			seenHash = true
+			continue
+		}
+		if seenHash && countInt > 0 {
 			result.WriteString(fmt.Sprintf("%v\n%v\n", string(key), value.(string)))
+			nextCursor, herr = hash(string(key))
+			if herr != nil {
+				return "", herr
+			}
 			countInt--
 		}
 		if countInt == 0 {
@@ -111,11 +152,24 @@ func (rs *TredsStore) PrefixScan(cursor, prefix, count string) (string, error) {
 		}
 		index += 1
 	}
+	if countInt != 0 {
+		nextCursor = uint32(0)
+	}
+	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
 	return result.String(), nil
 }
 
+func hash(s string) (uint32, error) {
+	h := fnv.New32a()
+	_, err := h.Write([]byte(s))
+	if err != nil {
+		return 0, err
+	}
+	return h.Sum32(), nil
+}
+
 func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) (string, error) {
-	startIndex, err := strconv.Atoi(cursor)
+	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return "", err
 	}
@@ -130,13 +184,32 @@ func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) (string, erro
 
 	var result strings.Builder
 
+	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
+
+	nextCursor := uint32(0)
+
 	for {
 		key, _, found := iterator.Next()
 		if !found {
 			break
 		}
-		if index >= startIndex && countInt > 0 {
+		hashKey, herr := hash(string(key))
+		if herr != nil {
+			return "", herr
+		}
+		if !seenHash && hashKey == uint32(startHash) {
+			seenHash = true
+			continue
+		}
+		if seenHash && countInt > 0 {
 			result.WriteString(fmt.Sprintf("%v\n", string(key)))
+			nextCursor, herr = hash(string(key))
+			if herr != nil {
+				return "", herr
+			}
 			countInt--
 		}
 		if countInt == 0 {
@@ -144,6 +217,10 @@ func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) (string, erro
 		}
 		index += 1
 	}
+	if countInt != 0 {
+		nextCursor = uint32(0)
+	}
+	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
 	return result.String(), nil
 }
 
