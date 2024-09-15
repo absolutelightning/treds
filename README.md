@@ -1,4 +1,4 @@
-# TREDS - Radix Tree Based Data Structure Server  [![Run CI Tests](https://github.com/absolutelightning/treds/actions/workflows/go.yml/badge.svg)](https://github.com/absolutelightning/treds/actions/workflows/go.yml)
+# Treds - Radix Tree Based Data Structure Server  [![Run CI Tests](https://github.com/absolutelightning/treds/actions/workflows/go.yml/badge.svg)](https://github.com/absolutelightning/treds/actions/workflows/go.yml)
 
 This is a Radix Trie Based Data Structure Server with primary focus of getting keys in sorted or quickly matching a common prefix.
 
