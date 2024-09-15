@@ -3,6 +3,7 @@ package store
 type Store interface {
 	Get(string) (string, error)
 	MGet([]string) (string, error)
+	MSet([]string) error
 	Set(string, string) error
 	Delete(string) error
 	PrefixScan(string, string, string) (string, error)

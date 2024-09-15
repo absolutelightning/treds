@@ -4,6 +4,7 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterPINGCommand(r)
 	RegisterGetCommand(r)
 	RegisterSetCommand(r)
+	RegisterMSetCommand(r)
 	RegisterDeleteCommand(r)
 	RegisterScanKVSCommand(r)
 	RegisterScanKeysCommand(r)

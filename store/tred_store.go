@@ -40,6 +40,27 @@ func (rs *TredsStore) Get(k string) (string, error) {
 	return res.String(), nil
 }
 
+func (rs *TredsStore) MSet(kvs []string) error {
+	var g errgroup.Group
+	var mu sync.Mutex
+	for itr := 0; itr < len(kvs); itr += 2 {
+		g.Go(func() error {
+			mu.Lock()
+			err := rs.Set(kvs[itr], kvs[itr+1])
+			mu.Unlock()
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (rs *TredsStore) MGet(args []string) (string, error) {
 	results := make([]string, len(args))
 	var g errgroup.Group
