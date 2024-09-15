@@ -18,6 +18,7 @@ This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu
 * `SET key value` - Sets a key value pair
 * `GET key` - Get a value for a key
 * `MGET key1 key2`- Get values for multiple keys
+* `DBSIZE` - Get number of keys in the db
 * `SCANKEYS offset prefix count` - Returns the count number of keys matching prefix starting from an index in lex order
 * `SCANKVS offset prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order
 * `KEYS regex` - Returns all keys matching a regex in lex order - (Not suitable to production use cases with huge number of keys)
