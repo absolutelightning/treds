@@ -31,11 +31,13 @@ func NewTredsStore() *TredsStore {
 }
 
 func (rs *TredsStore) Get(k string) (string, error) {
+	var res strings.Builder
 	v, ok := rs.tree.Get([]byte(k))
 	if !ok {
 		return NilResp, nil
 	}
-	return v.(string), nil
+	res.WriteString(fmt.Sprintf("%v\n", v))
+	return res.String(), nil
 }
 
 func (rs *TredsStore) MGet(args []string) (string, error) {
