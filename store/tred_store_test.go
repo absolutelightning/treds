@@ -100,7 +100,7 @@ func TestTredsStore_PrefixScan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	expected := "key1\nvalue1\nkey2\nvalue2\n"
+	expected := "key1\nvalue1\nkey2\nvalue2\n944401402\n"
 	if result != expected {
 		t.Fatalf("expected %s, got %s", expected, result)
 	}
@@ -118,7 +118,7 @@ func TestTredsStore_PrefixScanKeys(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	expected := "key1\nkey2\n"
+	expected := "key1\nkey2\n944401402\n"
 	if result != expected {
 		t.Fatalf("expected %s, got %s", expected, result)
 	}
