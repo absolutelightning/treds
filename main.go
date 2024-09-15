@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/panjf2000/gnet/v2"
 	"log"
 	"os"
 	"os/signal"
@@ -9,6 +8,8 @@ import (
 	"syscall"
 	"time"
 	"treds/server"
+
+	"github.com/panjf2000/gnet/v2"
 )
 
 const DefaultPort = "7997"
