@@ -1,12 +1,13 @@
 package main
 
 import (
+	"github.com/panjf2000/gnet/v2"
 	"log"
 	"os"
 	"os/signal"
 	"strconv"
-	"sync"
 	"syscall"
+	"time"
 	"treds/server"
 )
 
@@ -15,8 +16,6 @@ const DefaultPort = "7997"
 func main() {
 	var sigs chan os.Signal = make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
-	var wg sync.WaitGroup
-	wg.Add(1)
 
 	port := os.Getenv("TREDS_PORT")
 
@@ -30,15 +29,14 @@ func main() {
 		panic(err)
 	}
 
-	trieDataStructureServer := server.New(portInt)
+	tredsServer := server.New(portInt)
 
-	go trieDataStructureServer.Init()
-	go func() {
-		for err := range trieDataStructureServer.ErrCh {
-			log.Printf("error running server " + err.Error())
-		}
-	}()
-
-	wg.Wait()
+	log.Fatal(gnet.Run(
+		tredsServer,
+		"tcp://0.0.0.0:"+strconv.Itoa(tredsServer.Port),
+		gnet.WithMulticore(false),
+		gnet.WithReusePort(true),
+		gnet.WithTCPKeepAlive(300*time.Second),
+	))
 
 }

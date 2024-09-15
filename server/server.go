@@ -2,80 +2,84 @@ package server
 
 import (
 	"fmt"
-	"github.com/tidwall/evio"
 	"strings"
 	"treds/commands"
 	"treds/store"
+
+	"github.com/panjf2000/gnet/v2"
 )
 
 type Server struct {
-	Port       int
-	ErrCh      chan error
+	Addr string
+	Port int
+
 	TredsStore store.Store
+
+	*gnet.BuiltinEventEngine
 }
 
 func New(port int) *Server {
 	return &Server{
-		ErrCh:      make(chan error),
 		Port:       port,
 		TredsStore: store.NewTredsStore(),
 	}
 }
 
-func (s *Server) Init() {
+func (ts *Server) OnBoot(eng gnet.Engine) gnet.Action {
+	fmt.Println("Server started on", ts.Port)
+	return gnet.None
+}
 
+func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	commandRegistry := commands.NewRegistry()
 	commands.RegisterCommands(commandRegistry)
 
-	var events evio.Events
-
-	// numLoops should always be 1 because datastructures do not support MVCC.
-	// This is single threaded operation
-	events.NumLoops = 1 // Single-threaded
-
-	// Handle new connections
-	events.Serving = func(s evio.Server) (action evio.Action) {
-		fmt.Printf("Server started on %s\n", s.Addrs[0])
-		return
+	data, _ := c.Next(-1)
+	// Simple command handling: reply with PONG to PING command
+	inp := string(data)
+	if inp == "" {
+		return gnet.None
 	}
-
-	// Handle data read from clients
-	events.Data = func(c evio.Conn, in []byte) (out []byte, action evio.Action) {
-		// Simple command handling: reply with PONG to PING command
-		inp := string(in)
-		if inp == "" {
-			return
+	if strings.ToUpper(inp) == "PING\n" {
+		_, err := c.Write([]byte("PONG\n"))
+		if err != nil {
+			fmt.Println("Error occurred writing to connection", err)
 		}
-		if strings.ToUpper(inp) == "PING\n" {
-			out = []byte("PONG\n")
-		} else {
-			commandString := strings.TrimSpace(inp)
-			commandStringParts := strings.Split(commandString, " ")
-			command := strings.ToUpper(commandStringParts[0])
-			commandReg, err := commandRegistry.Retrieve(command)
-			if err != nil {
-				out = []byte(fmt.Sprintf("Error Executing command - %v\n", err.Error()))
-				return
-			}
-			if err = commandReg.Validate(commandStringParts[1:]); err != nil {
-				out = []byte(fmt.Sprintf("Error Validating command - %v\n", err.Error()))
-				return
-			}
-			res, err := commandReg.Execute(commandStringParts[1:], s.TredsStore)
-			if err != nil {
-				out = []byte(fmt.Sprintf("Error Executing command - %v\n", err.Error()))
-				return
-			}
-			out = []byte(fmt.Sprintf("%d\n%s", len(res), res))
+		return gnet.None
+	}
+	commandString := strings.TrimSpace(inp)
+	commandStringParts := strings.Split(commandString, " ")
+	command := strings.ToUpper(commandStringParts[0])
+	commandReg, err := commandRegistry.Retrieve(command)
+	if err != nil {
+		_, err = c.Write([]byte(fmt.Sprintf("Error Executing command - %v\n", err.Error())))
+		if err != nil {
+			fmt.Println("Error occurred writing to connection", err)
 		}
-		return
+		return gnet.None
 	}
-
-	// Define the address to listen on
-	address := fmt.Sprintf("tcp://0.0.0.0:%d", s.Port)
-
-	// Start the server
-	if err := evio.Serve(events, address); err != nil {
-		fmt.Printf("Error starting server: %v\n", err)
+	if err = commandReg.Validate(commandStringParts[1:]); err != nil {
+		_, err = c.Write([]byte(fmt.Sprintf("Error Executing command - %v\n", err.Error())))
+		if err != nil {
+			fmt.Println("Error occurred writing to connection", err)
+		}
+		return gnet.None
 	}
+	res, err := commandReg.Execute(commandStringParts[1:], ts.TredsStore)
+	if err != nil {
+		_, err = c.Write([]byte(fmt.Sprintf("Error Executing command - %v\n", err.Error())))
+		if err != nil {
+			fmt.Println("Error occurred writing to connection", err)
+		}
+		return gnet.None
+	}
+	_, err = c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+	if err != nil {
+		fmt.Println("Error occurred writing to connection", err)
+	}
+	return gnet.None
+}
+
+func (ts *Server) OnClose(c gnet.Conn, err error) gnet.Action {
+	return gnet.None
 }
