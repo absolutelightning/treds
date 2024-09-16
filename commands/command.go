@@ -26,4 +26,13 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterZRevRangeLexKeysCommand(r)
 	RegisterZRevRangeLexKVSCommand(r)
 	RegisterFlushAllCommand(r)
+	RegisterLPushCommand(r)
+	RegisterRPushCommand(r)
+	RegisterLPopCommand(r)
+	RegisterRPopCommand(r)
+	RegisterLRemCommand(r)
+	RegisterLSetCommand(r)
+	RegisterLRangeCommand(r)
+	RegisterLLenCommand(r)
+	RegisterLIndexCommand(r)
 }

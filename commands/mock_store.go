@@ -179,3 +179,39 @@ func (m *MockStore) ZRevRangeByScoreKVS(string, string, string, string, string, 
 func (m *MockStore) FlushAll() error {
 	return nil
 }
+
+func (m *MockStore) LPush([]string) error {
+	return nil
+}
+
+func (m *MockStore) RPush([]string) error {
+	return nil
+}
+
+func (rs *MockStore) LIndex(args []string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) LLen(key string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) LRange(key string, start, stop int) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) LSet(key string, index int, element string) error {
+	return nil
+}
+
+func (rs *MockStore) LRem(key string, index int) error {
+	return nil
+}
+
+func (rs *MockStore) LPop(key string, count int) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) RPop(key string, count int) (string, error) {
+	return "", nil
+}
