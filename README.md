@@ -4,7 +4,7 @@ This is a Radix Trie Based Data Structure Server.
 
 ## How it is different from Redis?
 * Keys at root level having a common prefix can be queried optimally. Results will be in sorted order 
-* `SCANKEYS/SCANKVS/KEYS/KVS` commands returns the results in sorted order.
+* `SCANKEYS/SCANKVS/KEYS/KVS` commands returns the results in sorted order. Also unlike [Redis SCAN](https://redis.io/docs/latest/commands/scan/) it returns count number of data if data is there.
 * It has Sorted Maps instead of Sorted Sets. So we can create a Sorted Kev/Value pair with associated with a score
 * Currently, it only has Key/Value store and Sorted Maps store and only supports strings/integers as values
 
