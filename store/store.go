@@ -25,4 +25,13 @@ type Store interface {
 	ZRevRangeByScoreKeys(string, string, string, string, string, bool) (string, error)
 	ZRevRangeByScoreKVS(string, string, string, string, string, bool) (string, error)
 	FlushAll() error
+	LPush([]string) error
+	RPush([]string) error
+	LPop(string, int) (string, error)
+	RPop(string, int) (string, error)
+	LRem(string, int) error
+	LSet(string, int, string) error
+	LRange(string, int, int) (string, error)
+	LLen(string) (string, error)
+	LIndex([]string) (string, error)
 }

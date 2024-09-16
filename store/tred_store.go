@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/emirpasic/gods/lists/doublylinkedlist"
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/emirpasic/gods/utils"
 	"golang.org/x/sync/errgroup"
@@ -17,10 +18,13 @@ const NilResp = "(nil)\n"
 const Epsilon = 1.19209e-07
 
 type TredsStore struct {
-	tree            *radix_tree.Tree
+	tree *radix_tree.Tree
+
 	sortedMaps      map[string]*treemap.Map
 	sortedMapsScore map[string]map[string]float64
 	sortedMapsKeys  map[string]*radix_tree.Tree
+
+	list map[string]*doublylinkedlist.List
 }
 
 func NewTredsStore() *TredsStore {
@@ -29,6 +33,7 @@ func NewTredsStore() *TredsStore {
 		sortedMaps:      make(map[string]*treemap.Map),
 		sortedMapsScore: make(map[string]map[string]float64),
 		sortedMapsKeys:  make(map[string]*radix_tree.Tree),
+		list:            make(map[string]*doublylinkedlist.List),
 	}
 }
 
@@ -266,7 +271,7 @@ func (rs *TredsStore) KVS(regex string) (string, error) {
 }
 
 func (rs *TredsStore) Size() (string, error) {
-	return strconv.Itoa(rs.tree.Len() + len(rs.sortedMaps)), nil
+	return strconv.Itoa(rs.tree.Len() + len(rs.sortedMaps) + len(rs.list)), nil
 }
 
 func (rs *TredsStore) ZAdd(args []string) error {
@@ -853,5 +858,152 @@ func (rs *TredsStore) FlushAll() error {
 	rs.sortedMaps = make(map[string]*treemap.Map)
 	rs.sortedMapsScore = make(map[string]map[string]float64)
 	rs.sortedMapsKeys = make(map[string]*radix_tree.Tree)
+	rs.list = make(map[string]*doublylinkedlist.List)
 	return nil
+}
+
+func (rs *TredsStore) LPush(args []string) error {
+	key := args[0]
+	storedList, ok := rs.list[key]
+	if !ok {
+		storedList = doublylinkedlist.New()
+	}
+	for _, arg := range args[1:] {
+		storedList.Prepend(arg)
+	}
+	rs.list[key] = storedList
+	return nil
+}
+
+func (rs *TredsStore) RPush(args []string) error {
+	key := args[0]
+	storedList, ok := rs.list[key]
+	if !ok {
+		storedList = doublylinkedlist.New()
+	}
+	for _, arg := range args[1:] {
+		storedList.Append(arg)
+	}
+	rs.list[key] = storedList
+	return nil
+}
+
+func (rs *TredsStore) LIndex(args []string) (string, error) {
+	key := args[0]
+	storedList, ok := rs.list[key]
+	if !ok {
+		return "", nil
+	}
+	index, err := strconv.Atoi(args[1])
+	if err != nil {
+		return "", err
+	}
+	if index < 0 {
+		index = storedList.Size() + index
+	}
+	value, found := storedList.Get(index)
+	if !found {
+		return "", nil
+	}
+	var result strings.Builder
+	result.WriteString(value.(string))
+	result.WriteString("\n")
+	return result.String(), nil
+}
+
+func (rs *TredsStore) LLen(key string) (string, error) {
+	storedList, ok := rs.list[key]
+	if !ok {
+		return "0", nil
+	}
+	return strconv.Itoa(storedList.Size()) + "\n", nil
+}
+
+func (rs *TredsStore) LRange(key string, start, stop int) (string, error) {
+	storedList, ok := rs.list[key]
+	if !ok {
+		return "", nil
+	}
+	if start < 0 {
+		start = storedList.Size() + start
+	}
+	if stop < 0 {
+		stop = storedList.Size() + stop
+	}
+	if start > stop {
+		return "", nil
+	}
+	vals := storedList.Values()
+	var result strings.Builder
+	for i := start; i <= stop; i++ {
+		result.WriteString(vals[i].(string))
+		result.WriteString("\n")
+	}
+	return result.String(), nil
+}
+
+func (rs *TredsStore) LSet(key string, index int, element string) error {
+	storedList, ok := rs.list[key]
+	if !ok {
+		return nil
+	}
+	if index < 0 {
+		index = storedList.Size() + index
+	}
+	storedList.Set(index, element)
+	return nil
+}
+
+func (rs *TredsStore) LRem(key string, index int) error {
+	storedList, ok := rs.list[key]
+	if !ok {
+		return nil
+	}
+	if index < 0 {
+		index = storedList.Size() + index
+	}
+	storedList.Remove(index)
+	return nil
+}
+
+func (rs *TredsStore) LPop(key string, count int) (string, error) {
+	var res strings.Builder
+	storedList, ok := rs.list[key]
+	if !ok {
+		return "", nil
+	}
+	for count > 0 {
+		elem, found := storedList.Get(0)
+		if found {
+			storedList.Remove(0)
+			res.WriteString(elem.(string))
+			res.WriteString("\n")
+		} else {
+			break
+		}
+		count--
+	}
+	return res.String(), nil
+}
+
+func (rs *TredsStore) RPop(key string, count int) (string, error) {
+	var res strings.Builder
+	storedList, ok := rs.list[key]
+	if !ok {
+		return "", nil
+	}
+	lastIndex := storedList.Size() - 1
+	for count > 0 {
+		elem, found := storedList.Get(lastIndex)
+		if found {
+			storedList.Remove(lastIndex)
+			lastIndex = storedList.Size() - 1
+			res.WriteString(elem.(string))
+			res.WriteString("\n")
+		} else {
+			break
+		}
+		count--
+	}
+	return res.String(), nil
 }
