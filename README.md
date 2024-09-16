@@ -1,7 +1,7 @@
 # Treds - Sorted Data Structure Server  [![Run CI Tests](https://github.com/absolutelightning/treds/actions/workflows/go.yml/badge.svg)](https://github.com/absolutelightning/treds/actions/workflows/go.yml)
 
-This is a Radix Trie Based Data Structure Server in which keys are stored in sorted order.
-Scan of keys returns the keys in sorted order. 
+Treds is a Radix Trie-based server that stores keys in sorted order, ensuring fast and efficient retrieval. 
+A scan operation returns keys in their sorted sequence.
 
 ## How it is different from Redis?
 * Keys at root level having a common prefix can be queried optimally
