@@ -847,3 +847,11 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 	}
 	return result.String(), nil
 }
+
+func (rs *TredsStore) FlushAll() error {
+	rs.tree = radix_tree.New()
+	rs.sortedMaps = make(map[string]*treemap.Map)
+	rs.sortedMapsScore = make(map[string]map[string]float64)
+	rs.sortedMapsKeys = make(map[string]*radix_tree.Tree)
+	return nil
+}
