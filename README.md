@@ -33,7 +33,7 @@ Tree Map used to store score maps also are connected internally using Doubly Lin
 * `KEYS regex` - Returns all keys matching a regex in lex order - (Not suitable to production use cases with huge number of keys)
 * `KVS regex` - Returns all keys/values in which keys match a regex in lex order - (Not suitable to production use cases with huge number of keys)
 * `ZADD key score member_key member_value [member_key member_value ....]` - Add member_key with member value with score to a sorted map in key
-* `ZREM key member [member..]` - Removes a member from sorted map in key
+* `ZREM key member [member ...]` - Removes a member from sorted map in key
 * `ZCARD key` - Returns the count of key/value pairs in sorted map in key
 * `ZSCORE key member` - Returns the score of a member in sorted map in key
 * `ZRANGELEXKEYS key offset count withscore prefix` - Returns the count number of keys matching prefix starting from an index in a sorted map in lex order. WithScore can be true or false
@@ -44,6 +44,15 @@ Tree Map used to store score maps also are connected internally using Doubly Lin
 * `ZREVRANGELEXKVS key offset count withscore prefix` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map in reverse lex order. WithScore can be true or false
 * `ZREVRANGESCOREKEYS key min max offset count withscore` - Returns the count number of keys with the score between min/max in reverser sorted order of score. WithScore can be true or false
 * `ZREVRANGESCOREKVS key min max offset count withscore` - Returns the count number of key/value pair with the score between min/max in reverse sorted order of score. WithScore can be true or false
+* `LPUSH key element [element ...]` - Adds elements to the left of list with key
+* `RPUSH key element [element ...]` - Adds elements to the right of list with key
+* `LPOP key count` - Removes count elements from left of list with key and returns the popped elements
+* `RPOP key count` - Removes count elements from right of list with key and returns the popped elements
+* `LREM key index` - Removes element at index of list with key
+* `LSET key index element` - Sets an element at an index of a list with key
+* `LRANGE key start stop` - Returns the elements from start index to stop index in the list with key
+* `LLEN key` - Returns the length of list with key
+* `LINDEX key index` - Returns the element at index of list with key
 * `FLUSHALL` - Deletes all keys
 
 ## Run 
