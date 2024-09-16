@@ -16,6 +16,7 @@ It is single threaded and has event loop.
 Implemented using modified Radix trees where leaf nodes are connected by Doubly Linked List in Radix Trie to facilitate the quick lookup of keys/values in sorted order.
 Doubly Linked List of leaf nodes are updated at the time of create/delete and update of keys optimally.
 This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), but without converting keys to binary.
+Tree Map used to store score maps also are connected internally using Doubly Linked List using similar logic
 
 ## Commands 
 * `PING` - Replies with a `PONG`
