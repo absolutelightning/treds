@@ -868,7 +868,9 @@ func (rs *TredsStore) LPush(args []string) error {
 	if !ok {
 		storedList = doublylinkedlist.New()
 	}
-	storedList.Prepend(args[1:])
+	for _, arg := range args[1:] {
+		storedList.Prepend(arg)
+	}
 	rs.list[key] = storedList
 	return nil
 }
@@ -879,7 +881,9 @@ func (rs *TredsStore) RPush(args []string) error {
 	if !ok {
 		storedList = doublylinkedlist.New()
 	}
-	storedList.Append(args[1:])
+	for _, arg := range args[1:] {
+		storedList.Append(arg)
+	}
 	rs.list[key] = storedList
 	return nil
 }

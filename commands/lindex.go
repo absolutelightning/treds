@@ -18,8 +18,8 @@ func RegisterLIndexCommand(r CommandRegistry) {
 
 func validateLIndexCommand() ValidationHook {
 	return func(args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("expected 1 argument, got %d", len(args))
+		if len(args) != 2 {
+			return fmt.Errorf("expected 2 argument, got %d", len(args))
 		}
 
 		return nil

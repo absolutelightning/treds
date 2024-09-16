@@ -34,7 +34,7 @@ func executeLRangeCommand() ExecutionHook {
 		if err != nil {
 			return "", err
 		}
-		stop, err := strconv.Atoi(args[1])
+		stop, err := strconv.Atoi(args[2])
 		if err != nil {
 			return "", err
 		}
