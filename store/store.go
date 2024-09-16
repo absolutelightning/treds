@@ -24,4 +24,5 @@ type Store interface {
 	ZRevRangeByLexKeys(string, string, string, string, bool) (string, error)
 	ZRevRangeByScoreKeys(string, string, string, string, string, bool) (string, error)
 	ZRevRangeByScoreKVS(string, string, string, string, string, bool) (string, error)
+	FlushAll() error
 }

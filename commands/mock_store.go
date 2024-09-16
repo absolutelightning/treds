@@ -175,3 +175,7 @@ func (m *MockStore) ZRevRangeByScoreKeys(string, string, string, string, string,
 func (m *MockStore) ZRevRangeByScoreKVS(string, string, string, string, string, bool) (string, error) {
 	return "", nil
 }
+
+func (m *MockStore) FlushAll() error {
+	return nil
+}

@@ -25,4 +25,5 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterZRevRangeScoreKVSCommand(r)
 	RegisterZRevRangeLexKeysCommand(r)
 	RegisterZRevRangeLexKVSCommand(r)
+	RegisterFlushAllCommand(r)
 }
