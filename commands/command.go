@@ -35,4 +35,12 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterLRangeCommand(r)
 	RegisterLLenCommand(r)
 	RegisterLIndexCommand(r)
+	RegisterSAddCommand(r)
+	RegisterSRemCommand(r)
+	RegisterSMembersCommand(r)
+	RegisterSIsMemberCommand(r)
+	RegisterSCardCommand(r)
+	RegisterSUnionCommand(r)
+	RegisterSInterCommand(r)
+	RegisterSDiffCommand(r)
 }

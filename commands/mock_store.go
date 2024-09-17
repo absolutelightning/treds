@@ -215,3 +215,35 @@ func (rs *MockStore) LPop(key string, count int) (string, error) {
 func (rs *MockStore) RPop(key string, count int) (string, error) {
 	return "", nil
 }
+
+func (rs *MockStore) SAdd(key string, members []string) error {
+	return nil
+}
+
+func (rs *MockStore) SRem(key string, members []string) error {
+	return nil
+}
+
+func (rs *MockStore) SMembers(key string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) SIsMember(key string, member string) (bool, error) {
+	return false, nil
+}
+
+func (rs *MockStore) SCard(key string) (int, error) {
+	return 0, nil
+}
+
+func (rs *MockStore) SUnion(keys []string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) SInter(keys []string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) SDiff(keys []string) (string, error) {
+	return "", nil
+}

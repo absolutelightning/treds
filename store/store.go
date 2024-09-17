@@ -34,4 +34,12 @@ type Store interface {
 	LRange(string, int, int) (string, error)
 	LLen(string) (string, error)
 	LIndex([]string) (string, error)
+	SAdd(string, []string) error
+	SRem(string, []string) error
+	SMembers(string) (string, error)
+	SIsMember(string, string) (bool, error)
+	SCard(string) (int, error)
+	SUnion([]string) (string, error)
+	SInter([]string) (string, error)
+	SDiff([]string) (string, error)
 }
