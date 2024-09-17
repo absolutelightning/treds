@@ -1017,7 +1017,8 @@ func (rs *TredsStore) RPop(key string, count int) (string, error) {
 func (rs *TredsStore) SAdd(key string, members []string) error {
 	storedSet, ok := rs.sets[key]
 	if !ok {
-		return nil
+		storedSet = hashset.New()
+		rs.sets[key] = storedSet
 	}
 	for _, member := range members {
 		storedSet.Add(member)
