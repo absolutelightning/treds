@@ -215,3 +215,66 @@ func (rs *MockStore) LPop(key string, count int) (string, error) {
 func (rs *MockStore) RPop(key string, count int) (string, error) {
 	return "", nil
 }
+
+func (rs *MockStore) SAdd(key string, members []string) error {
+	return nil
+}
+
+func (rs *MockStore) SRem(key string, members []string) error {
+	return nil
+}
+
+func (rs *MockStore) SMembers(key string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) SIsMember(key string, member string) (bool, error) {
+	return false, nil
+}
+
+func (rs *MockStore) SCard(key string) (int, error) {
+	return 0, nil
+}
+
+func (rs *MockStore) SUnion(keys []string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) SInter(keys []string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) SDiff(keys []string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) HSet(key string, args []string) error {
+	return nil
+}
+
+func (rs *MockStore) HGet(key string, field string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) HGetAll(key string) (string, error) {
+	return "", nil
+}
+func (rs *MockStore) HLen(key string) (int, error) {
+	return 0, nil
+}
+
+func (rs *MockStore) HDel(key string, fields []string) error {
+	return nil
+}
+
+func (rs *MockStore) HExists(key string, field string) (bool, error) {
+	return false, nil
+}
+
+func (rs *MockStore) HKeys(key string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) HVals(key string) (string, error) {
+	return "", nil
+}

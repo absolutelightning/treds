@@ -9,7 +9,7 @@ A scan operation returns keys in their sorted sequence.
 * Unlike [Redis SCAN](https://redis.io/docs/latest/commands/scan/), Treds SCAN **always** returns count number of data if data is there
 * It has Sorted Maps instead of Sorted Sets. So we can create a Sorted Key/Value pair with associated with a score
 * New command - `DELPREFIX` - Deletes all keys having a common prefix
-* Currently, it only has Key/Value store and Sorted Maps store and only supports strings/number as values
+* Currently, it only has Key/Value store, Sorted Maps store, List store and Set store and only supports strings/number as values
 
 ## Internals
 
@@ -53,6 +53,22 @@ Tree Map used to store score maps also are connected internally using Doubly Lin
 * `LRANGE key start stop` - Returns the elements from start index to stop index in the list with key
 * `LLEN key` - Returns the length of list with key
 * `LINDEX key index` - Returns the element at index of list with key
+* `SADD member [member ...]` - Adds the members to a set with key
+* `SREM member [member ...]` - Removes the members from a set with key
+* `SMEMBERS key` - Returns all members of a set with key
+* `SISMEMBER key member` - Return 1 if member is present in set with key, 0 otherwise
+* `SCARD key` - Returns the size of the set with key
+* `SUNION key [key ...]` - Returns the union of sets with the give keys
+* `SINTER key [key ...]` - Returns the intersection of sets with the given keys
+* `SDIFF key [key ...]` - Returns the difference between the first set and all the successive sets.
+* `HSET key field value [field value ...]` - Sets field value pairs in the hash with key 
+* `HGET key field` - Returns the value present at field inside the hash at key
+* `HGETALL key` - Returns all field value pairs inside the hash at the key
+* `HLEN key` - Returns the size of hash at the key
+* `HDEL key field [field ...]` - Deletes the fields present inside the hash at the key
+* `HEXISTS key field` - Returns a true or false based on field is present in hash at key or not
+* `HKEYS key` - Returns all field present in the hash at key
+* `HVALS key` - Returns all values present in the hash at key
 * `FLUSHALL` - Deletes all keys
 
 ## Run 

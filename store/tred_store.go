@@ -8,7 +8,9 @@ import (
 	"sync"
 
 	"github.com/emirpasic/gods/lists/doublylinkedlist"
+	"github.com/emirpasic/gods/maps/hashmap"
 	"github.com/emirpasic/gods/maps/treemap"
+	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/emirpasic/gods/utils"
 	"golang.org/x/sync/errgroup"
 	radix_tree "treds/datastructures/radix"
@@ -24,7 +26,11 @@ type TredsStore struct {
 	sortedMapsScore map[string]map[string]float64
 	sortedMapsKeys  map[string]*radix_tree.Tree
 
-	list map[string]*doublylinkedlist.List
+	lists map[string]*doublylinkedlist.List
+
+	sets map[string]*hashset.Set
+
+	hashes map[string]*hashmap.Map
 }
 
 func NewTredsStore() *TredsStore {
@@ -33,7 +39,9 @@ func NewTredsStore() *TredsStore {
 		sortedMaps:      make(map[string]*treemap.Map),
 		sortedMapsScore: make(map[string]map[string]float64),
 		sortedMapsKeys:  make(map[string]*radix_tree.Tree),
-		list:            make(map[string]*doublylinkedlist.List),
+		lists:           make(map[string]*doublylinkedlist.List),
+		sets:            make(map[string]*hashset.Set),
+		hashes:          make(map[string]*hashmap.Map),
 	}
 }
 
@@ -271,7 +279,8 @@ func (rs *TredsStore) KVS(regex string) (string, error) {
 }
 
 func (rs *TredsStore) Size() (string, error) {
-	return strconv.Itoa(rs.tree.Len() + len(rs.sortedMaps) + len(rs.list)), nil
+	size := rs.tree.Len() + len(rs.sortedMaps) + len(rs.lists) + len(rs.sets) + len(rs.hashes)
+	return strconv.Itoa(size), nil
 }
 
 func (rs *TredsStore) ZAdd(args []string) error {
@@ -858,39 +867,41 @@ func (rs *TredsStore) FlushAll() error {
 	rs.sortedMaps = make(map[string]*treemap.Map)
 	rs.sortedMapsScore = make(map[string]map[string]float64)
 	rs.sortedMapsKeys = make(map[string]*radix_tree.Tree)
-	rs.list = make(map[string]*doublylinkedlist.List)
+	rs.lists = make(map[string]*doublylinkedlist.List)
+	rs.sets = make(map[string]*hashset.Set)
+	rs.hashes = make(map[string]*hashmap.Map)
 	return nil
 }
 
 func (rs *TredsStore) LPush(args []string) error {
 	key := args[0]
-	storedList, ok := rs.list[key]
+	storedList, ok := rs.lists[key]
 	if !ok {
 		storedList = doublylinkedlist.New()
 	}
 	for _, arg := range args[1:] {
 		storedList.Prepend(arg)
 	}
-	rs.list[key] = storedList
+	rs.lists[key] = storedList
 	return nil
 }
 
 func (rs *TredsStore) RPush(args []string) error {
 	key := args[0]
-	storedList, ok := rs.list[key]
+	storedList, ok := rs.lists[key]
 	if !ok {
 		storedList = doublylinkedlist.New()
 	}
 	for _, arg := range args[1:] {
 		storedList.Append(arg)
 	}
-	rs.list[key] = storedList
+	rs.lists[key] = storedList
 	return nil
 }
 
 func (rs *TredsStore) LIndex(args []string) (string, error) {
 	key := args[0]
-	storedList, ok := rs.list[key]
+	storedList, ok := rs.lists[key]
 	if !ok {
 		return "", nil
 	}
@@ -912,7 +923,7 @@ func (rs *TredsStore) LIndex(args []string) (string, error) {
 }
 
 func (rs *TredsStore) LLen(key string) (string, error) {
-	storedList, ok := rs.list[key]
+	storedList, ok := rs.lists[key]
 	if !ok {
 		return "0", nil
 	}
@@ -920,7 +931,7 @@ func (rs *TredsStore) LLen(key string) (string, error) {
 }
 
 func (rs *TredsStore) LRange(key string, start, stop int) (string, error) {
-	storedList, ok := rs.list[key]
+	storedList, ok := rs.lists[key]
 	if !ok {
 		return "", nil
 	}
@@ -943,7 +954,7 @@ func (rs *TredsStore) LRange(key string, start, stop int) (string, error) {
 }
 
 func (rs *TredsStore) LSet(key string, index int, element string) error {
-	storedList, ok := rs.list[key]
+	storedList, ok := rs.lists[key]
 	if !ok {
 		return nil
 	}
@@ -955,7 +966,7 @@ func (rs *TredsStore) LSet(key string, index int, element string) error {
 }
 
 func (rs *TredsStore) LRem(key string, index int) error {
-	storedList, ok := rs.list[key]
+	storedList, ok := rs.lists[key]
 	if !ok {
 		return nil
 	}
@@ -968,7 +979,7 @@ func (rs *TredsStore) LRem(key string, index int) error {
 
 func (rs *TredsStore) LPop(key string, count int) (string, error) {
 	var res strings.Builder
-	storedList, ok := rs.list[key]
+	storedList, ok := rs.lists[key]
 	if !ok {
 		return "", nil
 	}
@@ -988,7 +999,7 @@ func (rs *TredsStore) LPop(key string, count int) (string, error) {
 
 func (rs *TredsStore) RPop(key string, count int) (string, error) {
 	var res strings.Builder
-	storedList, ok := rs.list[key]
+	storedList, ok := rs.lists[key]
 	if !ok {
 		return "", nil
 	}
@@ -1004,6 +1015,222 @@ func (rs *TredsStore) RPop(key string, count int) (string, error) {
 			break
 		}
 		count--
+	}
+	return res.String(), nil
+}
+
+func (rs *TredsStore) SAdd(key string, members []string) error {
+	storedSet, ok := rs.sets[key]
+	if !ok {
+		storedSet = hashset.New()
+		rs.sets[key] = storedSet
+	}
+	for _, member := range members {
+		storedSet.Add(member)
+	}
+	return nil
+}
+
+func (rs *TredsStore) SRem(key string, members []string) error {
+	storedSet, ok := rs.sets[key]
+	if !ok {
+		return nil
+	}
+	for _, member := range members {
+		storedSet.Remove(member)
+	}
+	return nil
+}
+
+func (rs *TredsStore) SMembers(key string) (string, error) {
+	storedSet, ok := rs.sets[key]
+	if !ok {
+		return "", nil
+	}
+	var res strings.Builder
+	values := storedSet.Values()
+	for _, member := range values {
+		res.WriteString(member.(string))
+		res.WriteString("\n")
+	}
+	return res.String(), nil
+}
+
+func (rs *TredsStore) SIsMember(key string, member string) (bool, error) {
+	storedSet, ok := rs.sets[key]
+	if !ok {
+		return false, nil
+	}
+	return storedSet.Contains(member), nil
+}
+
+func (rs *TredsStore) SCard(key string) (int, error) {
+	storedSet, ok := rs.sets[key]
+	if !ok {
+		return 0, nil
+	}
+	return storedSet.Size(), nil
+}
+
+func (rs *TredsStore) SUnion(keys []string) (string, error) {
+	unionSet := hashset.New()
+	for _, key := range keys {
+		storedSet, ok := rs.sets[key]
+		if !ok {
+			continue
+		}
+		unionSet = unionSet.Union(storedSet)
+	}
+	values := unionSet.Values()
+	var res strings.Builder
+	for _, key := range values {
+		res.WriteString(key.(string))
+		res.WriteString("\n")
+	}
+	return res.String(), nil
+}
+
+func (rs *TredsStore) SInter(keys []string) (string, error) {
+	intersectionSet := hashset.New()
+	for _, key := range keys {
+		storedSet, ok := rs.sets[key]
+		if !ok {
+			continue
+		}
+		intersectionSet = storedSet
+		break
+	}
+	for _, key := range keys {
+		storedSet, ok := rs.sets[key]
+		if !ok {
+			continue
+		}
+		intersectionSet = intersectionSet.Intersection(storedSet)
+	}
+	values := intersectionSet.Values()
+	var res strings.Builder
+	for _, key := range values {
+		res.WriteString(key.(string))
+		res.WriteString("\n")
+	}
+	return res.String(), nil
+}
+
+func (rs *TredsStore) SDiff(keys []string) (string, error) {
+	diffSet, ok := rs.sets[keys[0]]
+	if !ok {
+		return "", nil
+	}
+	for _, key := range keys[1:] {
+		storedSet, found := rs.sets[key]
+		if !found {
+			continue
+		}
+		diffSet = diffSet.Difference(storedSet)
+	}
+	values := diffSet.Values()
+	var res strings.Builder
+	for _, key := range values {
+		res.WriteString(key.(string))
+		res.WriteString("\n")
+	}
+	return res.String(), nil
+}
+
+func (rs *TredsStore) HSet(key string, args []string) error {
+	storedMap, ok := rs.hashes[key]
+	if !ok {
+		storedMap = hashmap.New()
+		rs.hashes[key] = storedMap
+	}
+	for iter := 0; iter < len(args); iter += 2 {
+		storedMap.Put(args[iter], args[iter+1])
+	}
+	return nil
+}
+
+func (rs *TredsStore) HGet(key string, field string) (string, error) {
+	storedMap, ok := rs.hashes[key]
+	if !ok {
+		return "", nil
+	}
+	val, found := storedMap.Get(field)
+	if !found {
+		return "", nil
+	}
+	var res strings.Builder
+	res.WriteString(val.(string))
+	res.WriteString("\n")
+	return res.String(), nil
+}
+
+func (rs *TredsStore) HGetAll(key string) (string, error) {
+	storedMap, ok := rs.hashes[key]
+	if !ok {
+		return "", nil
+	}
+	var res strings.Builder
+	for _, field := range storedMap.Keys() {
+		res.WriteString(field.(string))
+		res.WriteString("\n")
+		value, _ := storedMap.Get(field)
+		res.WriteString(value.(string))
+		res.WriteString("\n")
+	}
+	return res.String(), nil
+}
+func (rs *TredsStore) HLen(key string) (int, error) {
+	storedMap, ok := rs.hashes[key]
+	if !ok {
+		return 0, nil
+	}
+	return storedMap.Size(), nil
+}
+
+func (rs *TredsStore) HDel(key string, fields []string) error {
+	storedMap, ok := rs.hashes[key]
+	if !ok {
+		return nil
+	}
+	for _, field := range fields {
+		storedMap.Remove(field)
+	}
+	return nil
+}
+
+func (rs *TredsStore) HExists(key string, field string) (bool, error) {
+	storedMap, ok := rs.hashes[key]
+	if !ok {
+		return false, nil
+	}
+	_, found := storedMap.Get(field)
+	return found, nil
+}
+
+func (rs *TredsStore) HKeys(key string) (string, error) {
+	storedMap, ok := rs.hashes[key]
+	if !ok {
+		return "", nil
+	}
+	fields := storedMap.Keys()
+	var res strings.Builder
+	for _, field := range fields {
+		res.WriteString(field.(string))
+		res.WriteString("\n")
+	}
+	return res.String(), nil
+}
+
+func (rs *TredsStore) HVals(key string) (string, error) {
+	storedMap, ok := rs.hashes[key]
+	if !ok {
+		return "", nil
+	}
+	fields := storedMap.Values()
+	var res strings.Builder
+	for _, field := range fields {
+		res.WriteString(field.(string))
+		res.WriteString("\n")
 	}
 	return res.String(), nil
 }
