@@ -59,8 +59,16 @@ Tree Map used to store score maps also are connected internally using Doubly Lin
 * `SISMEMBER key member` - Return 1 if member is present in set with key, 0 otherwise
 * `SCARD key` - Returns the size of the set with key
 * `SUNION key [key ...]` - Returns the union of sets with the give keys
-* `SINTER key [key ...]` - Returns the intersection of sets with the give keys
+* `SINTER key [key ...]` - Returns the intersection of sets with the given keys
 * `SDIFF key [key ...]` - Returns the difference between the first set and all the successive sets.
+* `HSET key field value [field value ...]` - Sets field value pairs in the hash with key 
+* `HGET key field` - Returns the value present at field inside the hash at key
+* `HGETALL key` - Returns all field value pairs inside the hash at the key
+* `HLEN key` - Returns the size of hash at the key
+* `HDEL key field [field ...]` - Deletes the fields present inside the hash at the key
+* `HEXISTS key field` - Returns a true or false based on field is present in hash at key or not
+* `HKEYS key` - Returns all field present in the hash at key
+* `HVALS key` - Returns all values present in the hash at key
 * `FLUSHALL` - Deletes all keys
 
 ## Run 
