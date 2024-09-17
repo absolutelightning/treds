@@ -9,7 +9,7 @@ A scan operation returns keys in their sorted sequence.
 * Unlike [Redis SCAN](https://redis.io/docs/latest/commands/scan/), Treds SCAN **always** returns count number of data if data is there
 * It has Sorted Maps instead of Sorted Sets. So we can create a Sorted Key/Value pair with associated with a score
 * New command - `DELPREFIX` - Deletes all keys having a common prefix
-* Currently, it only has Key/Value store, Sorted Maps store, List store and Set store and only supports strings/number as values
+* Currently, it only has Key/Value store, Sorted Maps store, List store, Set store and Hash store and only supports strings/number as values
 
 ## Internals
 
