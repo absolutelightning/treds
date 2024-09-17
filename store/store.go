@@ -42,4 +42,12 @@ type Store interface {
 	SUnion([]string) (string, error)
 	SInter([]string) (string, error)
 	SDiff([]string) (string, error)
+	HSet(string, []string) error
+	HGet(string, string) (string, error)
+	HGetAll(string) (string, error)
+	HLen(string) (int, error)
+	HDel(string, []string) error
+	HExists(string, string) (bool, error)
+	HKeys(string) (string, error)
+	HVals(string) (string, error)
 }

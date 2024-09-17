@@ -247,3 +247,34 @@ func (rs *MockStore) SInter(keys []string) (string, error) {
 func (rs *MockStore) SDiff(keys []string) (string, error) {
 	return "", nil
 }
+
+func (rs *MockStore) HSet(key string, args []string) error {
+	return nil
+}
+
+func (rs *MockStore) HGet(key string, field string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) HGetAll(key string) (string, error) {
+	return "", nil
+}
+func (rs *MockStore) HLen(key string) (int, error) {
+	return 0, nil
+}
+
+func (rs *MockStore) HDel(key string, fields []string) error {
+	return nil
+}
+
+func (rs *MockStore) HExists(key string, field string) (bool, error) {
+	return false, nil
+}
+
+func (rs *MockStore) HKeys(key string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) HVals(key string) (string, error) {
+	return "", nil
+}

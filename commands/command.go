@@ -43,4 +43,12 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterSUnionCommand(r)
 	RegisterSInterCommand(r)
 	RegisterSDiffCommand(r)
+	RegisterHSetCommand(r)
+	RegisterHGetCommand(r)
+	RegisterHGetAllCommand(r)
+	RegisterHLenCommand(r)
+	RegisterHDelCommand(r)
+	RegisterHExistsCommand(r)
+	RegisterHKeysCommand(r)
+	RegisterHValsCommand(r)
 }
