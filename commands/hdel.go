@@ -6,7 +6,7 @@ import (
 	"treds/store"
 )
 
-const HDelCommand = "HDEl"
+const HDelCommand = "HDEL"
 
 func RegisterHDelCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
@@ -18,8 +18,8 @@ func RegisterHDelCommand(r CommandRegistry) {
 
 func validateHDelCommand() ValidationHook {
 	return func(args []string) error {
-		if len(args) < 3 {
-			return fmt.Errorf("expected minimum 3 argument, got %d", len(args))
+		if len(args) < 2 {
+			return fmt.Errorf("expected minimum 2 argument, got %d", len(args))
 		}
 
 		return nil

@@ -18,8 +18,8 @@ func RegisterHGetCommand(r CommandRegistry) {
 
 func validateHGetCommand() ValidationHook {
 	return func(args []string) error {
-		if len(args) != 3 {
-			return fmt.Errorf("expected 3 argument, got %d", len(args))
+		if len(args) != 2 {
+			return fmt.Errorf("expected 2 argument, got %d", len(args))
 		}
 
 		return nil
