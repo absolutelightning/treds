@@ -250,15 +250,16 @@ func (t *Txn) delete(parent, n *Node, search []byte) (*Node, *LeafNode) {
 }
 
 // delete does a recursive deletion
-func (t *Txn) deletePrefix(parent, n *Node, search []byte) (*Node, int) {
+func (t *Txn) deletePrefix(n *Node, search []byte) (*Node, int) {
 	// Check for key exhaustion
 	if len(search) == 0 {
 		if n.isLeaf() {
 			n.leaf = nil
 		}
+		delSize := t.trackChannelsAndCount(n)
 		n.edges = nil
 		n.computeLinks()
-		return n, t.trackChannelsAndCount(n)
+		return n, delSize
 	}
 
 	// Look for an edge
@@ -276,7 +277,7 @@ func (t *Txn) deletePrefix(parent, n *Node, search []byte) (*Node, int) {
 	} else {
 		search = search[len(child.prefix):]
 	}
-	newChild, numDeletions := t.deletePrefix(n, child, search)
+	newChild, numDeletions := t.deletePrefix(child, search)
 	if newChild == nil {
 		return nil, 0
 	}
@@ -328,14 +329,10 @@ func (t *Txn) Delete(k []byte) (interface{}, bool) {
 // DeletePrefix is used to delete an entire subtree that matches the prefix
 // This will delete all nodes under that prefix
 func (t *Txn) DeletePrefix(prefix []byte) bool {
-	newRoot, numDeletions := t.deletePrefix(nil, t.root, prefix)
-	if newRoot != nil {
-		t.root = newRoot
-		t.size = t.size - numDeletions
-		return true
-	}
-	return false
-
+	newRoot, numDeletions := t.deletePrefix(t.root, prefix)
+	t.root = newRoot
+	t.size = t.size - numDeletions
+	return true
 }
 
 // Root returns the current root of the radix tree within this
