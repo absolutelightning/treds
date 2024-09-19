@@ -169,11 +169,11 @@ func (rs *TredsStore) MGet(args []string) (string, error) {
 }
 
 func (rs *TredsStore) Set(k string, v string) error {
-	storeType := rs.GetKeyDetails(k)
-	if storeType == -1 || storeType == KeyValueStore {
-		newTree, _, _ := rs.tree.Insert([]byte(k), v)
-		rs.tree = newTree
+	kd := rs.GetKeyDetails(k)
+	if kd != -1 && kd != KeyValueStore {
+		return fmt.Errorf("not key value store")
 	}
+	rs.tree, _, _ = rs.tree.Insert([]byte(k), v)
 	return nil
 }
 
