@@ -253,10 +253,10 @@ func (t *Txn) delete(parent, n *Node, search []byte) (*Node, *LeafNode) {
 func (t *Txn) deletePrefix(n *Node, search []byte) (*Node, int) {
 	// Check for key exhaustion
 	if len(search) == 0 {
+		delSize := t.trackChannelsAndCount(n)
 		if n.isLeaf() {
 			n.leaf = nil
 		}
-		delSize := t.trackChannelsAndCount(n)
 		n.edges = nil
 		n.computeLinks()
 		return n, delSize
@@ -281,11 +281,6 @@ func (t *Txn) deletePrefix(n *Node, search []byte) (*Node, int) {
 	if newChild == nil {
 		return nil, 0
 	}
-	// Copy this node. WATCH OUT - it's safe to pass "false" here because we
-	// will only ADD a leaf via nc.mergeChild() if there isn't one due to
-	// the !nc.isLeaf() check in the logic just below. This is pretty subtle,
-	// so be careful if you change any of the logic here.
-
 	// Delete the edge if the node has no edges
 	if newChild.leaf == nil && len(newChild.edges) == 0 {
 		n.delEdge(label)
@@ -316,8 +311,9 @@ func (t *Txn) Insert(k []byte, v interface{}) (interface{}, bool) {
 // and a bool indicating if the key was set.
 func (t *Txn) Delete(k []byte) (interface{}, bool) {
 	newRoot, leaf := t.delete(nil, t.root, k)
-	if newRoot != nil {
-		t.root = newRoot
+	t.root = newRoot
+	if t.root == nil {
+		t.root = &Node{}
 	}
 	if leaf != nil {
 		t.size--
@@ -332,6 +328,9 @@ func (t *Txn) DeletePrefix(prefix []byte) bool {
 	newRoot, numDeletions := t.deletePrefix(t.root, prefix)
 	t.root = newRoot
 	t.size = t.size - numDeletions
+	if t.root == nil {
+		t.root = &Node{}
+	}
 	return true
 }
 
