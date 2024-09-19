@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"treds/commands"
 	"treds/store"
@@ -56,6 +57,12 @@ func (ts *Server) OnBoot(eng gnet.Engine) gnet.Action {
 	}
 	setCommand.Execute(args, ts.tredsStore)
 	fmt.Println("Server started on", ts.Port)
+	go func() {
+		for {
+			ts.tredsStore.CleanUpExpiredKeys()
+			time.Sleep(100 * time.Millisecond)
+		}
+	}()
 	return gnet.None
 }
 

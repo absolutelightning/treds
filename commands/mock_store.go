@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // MockStore is a mock implementation of the store interface for testing.
@@ -277,4 +278,15 @@ func (rs *MockStore) HKeys(key string) (string, error) {
 
 func (rs *MockStore) HVals(key string) (string, error) {
 	return "", nil
+}
+
+func (rs *MockStore) CleanUpExpiredKeys() {
+}
+
+func (rs *MockStore) Expire(key string, expiration time.Time) error {
+	return nil
+}
+
+func (rs *MockStore) Ttl(key string) int {
+	return 0
 }

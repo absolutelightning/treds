@@ -1,5 +1,7 @@
 package store
 
+import "time"
+
 type Store interface {
 	Get(string) (string, error)
 	MGet([]string) (string, error)
@@ -50,4 +52,7 @@ type Store interface {
 	HExists(string, string) (bool, error)
 	HKeys(string) (string, error)
 	HVals(string) (string, error)
+	CleanUpExpiredKeys()
+	Expire(key string, at time.Time) error
+	Ttl(key string) int
 }
