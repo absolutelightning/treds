@@ -81,10 +81,10 @@ func (rs *TredsStore) GetKeyDetails(key string) Type {
 		_ = rs.Delete(key)
 		return -1
 	}
-	return rs.dbHasKey(key)
+	return rs.getKeyStore(key)
 }
 
-func (rs *TredsStore) dbHasKey(key string) Type {
+func (rs *TredsStore) getKeyStore(key string) Type {
 	_, found := rs.tree.Get([]byte(key))
 	if found {
 		return KeyValueStore
@@ -1480,7 +1480,7 @@ func (rs *TredsStore) Expire(key string, expiration time.Time) error {
 }
 
 func (rs *TredsStore) Ttl(key string) int {
-	if rs.dbHasKey(key) != -1 {
+	if rs.getKeyStore(key) != -1 {
 		if expiryTime, ok := rs.expiry[key]; ok {
 			return int(expiryTime.Sub(time.Now()).Seconds())
 		}
