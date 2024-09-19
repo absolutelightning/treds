@@ -107,7 +107,7 @@ func (rs *TredsStore) dbHasKey(key string) Type {
 func (rs *TredsStore) Get(k string) (string, error) {
 	storeType := rs.GetKeyDetails(k)
 	if storeType != KeyValueStore {
-		return "", nil
+		return NilResp, nil
 	}
 	var res strings.Builder
 	v, ok := rs.tree.Get([]byte(k))
