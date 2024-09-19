@@ -114,6 +114,12 @@ func (rs *TredsStore) Set(k string, v string) error {
 func (rs *TredsStore) Delete(k string) error {
 	newTree, _, _ := rs.tree.Delete([]byte(k))
 	rs.tree = newTree
+	delete(rs.sortedMaps, k)
+	delete(rs.sortedMapsScore, k)
+	delete(rs.sortedMapsKeys, k)
+	delete(rs.lists, k)
+	delete(rs.sets, k)
+	delete(rs.hashes, k)
 	return nil
 }
 
