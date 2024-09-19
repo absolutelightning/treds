@@ -51,4 +51,6 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterHExistsCommand(r)
 	RegisterHKeysCommand(r)
 	RegisterHValsCommand(r)
+	RegisterExpireCommand(r)
+	RegisterTtlCommand(r)
 }
