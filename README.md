@@ -70,6 +70,8 @@ Tree Map used to store score maps also are connected internally using Doubly Lin
 * `HKEYS key` - Returns all field present in the hash at key
 * `HVALS key` - Returns all values present in the hash at key
 * `FLUSHALL` - Deletes all keys
+* `EXPIRE key seconds` - Expire key after given seconds
+* `TTL key` - Returns the time in seconds remaining before key expires. -1 if key has no expiry, -2 if key is not present.
 
 ## Run 
 
