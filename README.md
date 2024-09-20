@@ -23,11 +23,31 @@ Tree Map used to store score maps also are connected internally using Doubly Lin
 Both Treds and Redis are filled with 10 Million Keys in KeyValue Store and 10 Million Keys in a Sorted Map/Set respectively
 
 ### Treds - ScanKeys vs Redis - Scan
+
+Treds Command -
+```text
+scankeys 0 prefix 100000000000
+```
+
+Redis Command - 
+```text
+scan 0 match prefix count 100000000000 
+```
 This graph shows the performance comparison between Treds - ScanKeys and Redis - Scan:
 
 ![Scan Comparison](./benchmark/scan-comparison.png)
 
+
 ### Treds - ZRangeScoreKeys vs Redis - ZRangeByScore
+Treds Command -
+```text
+zrangescorekeys key 0 max 0 100000000000000 false
+```
+
+Redis Command -
+```text
+zrangebyscore key 0 max 0 100000000000
+```
 This graph shows the performance comparison between Treds - ZRangeScoreKeys and Redis - ZRangeByScore:
 
 ![Scan Comparison](./benchmark/zrange-score-comparison.png)
