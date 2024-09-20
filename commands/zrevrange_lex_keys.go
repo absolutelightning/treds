@@ -27,11 +27,15 @@ func executeZRevRangeLexKeys() ExecutionHook {
 		if len(args) > 3 {
 			withScore, _ = strconv.ParseBool(args[3])
 		}
-		prefix := ""
+		minKey := ""
 		if len(args) > 4 {
-			prefix = args[4]
+			minKey = args[4]
 		}
-		v, err := store.ZRevRangeByLexKeys(args[0], args[1], prefix, count, withScore)
+		maxKey := ""
+		if len(args) > 5 {
+			maxKey = args[5]
+		}
+		v, err := store.ZRevRangeByLexKeys(args[0], args[1], minKey, maxKey, count, withScore)
 		if err != nil {
 			return "", err
 		}

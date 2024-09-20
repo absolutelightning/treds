@@ -489,7 +489,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 	return nil
 }
 
-func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withScore bool) (string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return "", fmt.Errorf("not sorted map store")
@@ -515,7 +515,7 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string, withScor
 		if !found {
 			break
 		}
-		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
+		if index >= startIndex && countInt > 0 && strings.Compare(string(storedKey), min) >= 0 && strings.Compare(string(storedKey), max) <= 0 {
 			if withScore {
 				// Fetch the score
 				keyScore, _ := sortedMapKey[string(storedKey)]
@@ -547,7 +547,7 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, prefix, count string, withScor
 	return result.String(), nil
 }
 
-func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withScore bool) (string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return "", fmt.Errorf("not sorted map store")
@@ -573,7 +573,7 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, prefix, count string, withSco
 		if !found {
 			break
 		}
-		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
+		if index >= startIndex && countInt > 0 && strings.Compare(string(storedKey), min) >= 0 && strings.Compare(string(storedKey), max) <= 0 {
 			if withScore {
 				// Fetch the score
 				keyScore, _ := sortedMapKey[string(storedKey)]
@@ -760,7 +760,7 @@ func (rs *TredsStore) ZCard(key string) (int, error) {
 	return store.Len(), nil
 }
 
-func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, prefix, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, withScore bool) (string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return "", fmt.Errorf("not sorted map store")
@@ -786,7 +786,7 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, prefix, count string, withS
 		if !found {
 			break
 		}
-		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
+		if index >= startIndex && countInt > 0 && strings.Compare(string(storedKey), min) >= 0 && strings.Compare(string(storedKey), max) <= 0 {
 			if withScore {
 				keyScore, _ := sortedMapKey[string(storedKey)]
 				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64)
@@ -812,7 +812,7 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, prefix, count string, withS
 	return result.String(), nil
 }
 
-func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, prefix, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, withScore bool) (string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return "", fmt.Errorf("not sorted map store")
@@ -838,7 +838,7 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, prefix, count string, with
 		if !found {
 			break
 		}
-		if index >= startIndex && countInt > 0 && strings.HasPrefix(string(storedKey), prefix) {
+		if index >= startIndex && countInt > 0 && strings.Compare(string(storedKey), min) >= 0 && strings.Compare(string(storedKey), max) <= 0 {
 			if withScore {
 				// Fetch the score
 				keyScore, _ := sortedMapKey[string(storedKey)]
