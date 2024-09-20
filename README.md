@@ -20,12 +20,14 @@ This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu
 Tree Map used to store score maps also are connected internally using Doubly Linked List using similar logic
 
 ## Performance Comparison of Treds - ScanKeys vs Redis - Scan
-
 This graph shows the performance comparison between Treds - ScanKeys and Redis - Scan:
 
 ![Scan Comparison](./benchmark/scan-comparison.png)
-![ZRangeByScore Comparison](./benchmark/zrange-comparison.png)
 
+## Performance Comparison of Treds - ZRangeScoreKeys vs Redis - ZRangeByScore 
+This graph shows the performance comparison between Treds - ZRangeScoreKeys and Redis - ZRangeByScore:
+
+![Scan Comparison](./benchmark/zrange-score-comparison.png)
 
 ## Commands 
 * `PING` - Replies with a `PONG`
