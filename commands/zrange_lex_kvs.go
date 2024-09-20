@@ -23,7 +23,7 @@ func validateZRangeLex() ValidationHook {
 		if len(args) < 2 {
 			return fmt.Errorf("expected minimum 2 argument, got %d", len(args))
 		}
-		if len(args) > 5 {
+		if len(args) > 6 {
 			return fmt.Errorf("expected maximum 3 argument, got %d", len(args))
 		}
 		return nil
