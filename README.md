@@ -122,6 +122,6 @@ go run main.go
 ```
 
 ## Future Work
-* Add Raft for HA
 * Transactions
 * Pipelines
+* More Commands ...
