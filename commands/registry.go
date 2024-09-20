@@ -17,12 +17,16 @@ type commandRegistry struct {
 }
 
 type ValidationHook func(args []string) error
+
+// TODO: this need to be changed to never return an error,
+// in raft world the FSM should never fail, any error checking need to be done in the validation hook
 type ExecutionHook func(args []string, store store.Store) (string, error)
 
 type CommandRegistration struct {
 	Name     string
 	Validate ValidationHook
 	Execute  ExecutionHook
+	IsWrite  bool
 }
 
 func NewRegistry() CommandRegistry {

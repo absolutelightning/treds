@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 
 	"treds/store"
 )
@@ -9,11 +10,15 @@ import (
 const SetCommand = "SET"
 
 func RegisterSetCommand(r CommandRegistry) {
-	r.Add(&CommandRegistration{
+	err := r.Add(&CommandRegistration{
 		Name:     SetCommand,
 		Validate: validateSet(),
 		Execute:  executeSet(),
+		IsWrite:  true,
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func validateSet() ValidationHook {

@@ -31,7 +31,10 @@ func main() {
 		panic(err)
 	}
 
-	tredsServer := server.New(portInt)
+	tredsServer, err := server.New(portInt)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Fatal(gnet.Run(
 		tredsServer,
