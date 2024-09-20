@@ -804,7 +804,7 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, wit
 			}
 			countInt--
 		}
-		if countInt == 0 || strings.Compare(string(storedKey), max) > 0 {
+		if countInt == 0 || strings.Compare(string(storedKey), min) < 0 {
 			break
 		}
 		index += 1
@@ -855,7 +855,7 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, wi
 			}
 			countInt--
 		}
-		if countInt == 0 || strings.Compare(string(storedKey), max) > 0 {
+		if countInt == 0 || strings.Compare(string(storedKey), min) < 0 {
 			break
 		}
 		index += 1
