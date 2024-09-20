@@ -19,6 +19,13 @@ Doubly Linked List of leaf nodes are updated at the time of create/delete and up
 This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), but for Radix Tree and without converting keys to binary.
 Tree Map used to store score maps also are connected internally using Doubly Linked List using similar logic
 
+## Performance Comparison of Treds - ScanKeys vs Redis - Scan
+
+This graph shows the performance comparison between Treds - ScanKeys and Redis - Scan:
+
+![Scan Comparison](./benchmark/scan-comparison.png)
+
+
 ## Commands 
 * `PING` - Replies with a `PONG`
 * `SET key value` - Sets a key value pair
@@ -90,3 +97,5 @@ go run main.go
 
 ## Future Work
 * Add Raft for HA
+* Transactions
+* Pipelines
