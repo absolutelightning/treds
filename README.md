@@ -19,12 +19,38 @@ Doubly Linked List of leaf nodes are updated at the time of create/delete and up
 This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), but for Radix Tree and without converting keys to binary.
 Tree Map used to store score maps also are connected internally using Doubly Linked List using similar logic
 
-## Performance Comparison of Treds - ScanKeys vs Redis - Scan
+## Performance Comparison
+Both Treds and Redis are filled with 10 Million Keys in KeyValue Store and 10 Million Keys in a Sorted Map/Set respectively
 
+### Treds - ScanKeys vs Redis - Scan
+
+Treds Command -
+```text
+scankeys 0 prefix 100000000000
+```
+
+Redis Command - 
+```text
+scan 0 match prefix count 100000000000 
+```
 This graph shows the performance comparison between Treds - ScanKeys and Redis - Scan:
 
 ![Scan Comparison](./benchmark/scan-comparison.png)
 
+
+### Treds - ZRangeScoreKeys vs Redis - ZRangeByScore
+Treds Command -
+```text
+zrangescorekeys key 0 max 0 100000000000 false
+```
+
+Redis Command -
+```text
+zrangebyscore key 0 max
+```
+This graph shows the performance comparison between Treds - ZRangeScoreKeys and Redis - ZRangeByScore:
+
+![Scan Comparison](./benchmark/zrange-score-comparison.png)
 
 ## Commands 
 * `PING` - Replies with a `PONG`
@@ -43,12 +69,12 @@ This graph shows the performance comparison between Treds - ScanKeys and Redis -
 * `ZREM key member [member ...]` - Removes a member from sorted map in key
 * `ZCARD key` - Returns the count of key/value pairs in sorted map in key
 * `ZSCORE key member` - Returns the score of a member in sorted map in key
-* `ZRANGELEXKEYS key offset count withscore prefix` - Returns the count number of keys matching prefix starting from an index in a sorted map in lex order. WithScore can be true or false
-* `ZRANGELEXKVS key offset count withscore prefix` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map in lex order. WithScore can be true or false
+* `ZRANGELEXKEYS key offset count withscore min max` - Returns the count number of keys are >= min and <= max starting from an index in a sorted map in lex order. WithScore can be true or false
+* `ZRANGELEXKVS key offset count withscore min max` - Returns the count number of key/value pair in which keys are >= min and <= max starting from an index in a sorted map in lex order. WithScore can be true or false
 * `ZRANGESCOREKEYS key min max offset count withscore` - Returns the count number of keys with the score between min/max in sorted order of score. WithScore can be true or false
 * `ZRANGESCOREKVS key min max offset count withscore` - Returns the count number of key/value pair with the score between min/max in sorted order of score. WithScore can be true or false
-* `ZREVRANGELEXKEYS key offset count withscore prefix` - Returns the count number of keys matching prefix starting from an index in a sorted map in reverse lex order. WithScore can be true or false
-* `ZREVRANGELEXKVS key offset count withscore prefix` - Returns the count number of key/value pair in which keys match prefix starting from an index in a sorted map in reverse lex order. WithScore can be true or false
+* `ZREVRANGELEXKEYS key offset count withscore prefix` - Returns the count number of keys are >= min and <= max starting from an index in a sorted map in reverse lex order. WithScore can be true or false
+* `ZREVRANGELEXKVS key offset count withscore prefix` - Returns the count number of key/value pair in which keys are >= min and <= max starting from an index in a sorted map in reverse lex order. WithScore can be true or false
 * `ZREVRANGESCOREKEYS key min max offset count withscore` - Returns the count number of keys with the score between min/max in reverser sorted order of score. WithScore can be true or false
 * `ZREVRANGESCOREKVS key min max offset count withscore` - Returns the count number of key/value pair with the score between min/max in reverse sorted order of score. WithScore can be true or false
 * `LPUSH key element [element ...]` - Adds elements to the left of list with key
@@ -96,6 +122,6 @@ go run main.go
 ```
 
 ## Future Work
-* Add Raft for HA
 * Transactions
 * Pipelines
+* More Commands ...
