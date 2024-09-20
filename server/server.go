@@ -31,7 +31,7 @@ func New(port int) *Server {
 	}
 }
 
-func (ts *Server) OnBoot(eng gnet.Engine) gnet.Action {
+func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
 	fmt.Println("Server started on", ts.Port)
 	go func() {
 		for {
