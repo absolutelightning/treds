@@ -46,7 +46,7 @@ zrangescorekeys key 0 max 0 100000000000 false
 
 Redis Command -
 ```text
-zrangebyscore key 0 max 0 100000000000
+zrangebyscore key 0 max
 ```
 This graph shows the performance comparison between Treds - ZRangeScoreKeys and Redis - ZRangeByScore:
 
