@@ -24,6 +24,7 @@ Tree Map used to store score maps also are connected internally using Doubly Lin
 This graph shows the performance comparison between Treds - ScanKeys and Redis - Scan:
 
 ![Scan Comparison](./benchmark/scan-comparison.png)
+![ZRangeByScore Comparison](./benchmark/zrange-comparison.png)
 
 
 ## Commands 
