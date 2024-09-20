@@ -19,12 +19,15 @@ Doubly Linked List of leaf nodes are updated at the time of create/delete and up
 This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), but for Radix Tree and without converting keys to binary.
 Tree Map used to store score maps also are connected internally using Doubly Linked List using similar logic
 
-## Performance Comparison of Treds - ScanKeys vs Redis - Scan
+## Performance Comparison
+Both Treds and Redis are filled with 10 Million Keys in KeyValue Store and 10 Million Keys in a Sorted Map/Set respectively
+
+### Treds - ScanKeys vs Redis - Scan
 This graph shows the performance comparison between Treds - ScanKeys and Redis - Scan:
 
 ![Scan Comparison](./benchmark/scan-comparison.png)
 
-## Performance Comparison of Treds - ZRangeScoreKeys vs Redis - ZRangeByScore 
+### Treds - ZRangeScoreKeys vs Redis - ZRangeByScore
 This graph shows the performance comparison between Treds - ZRangeScoreKeys and Redis - ZRangeByScore:
 
 ![Scan Comparison](./benchmark/zrange-score-comparison.png)
