@@ -41,7 +41,7 @@ This graph shows the performance comparison between Treds - ScanKeys and Redis -
 ### Treds - ZRangeScoreKeys vs Redis - ZRangeByScore
 Treds Command -
 ```text
-zrangescorekeys key 0 max 0 100000000000000 false
+zrangescorekeys key 0 max 0 100000000000 false
 ```
 
 Redis Command -
