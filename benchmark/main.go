@@ -69,11 +69,15 @@ func readAllData(conn net.Conn) (string, error) {
 }
 
 func main() {
-	timeDuration := scan(0)
-	fmt.Println(fmt.Sprintf("user:* -> %v", timeDuration))
+	//timeDuration := scan(0)
+	//fmt.Println(fmt.Sprintf("user:* -> %v", timeDuration))
+	//for i := 1; i <= 10000000; i *= 10 {
+	//	timeDuration = scan(i)
+	//	fmt.Println(fmt.Sprintf("user:%d* -> %v", i, timeDuration))
+	//}
 	for i := 1; i <= 10000000; i *= 10 {
-		timeDuration = scan(i)
-		fmt.Println(fmt.Sprintf("user:%d* -> %v", i, timeDuration))
+		timeDuration := zrangebyscore(0, i)
+		fmt.Println(fmt.Sprintf("0-%d", i), timeDuration)
 	}
 }
 
@@ -98,6 +102,43 @@ func scan(i int) *time.Duration {
 	if i == 0 {
 		command = fmt.Sprintf("scankeys 0 user: 100000000000")
 	}
+
+	startTime := time.Now()
+
+	// Send command to Treds
+	err = sendCommand(conn, command)
+
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil
+	}
+
+	response, err := readAllData(conn)
+
+	fmt.Println(response)
+
+	endTime := time.Since(startTime)
+
+	return &endTime
+}
+
+func zrangebyscore(min, max int) *time.Duration {
+	// Connect to Treds server at localhost:7997
+	host := os.Getenv("TREDS_HOST")
+	port := os.Getenv("TREDS_PORT")
+	if host == "" {
+		host = "localhost"
+	}
+	if port == "" {
+		port = "7997"
+	}
+	conn, err := connectToTreds(fmt.Sprintf("%s:%s", host, port))
+	if err != nil {
+		fmt.Println("Error connecting to Treds:", err)
+		os.Exit(1)
+	}
+
+	command := fmt.Sprintf("zrangescorekeys ssd %d %d 0 100000000000000 false", min, max)
 
 	startTime := time.Now()
 
