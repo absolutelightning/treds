@@ -70,10 +70,10 @@ func readAllData(conn net.Conn) (string, error) {
 
 func main() {
 	//timeDuration := scan(0)
-	//fmt.Println(fmt.Sprintf("user:* -> %v", timeDuration))
+	//fmt.Println(fmt.Sprintf("user: -> %v", timeDuration))
 	//for i := 1; i <= 10000000; i *= 10 {
 	//	timeDuration = scan(i)
-	//	fmt.Println(fmt.Sprintf("user:%d* -> %v", i, timeDuration))
+	//	fmt.Println(fmt.Sprintf("user:%d -> %v", i, timeDuration))
 	//}
 	for i := 1; i <= 10000000; i *= 10 {
 		timeDuration := zrangebyscore(0, i)
