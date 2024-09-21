@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"time"
 )
+
+const DefaultPort = "7997"
 
 // Connect to the Treds server
 func connectToTreds(address string) (net.Conn, error) {
@@ -71,6 +74,9 @@ func readAllData(conn net.Conn) (string, error) {
 
 func main() {
 	// Connect to Treds server at localhost:7997
+	portFlag := flag.String("port", DefaultPort, "Port to connect on")
+	flag.Parse()
+
 	host := os.Getenv("TREDS_HOST")
 	port := os.Getenv("TREDS_PORT")
 	if host == "" {
@@ -79,6 +85,11 @@ func main() {
 	if port == "" {
 		port = "7997"
 	}
+	
+	if portFlag != nil && *portFlag != "" {
+		port = *portFlag
+	}
+
 	conn, err := connectToTreds(fmt.Sprintf("%s:%s", host, port))
 	if err != nil {
 		fmt.Println("Error connecting to Treds:", err)

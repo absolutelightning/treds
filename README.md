@@ -112,15 +112,19 @@ This graph shows the performance comparison between Treds - ZRangeScoreKeys and 
 To run server run the following command on repository root
 
 ```text
-go run main.go 
+export TREDS_PORT=7777
+go run main.go -port 7788
 ```
 
 For CLI run the following command in the `client` folder in the repo
 
 ```text
 cd ./client
-go run main.go 
+export TREDS_PORT=7777
+go run main.go -port 7788
 ```
+
+`If port is set in env variable as well as flag, flag takes the precedence.`
 
 ## Future Work
 * Transactions

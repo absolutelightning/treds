@@ -32,7 +32,7 @@ func New(port int) *Server {
 	}
 }
 
-func (ts *Server) OnBoot(eng gnet.Engine) gnet.Action {
+func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
 	setCommand, _ := ts.tredsCommandRegistry.Retrieve("SET")
 
 	for i := 0; i <= 10000000; i++ {
