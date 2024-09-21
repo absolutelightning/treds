@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strconv"
 
 	"treds/store"
 )
@@ -27,10 +28,10 @@ func validateDeletePrefix() ValidationHook {
 
 func executeDeletePrefix() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
-		err := store.DeletePrefix(args[0])
+		numDel, err := store.DeletePrefix(args[0])
 		if err != nil {
 			return "", err
 		}
-		return "OK\n", nil
+		return strconv.Itoa(numDel), nil
 	}
 }

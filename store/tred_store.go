@@ -316,10 +316,10 @@ func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) (string, erro
 	return result.String(), nil
 }
 
-func (rs *TredsStore) DeletePrefix(prefix string) error {
-	newTree, _ := rs.tree.DeletePrefix([]byte(prefix))
+func (rs *TredsStore) DeletePrefix(prefix string) (int, error) {
+	newTree, _, numDel := rs.tree.DeletePrefix([]byte(prefix))
 	rs.tree = newTree
-	return nil
+	return numDel, nil
 }
 
 func (rs *TredsStore) Keys(regex string) (string, error) {
