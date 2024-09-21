@@ -134,7 +134,6 @@ Binary named `treds` will be generated in repo root.
 ```text
 make build             
 ```
-or
 ```text
 GOOS=linux GOARCH=arm64 make build
 ```
@@ -145,7 +144,6 @@ Binary named `treds-cli` will be generated in repo root.
 ```text
 make build-cli             
 ```
-or
 ```text
 GOOS=linux GOARCH=arm64 make build-cli
 ```
