@@ -22,6 +22,7 @@ Tree Map used to store score maps also are connected internally using Doubly Lin
 
 ## Performance Comparison
 Both Treds and Redis are filled with 10 Million Keys in KeyValue Store and 10 Million Keys in a Sorted Map/Set respectively
+Each key is of format `user:%d`, so every key has prefix `user:`
 The commands are run in Golang program and redirecting the output to a file `go run main.go > out`
 
 ### Treds - ScanKeys vs Redis - Scan
