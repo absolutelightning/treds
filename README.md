@@ -124,6 +124,7 @@ export TREDS_PORT=7777
 go run main.go -port 7788
 ```
 
+`Default Port of Treds is 7997`
 `If port is set in env variable as well as flag, flag takes the precedence.`
 
 ## Generating Binaries
