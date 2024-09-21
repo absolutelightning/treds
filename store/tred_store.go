@@ -452,9 +452,9 @@ func (rs *TredsStore) ZRem(args []string) error {
 		radixTree := storedRadixTree.(*radix_tree.Tree)
 		radixTree, _, _ = radixTree.Delete([]byte(args[itr]))
 		if radixTree.Len() == 0 {
-			storedTm.Remove(score)
+			storedTm.Remove(scoreFloat)
 		} else {
-			storedTm.Put(score, radixTree)
+			storedTm.Put(scoreFloat, radixTree)
 		}
 		_, radixTreeFloor := storedTm.Floor(scoreFloat - Epsilon)
 		if radixTreeFloor != nil {
