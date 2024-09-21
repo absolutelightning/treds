@@ -117,6 +117,11 @@ export TREDS_PORT=7777
 go run main.go -port 7788
 ```
 
+Using docker
+```text
+docker run -p 7997:7997 absolutelightning/treds
+```
+
 For CLI run the following command in the `client` folder in the repo
 
 ```text
