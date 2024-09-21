@@ -7,19 +7,19 @@ GOOS ?= $(shell go env GOOS)
 
 # Default build for current OS, using GOARCH and GOOS from env
 build:
-	GOARCH=$(GOARCH) GOOS=$(GOOS) go build $(filter-out $@,$(MAKECMDGOALS)) -o ${BINARY_NAME}
+	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -o ${BINARY_NAME}
 
 # Build the cli in the client folder
 build-cli:
-	GOARCH=$(GOARCH) GOOS=$(GOOS) go build $(filter-out $@,$(MAKECMDGOALS)) -o ${CLI_BINARY_NAME} ./client
+	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -o ${CLI_BINARY_NAME} ./client
 
 # Run the default binary for the current OS
 run: build
-	./${BINARY_NAME} $(filter-out $@,$(MAKECMDGOALS))
+	./${BINARY_NAME}
 
 # Run the cli binary
 run-cli: build-cli
-	./${CLI_BINARY_NAME} $(filter-out $@,$(MAKECMDGOALS))
+	./${CLI_BINARY_NAME}
 
 # Clean up binaries
 clean:
