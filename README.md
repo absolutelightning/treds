@@ -127,6 +127,7 @@ go run main.go -port 7788
 `If port is set in env variable as well as flag, flag takes the precedence.`
 
 ## Future Work
+* Add Raft for HA and Persistence
 * Transactions
 * Pipelines
 * More Commands ...
