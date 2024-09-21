@@ -324,14 +324,14 @@ func (t *Txn) Delete(k []byte) (interface{}, bool) {
 
 // DeletePrefix is used to delete an entire subtree that matches the prefix
 // This will delete all nodes under that prefix
-func (t *Txn) DeletePrefix(prefix []byte) bool {
+func (t *Txn) DeletePrefix(prefix []byte) (bool, int) {
 	newRoot, numDeletions := t.deletePrefix(t.root, prefix)
 	t.root = newRoot
 	t.size = t.size - numDeletions
 	if t.root == nil {
 		t.root = &Node{}
 	}
-	return true
+	return true, numDeletions
 }
 
 // Root returns the current root of the radix tree within this
@@ -379,10 +379,10 @@ func (t *Tree) Delete(k []byte) (*Tree, interface{}, bool) {
 
 // DeletePrefix is used to delete all nodes starting with a given prefix. Returns the new tree,
 // and a bool indicating if the prefix matched any nodes
-func (t *Tree) DeletePrefix(k []byte) (*Tree, bool) {
+func (t *Tree) DeletePrefix(k []byte) (*Tree, bool, int) {
 	txn := t.Txn()
-	ok := txn.DeletePrefix(k)
-	return txn.Commit(), ok
+	ok, numDel := txn.DeletePrefix(k)
+	return txn.Commit(), ok, numDel
 }
 
 // Root returns the root node of the tree which can be used for richer

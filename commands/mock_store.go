@@ -92,8 +92,8 @@ func (m *MockStore) PrefixScan(cursor, prefix, count string) (string, error) {
 	return res, nil
 }
 
-func (m *MockStore) DeletePrefix(prefix string) error {
-	return nil
+func (m *MockStore) DeletePrefix(prefix string) (int, error) {
+	return 0, nil
 }
 
 func (m *MockStore) Keys(regex string) (string, error) {

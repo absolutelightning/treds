@@ -9,7 +9,7 @@ A scan operation returns keys in their sorted sequence.
 * Unlike [Redis SCAN](https://redis.io/docs/latest/commands/scan/), Treds `SCAN` **always** returns count number of data if data is there
 * Unlike [Redis ZRANGEBYLEX](https://redis.io/docs/latest/commands/zrangebylex/), Treds `ZRANGELEX` **always** returns data irrespective of score, basically data across different scores are returned
 * It has Sorted Maps instead of Sorted Sets. So we can create a Sorted Key/Value pair with associated with a score
-* New command - `DELPREFIX` - Deletes all keys having a common prefix
+* New command - `DELPREFIX` - Deletes all keys having a common prefix and returns number of keys deleted
 * Currently, it only has Key/Value store, Sorted Maps store, List store, Set store and Hash store and only supports strings/number as values
 
 ## Internals
@@ -60,7 +60,7 @@ This graph shows the performance comparison between Treds - ZRangeScoreKeys and 
 * `DEL key` - Delete a key
 * `MSET key1 value1 [key2 value2 key3 value3 ....]`- Set values for multiple keys
 * `MGET key1 [key2 key3 ....]`- Get values for multiple keys
-* `DELPREFIX prefix` - Delete all keys having a common prefix
+* `DELPREFIX prefix` - Delete all keys having a common prefix. Returns number of keys deleted
 * `DBSIZE` - Get number of keys in the db
 * `SCANKEYS cursor prefix count` - Returns the count number of keys matching prefix starting from an index in lex order. Last element is the next cursor
 * `SCANKVS cursor prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order. Last element is the next cursor
@@ -125,6 +125,26 @@ go run main.go -port 7788
 ```
 
 `If port is set in env variable as well as flag, flag takes the precedence.`
+
+## Generating Binaries
+
+To build the binary for the treds server, run following command in repo root - 
+Binary named treds will be generated in repo root.
+
+```text
+make build             
+make build-darwin
+make build-linux
+make build-windows
+```
+
+To build the binary for the treds cli, run following command in repo root -
+Binary named treds-cli will be generated in repo root.
+
+```text
+make build-cli             
+```
+
 
 ## Future Work
 * Add Raft for HA and Persistence

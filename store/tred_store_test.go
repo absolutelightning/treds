@@ -132,7 +132,7 @@ func TestTredsStore_DeletePrefix(t *testing.T) {
 	store.Set("other", "value3")
 
 	// Test deleting with a prefix
-	err := store.DeletePrefix("key")
+	_, err := store.DeletePrefix("key")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
