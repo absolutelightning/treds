@@ -133,9 +133,9 @@ Binary named `treds` will be generated in repo root.
 
 ```text
 make build             
-make build-darwin
-make build-linux
-make build-windows
+```
+```text
+GOOS=linux GOARCH=arm64 make build
 ```
 
 To build the binary for the treds cli, run following command in repo root -
@@ -143,6 +143,9 @@ Binary named `treds-cli` will be generated in repo root.
 
 ```text
 make build-cli             
+```
+```text
+GOOS=linux GOARCH=arm64 make build-cli
 ```
 
 

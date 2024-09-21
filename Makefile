@@ -1,53 +1,39 @@
 BINARY_NAME=treds
 CLI_BINARY_NAME=treds-cli
 
-# Default build for current OS (no GOOS specified)
+# Use GOARCH and GOOS from environment, default to amd64 and the current OS.
+GOARCH ?= amd64
+GOOS ?= $(shell go env GOOS)
+
+# Default build for current OS, using GOARCH and GOOS from env
 build:
-	go build -o ${BINARY_NAME}
+	GOARCH=$(GOARCH) GOOS=$(GOOS) go build $(filter-out $@,$(MAKECMDGOALS)) -o ${BINARY_NAME}-${GOOS}-${GOARCH}
 
-# Build for Darwin (macOS)
-build-darwin:
-	GOARCH=amd64 GOOS=darwin go build -o ${BINARY_NAME}-darwin
-
-# Build for Linux
-build-linux:
-	GOARCH=amd64 GOOS=linux go build -o ${BINARY_NAME}-linux
-
-# Build for Windows
-build-windows:
-	GOARCH=amd64 GOOS=windows go build -o ${BINARY_NAME}-windows
-
-# Build for all platforms
-build_all: build-darwin build-linux build-windows
+# Build the cli in the client folder
+build-cli:
+	GOARCH=$(GOARCH) GOOS=$(GOOS) go build $(filter-out $@,$(MAKECMDGOALS)) -o ${cli_BINARY_NAME}-${GOOS}-${GOARCH} ./client
 
 # Run the default binary for the current OS
 run: build
-	./${BINARY_NAME}
+	./${BINARY_NAME}-${GOOS}-${GOARCH} $(filter-out $@,$(MAKECMDGOALS))
 
-# Build the client in the client folder
-build-cli:
-	go build -o ${CLI_BINARY_NAME} ./client
-
-# Run the client binary
+# Run the cli binary
 run-cli: build-cli
-	./${CLI_BINARY_NAME}
+	./${CLI_BINARY_NAME}-${GOOS}-${GOARCH} $(filter-out $@,$(MAKECMDGOALS))
 
 # Clean up binaries
 clean:
 	go clean
-	rm -f ${BINARY_NAME}
-	rm -f ${BINARY_NAME}-darwin
-	rm -f ${BINARY_NAME}-linux
-	rm -f ${BINARY_NAME}-windows
-	rm -f ${CLI_BINARY_NAME}
+	rm -f ${BINARY_NAME}-*
+	rm -f ${CLI_BINARY_NAME}-*
 
 # Run tests
 test:
-	go test ./...
+	go test $(filter-out $@,$(MAKECMDGOALS)) ./...
 
 # Run tests with coverage
 test_coverage:
-	go test ./... -coverprofile=coverage.out
+	go test $(filter-out $@,$(MAKECMDGOALS)) ./... -coverprofile=coverage.out
 
 # Install dependencies
 dep:
