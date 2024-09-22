@@ -18,10 +18,12 @@ It is single threaded and has event loop.
 Implemented using modified Radix trees where leaf nodes are connected by Doubly Linked List in Radix Trie to facilitate the quick lookup of keys/values in sorted order.
 Doubly Linked List of leaf nodes are updated at the time of create/delete and update of keys optimally.
 This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), but for Radix Tree and without converting keys to binary.
-Tree Map used to store score maps also are connected internally using Doubly Linked List using similar logic
+Tree Map used to store score maps also are connected internally using Doubly Linked List using similar logic.
+For more details - check out the [medium article](https://ashesh-vidyut.medium.com/optimizing-radix-trees-efficient-prefix-search-and-key-iteration-0c4fb817eac2)
 
 ## Performance Comparison
 Both Treds and Redis are filled with 10 Million Keys in KeyValue Store and 10 Million Keys in a Sorted Map/Set respectively
+Each key is of format `user:%d`, so every key has prefix `user:`
 The commands are run in Golang program and redirecting the output to a file `go run main.go > out`
 
 ### Treds - ScanKeys vs Redis - Scan
@@ -113,8 +115,8 @@ This graph shows the performance comparison between Treds - ZRangeScoreKeys and 
 To run server run the following command on repository root
 
 ```text
-export TREDS_PORT=7777
-go run main.go -port 7777
+export TREDS_PORT=7997
+go run main.go -port 7997
 ```
 
 Using docker
@@ -126,8 +128,8 @@ For CLI run the following command in the `client` folder in the repo
 
 ```text
 cd ./client
-export TREDS_PORT=7777
-go run main.go -port 7777
+export TREDS_PORT=7997
+go run main.go -port 7997
 ```
 
 `Default Port of Treds is 7997`
