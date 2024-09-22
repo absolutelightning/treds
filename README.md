@@ -115,8 +115,8 @@ This graph shows the performance comparison between Treds - ZRangeScoreKeys and 
 To run server run the following command on repository root
 
 ```text
-export TREDS_PORT=7777
-go run main.go -port 7777
+export TREDS_PORT=7997
+go run main.go -port 7997
 ```
 
 Using docker
@@ -128,8 +128,8 @@ For CLI run the following command in the `client` folder in the repo
 
 ```text
 cd ./client
-export TREDS_PORT=7777
-go run main.go -port 7777
+export TREDS_PORT=7997
+go run main.go -port 7997
 ```
 
 `Default Port of Treds is 7997`
