@@ -19,6 +19,7 @@ Implemented using modified Radix trees where leaf nodes are connected by Doubly 
 Doubly Linked List of leaf nodes are updated at the time of create/delete and update of keys optimally.
 This structure is similar to [Prefix Hash Tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), but for Radix Tree and without converting keys to binary.
 Tree Map used to store score maps also are connected internally using Doubly Linked List using similar logic
+For more details - check out the [medium article](https://ashesh-vidyut.medium.com/optimizing-radix-trees-efficient-prefix-search-and-key-iteration-0c4fb817eac2)
 
 ## Performance Comparison
 Both Treds and Redis are filled with 10 Million Keys in KeyValue Store and 10 Million Keys in a Sorted Map/Set respectively
