@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"fmt"
 	wal "github.com/hashicorp/raft-wal"
 	"io/fs"
@@ -26,6 +27,7 @@ type Server struct {
 
 	*gnet.BuiltinEventEngine
 	raft *raft.Raft
+	id   string
 }
 
 func New(port int) (*Server, error) {
@@ -88,6 +90,7 @@ func New(port int) (*Server, error) {
 		tredsStore:           tredsStore,
 		tredsCommandRegistry: commandRegistry,
 		raft:                 r,
+		id:                   id.String(),
 	}, nil
 }
 
@@ -118,6 +121,23 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	// - forward to leader
 	// - return a special error to the client/sdk and they will retry on the new leader
 	if commandReg.IsWrite {
+
+		// Only writes need to be forwarded to leader
+		forwarded, rspFwd, err := ts.forwarRequest(data)
+		if err != nil {
+			respondErr(c, err)
+			return gnet.None
+		}
+
+		// If request is forwarded we just send back the answer from the leader to the client
+		// and stop processing
+		if forwarded {
+			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			if errConn != nil {
+				fmt.Println("Error occurred writing to connection", errConn)
+			}
+			return gnet.None
+		}
 
 		// Validation need to be done before raft Apply so an error is returned before persisting
 		if err = commandReg.Validate(commandStringParts[1:]); err != nil {
@@ -182,4 +202,28 @@ func respondErr(c gnet.Conn, err error) {
 
 func (ts *Server) OnClose(_ gnet.Conn, _ error) gnet.Action {
 	return gnet.None
+}
+
+func (ts *Server) forwarRequest(data []byte) (bool, string, error) {
+	addr, id := ts.raft.LeaderWithID()
+	if string(id) == ts.id {
+		return false, "", nil
+	}
+
+	//TODO: Add connection pooling to avoid opening a connection per request to the server
+	conn, err := net.Dial("tcp", string(addr))
+	if err != nil {
+		return false, "", nil
+	}
+	defer conn.Close()
+	_, err = conn.Write([]byte(data))
+	if err != nil {
+		return false, "", nil
+	}
+	reader := bufio.NewReader(conn)
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return false, "", err
+	}
+	return true, line, nil
 }
