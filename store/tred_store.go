@@ -33,9 +33,8 @@ const (
 type TredsStore struct {
 	tree *radix_tree.Tree
 
-	sortedMaps      map[string]*treemap.Map
-	sortedMapsScore map[string]map[string]float64
-	sortedMapsKeys  map[string]*radix_tree.Tree
+	sortedMaps     map[string]*treemap.Map
+	sortedMapsKeys map[string]*radix_tree.Tree
 
 	lists map[string]*doublylinkedlist.List
 
@@ -48,14 +47,13 @@ type TredsStore struct {
 
 func NewTredsStore() *TredsStore {
 	return &TredsStore{
-		tree:            radix_tree.New(),
-		sortedMaps:      make(map[string]*treemap.Map),
-		sortedMapsScore: make(map[string]map[string]float64),
-		sortedMapsKeys:  make(map[string]*radix_tree.Tree),
-		lists:           make(map[string]*doublylinkedlist.List),
-		sets:            make(map[string]*hashset.Set),
-		hashes:          make(map[string]*hashmap.Map),
-		expiry:          make(map[string]time.Time),
+		tree:           radix_tree.New(),
+		sortedMaps:     make(map[string]*treemap.Map),
+		sortedMapsKeys: make(map[string]*radix_tree.Tree),
+		lists:          make(map[string]*doublylinkedlist.List),
+		sets:           make(map[string]*hashset.Set),
+		hashes:         make(map[string]*hashmap.Map),
+		expiry:         make(map[string]time.Time),
 	}
 }
 
@@ -180,7 +178,6 @@ func (rs *TredsStore) Set(k string, v string) error {
 func (rs *TredsStore) Delete(k string) error {
 	rs.tree, _, _ = rs.tree.Delete([]byte(k))
 	delete(rs.sortedMaps, k)
-	delete(rs.sortedMapsScore, k)
 	delete(rs.sortedMapsKeys, k)
 	delete(rs.lists, k)
 	delete(rs.sets, k)
@@ -377,9 +374,6 @@ func (rs *TredsStore) ZAdd(args []string) error {
 		tm = storedTm
 	}
 	sm := make(map[string]float64)
-	if storedSm, ok := rs.sortedMapsScore[args[0]]; ok {
-		sm = storedSm
-	}
 	sortedKeyMap, ok := rs.sortedMapsKeys[args[0]]
 	if !ok {
 		sortedKeyMap = radix_tree.New()
@@ -395,7 +389,7 @@ func (rs *TredsStore) ZAdd(args []string) error {
 		if found {
 			radixTree = storedRadixTree.(*radix_tree.Tree)
 		}
-		sortedKeyMap, _, _ = sortedKeyMap.Insert([]byte(args[itr+1]), args[itr+2])
+		sortedKeyMap, _, _ = sortedKeyMap.Insert([]byte(args[itr+1]), args[itr])
 		radixTree, _, _ = radixTree.Insert([]byte(args[itr+1]), args[itr+2])
 		tm.Put(score, radixTree)
 		_, radixTreeFloor := tm.Floor(score - Epsilon)
@@ -424,7 +418,6 @@ func (rs *TredsStore) ZAdd(args []string) error {
 		}
 	}
 	rs.sortedMaps[args[0]] = tm
-	rs.sortedMapsScore[args[0]] = sm
 	rs.sortedMapsKeys[args[0]] = sortedKeyMap
 	return nil
 }
@@ -440,11 +433,12 @@ func (rs *TredsStore) ZRem(args []string) error {
 	}
 	for itr := 1; itr < len(args); itr += 1 {
 		key := []byte(args[itr])
-		score, found := rs.sortedMapsScore[args[0]]
+		score, found := rs.sortedMapsKeys[args[0]]
 		if !found {
 			continue
 		}
-		scoreFloat := score[string(key)]
+		scoreStored, _ := score.Get(key)
+		scoreFloat := scoreStored.(float64)
 		storedRadixTree, found := storedTm.Get(scoreFloat)
 		if !found {
 			continue
@@ -483,7 +477,6 @@ func (rs *TredsStore) ZRem(args []string) error {
 	}
 	rs.sortedMaps[args[0]] = storedTm
 	for _, arg := range args[1:] {
-		delete(rs.sortedMapsScore[args[0]], arg)
 		rs.sortedMapsKeys[args[0]].Delete([]byte(arg))
 	}
 	return nil
@@ -508,21 +501,20 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withSc
 		return "", err
 	}
 	index := 0
-	sortedMapKey := rs.sortedMapsScore[key]
 	var result strings.Builder
 	for {
-		storedKey, value, found := iterator.Next()
+		storedKey, score, found := iterator.Next()
 		if !found {
 			break
 		}
 		if index >= startIndex && countInt > 0 && strings.Compare(string(storedKey), min) >= 0 && strings.Compare(string(storedKey), max) <= 0 {
+			keyScore := score.(float64)
+			tree, _ := rs.sortedMaps[key].Get(keyScore)
+			scoreRadixTree := tree.(*radix_tree.Tree)
+			value, _ := scoreRadixTree.Get(storedKey)
 			if withScore {
-				// Fetch the score
-				keyScore, _ := sortedMapKey[string(storedKey)]
-
 				// Convert the floating-point score to a string
 				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // Convert float to string with full precision
-
 				// Append score, key, and value to the result
 				result.WriteString(scoreStr)
 				result.WriteString("\n")
@@ -567,17 +559,14 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withS
 	}
 	index := 0
 	var result strings.Builder
-	sortedMapKey := rs.sortedMapsScore[key]
 	for {
-		storedKey, _, found := iterator.Next()
+		storedKey, score, found := iterator.Next()
 		if !found {
 			break
 		}
 		if index >= startIndex && countInt > 0 && strings.Compare(string(storedKey), min) >= 0 && strings.Compare(string(storedKey), max) <= 0 {
+			keyScore := score.(float64)
 			if withScore {
-				// Fetch the score
-				keyScore, _ := sortedMapKey[string(storedKey)]
-
 				// Convert the floating-point score to a string
 				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // Convert float to string with full precision
 
@@ -633,12 +622,13 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 		return "", nil
 	}
 	minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
-	sortedMapKey := rs.sortedMapsScore[key]
+	sortedMapKey := rs.sortedMapsKeys[key]
 	for minKV != nil {
 		if countInt == 0 {
 			break
 		}
-		score, _ := sortedMapKey[string(minKV.Key())]
+		scoreValue, _ := sortedMapKey.Get(minKV.Key())
+		score := scoreValue.(float64)
 		if score > maxFloat {
 			break
 		}
@@ -701,12 +691,12 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 		return "", nil
 	}
 	minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
-	sortedMapKey := rs.sortedMapsScore[key]
 	for minKV != nil {
 		if countInt == 0 {
 			break
 		}
-		score, _ := sortedMapKey[string(minKV.Key())]
+		scoreValue, _ := rs.sortedMapsKeys[key].Get(minKV.Key())
+		score := scoreValue.(float64)
 		if score > maxFloat {
 			break
 		}
@@ -738,11 +728,12 @@ func (rs *TredsStore) ZScore(args []string) (string, error) {
 	if kd != -1 && kd != SortedMapStore {
 		return "", fmt.Errorf("not sorted map store")
 	}
-	store, ok := rs.sortedMapsScore[args[0]]
+	store, ok := rs.sortedMapsKeys[args[0]]
 	if !ok {
 		return "", nil
 	}
-	if score, found := store[args[1]]; found {
+	if scoreValue, found := store.Get([]byte(args[1])); found {
+		score := scoreValue.(float64)
 		return strconv.FormatFloat(score, 'f', -1, 64), nil
 	}
 	return "", nil
@@ -780,16 +771,18 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, wit
 	}
 	index := 0
 	var result strings.Builder
-	sortedMapKey := rs.sortedMapsScore[key]
 	for {
-		storedKey, value, found := iterator.Previous()
+		storedKey, scoreValue, found := iterator.Previous()
 		if !found {
 			break
 		}
 		if index >= startIndex && countInt > 0 && strings.Compare(string(storedKey), min) >= 0 && strings.Compare(string(storedKey), max) <= 0 {
+			score := scoreValue.(float64)
+			tree, _ := rs.sortedMaps[key].Get(score)
+			valueRadixTree := tree.(*radix_tree.Tree)
+			value, _ := valueRadixTree.Get(storedKey)
 			if withScore {
-				keyScore, _ := sortedMapKey[string(storedKey)]
-				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64)
+				scoreStr := strconv.FormatFloat(score, 'f', -1, 64)
 				result.WriteString(scoreStr)
 				result.WriteString("\n")
 				result.WriteString(string(storedKey))
@@ -832,17 +825,16 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, wi
 	}
 	index := 0
 	var result strings.Builder
-	sortedMapKey := rs.sortedMapsScore[key]
 	for {
-		storedKey, _, found := iterator.Previous()
+		storedKey, scoreValue, found := iterator.Previous()
 		if !found {
 			break
 		}
 		if index >= startIndex && countInt > 0 && strings.Compare(string(storedKey), min) >= 0 && strings.Compare(string(storedKey), max) <= 0 {
+			score := scoreValue.(float64)
 			if withScore {
 				// Fetch the score
-				keyScore, _ := sortedMapKey[string(storedKey)]
-				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // -1 preserves full precision
+				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // -1 preserves full precision
 				// Append keyScore and storedKey to the result
 				result.WriteString(scoreStr)
 				result.WriteString("\n")
@@ -895,12 +887,12 @@ func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, w
 		return "", nil
 	}
 	maxKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
-	sortedMapKey := rs.sortedMapsScore[key]
 	for maxKV != nil {
 		if countInt == 0 {
 			break
 		}
-		score, _ := sortedMapKey[string(maxKV.Key())]
+		scoreValue, _ := rs.sortedMapsKeys[key].Get(maxKV.Key())
+		score := scoreValue.(float64)
 		if score < minFloat {
 			break
 		}
@@ -962,12 +954,12 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 		return "", nil
 	}
 	maxKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
-	sortedMapKey := rs.sortedMapsScore[key]
 	for maxKV != nil {
 		if countInt == 0 {
 			break
 		}
-		score, _ := sortedMapKey[string(maxKV.Key())]
+		scoreValue, _ := rs.sortedMapsKeys[key].Get(maxKV.Key())
+		score := scoreValue.(float64)
 		if score < minFloat {
 			break
 		}
@@ -997,7 +989,6 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 func (rs *TredsStore) FlushAll() error {
 	rs.tree = radix_tree.New()
 	rs.sortedMaps = make(map[string]*treemap.Map)
-	rs.sortedMapsScore = make(map[string]map[string]float64)
 	rs.sortedMapsKeys = make(map[string]*radix_tree.Tree)
 	rs.lists = make(map[string]*doublylinkedlist.List)
 	rs.sets = make(map[string]*hashset.Set)
