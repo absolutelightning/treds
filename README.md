@@ -24,7 +24,7 @@ For more details - check out the [medium article](https://ashesh-vidyut.medium.c
 ## Performance Comparison
 Both Treds and Redis are filled with 10 Million Keys in KeyValue Store and 10 Million Keys in a Sorted Map/Set respectively
 Each key is of format `user:%d`, so every key has prefix `user:`
-The commands are run in Golang program and redirecting the output to a file `go run main.go > out`
+The commands are run in Golang program and redirecting the output to a file `go run main.go > out`.
 For Redis setup see - [Redis Prefix Bench Repo](https://github.com/absolutelightning/redis-prefix-bench)
 
 ### Treds - ScanKeys vs Redis - Scan
