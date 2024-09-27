@@ -77,6 +77,9 @@ func readAllData(conn net.Conn) (string, error) {
 func completer(d prompt.Document) []prompt.Suggest {
 	input := d.TextBeforeCursor()
 	firstWord := strings.Split(input, " ")[0]
+	if firstWord == "" {
+		return []prompt.Suggest{}
+	}
 	s := []prompt.Suggest{
 		{Text: "DBSIZE", Description: "Get number of keys in the db"},
 		{Text: "DEL", Description: "DEL key - Delete a key"},
