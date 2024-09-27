@@ -25,6 +25,7 @@ For more details - check out the [medium article](https://ashesh-vidyut.medium.c
 Both Treds and Redis are filled with 10 Million Keys in KeyValue Store and 10 Million Keys in a Sorted Map/Set respectively
 Each key is of format `user:%d`, so every key has prefix `user:`
 The commands are run in Golang program and redirecting the output to a file `go run main.go > out`
+For Redis setup see - [Redis Prefix Bench Repo](https://github.com/absolutelightning/redis-prefix-bench)
 
 ### Treds - ScanKeys vs Redis - Scan
 
@@ -39,8 +40,25 @@ scan 0 match prefix count 100000000000
 ```
 This graph shows the performance comparison between Treds - ScanKeys and Redis - Scan:
 
-![Scan Comparison](./benchmark/scan-comparison.png)
+![ScanKeys Comparison](./benchmark/scan-comparison.png)
 
+### Treds - ScanKVS vs RedisSearch FT.SEARCH
+
+Treds Command -
+```text
+scankvs 0 prefix 1000
+```
+
+Redis Command -
+```text
+FT.SEARCH idx:user prefix SORTBY name LIMIT 0 1000
+```
+
+Prefix for redis command can be replaced by "User*", "User1*", "User10*" ... etc
+
+This graph shows the performance comparison between Treds - ScanKVS and Redis FT.Search:
+
+![ScanKVS Comparison](./benchmark/scankvs-comparision.png)
 
 ### Treds - ZRangeScoreKeys vs Redis - ZRangeByScore
 Treds Command -
@@ -54,7 +72,7 @@ zrangebyscore key 0 max
 ```
 This graph shows the performance comparison between Treds - ZRangeScoreKeys and Redis - ZRangeByScore:
 
-![Scan Comparison](./benchmark/zrange-score-comparison.png)
+![ZRangeScore Comparison](./benchmark/zrange-score-comparison.png)
 
 ## Commands 
 * `PING` - Replies with a `PONG`
