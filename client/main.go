@@ -168,9 +168,6 @@ func main() {
 			if cmd == "" || cmd == "\n" {
 				return
 			}
-			if cmd == "exit" || cmd == "quit" { // Allow user to quit
-				return
-			}
 			// Measure the start time
 			startTime := time.Now()
 			// Send command to Treds
