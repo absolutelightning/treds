@@ -75,6 +75,8 @@ func readAllData(conn net.Conn) (string, error) {
 }
 
 func completer(d prompt.Document) []prompt.Suggest {
+	input := d.TextBeforeCursor()
+	firstWord := strings.Split(input, " ")[0]
 	s := []prompt.Suggest{
 		{Text: "DBSIZE", Description: "Get number of keys in the db"},
 		{Text: "DEL", Description: "DEL key - Delete a key"},
@@ -129,7 +131,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "ZREVRANGESCOREKVS", Description: "ZREVRANGESCOREKVS key min max offset count withscore - Returns the count number of key/value pair with the score between min/max in reverse sorted order of score. WithScore can be true or false"},
 		{Text: "ZSCORE", Description: "ZSCORE key member - Returns the score of a member in sorted map in key"},
 	}
-	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
+	return prompt.FilterHasPrefix(s, firstWord, true)
 }
 
 func main() {
@@ -159,41 +161,45 @@ func main() {
 
 	// Start the CLI loop
 	fmt.Println("Connected to Treds. Type commands and press Enter.")
-	for {
-		cmd := prompt.Input("> ", completer)
-		cmd = strings.TrimSpace(cmd) // Remove leading/trailing whitespace
-		if cmd == "" || cmd == "\n" {
-			continue
-		}
-		if cmd == "exit" || cmd == "quit" { // Allow user to quit
-			break
-		}
-
-		// Measure the start time
-		startTime := time.Now()
-
-		// Send command to Treds
-		err := sendCommand(conn, cmd)
-		if err != nil {
-			fmt.Println("Error sending command:", err)
-			continue
-		}
-
-		// Read response from Treds
-		response, err := readAllData(conn)
-		if err != nil {
-			fmt.Println("Error reading response:", err)
-			continue
-		}
-		// Print response
-		fmt.Println(response)
-
-		// Calculate the elapsed time
-		elapsedTime := time.Since(startTime)
-
-		// Print the time taken
-		fmt.Printf("Time taken: %v\n", elapsedTime)
-	}
-
-	fmt.Println("Disconnected from Treds.")
+	fmt.Println("Please use `Ctrl-D` to exit this program.")
+	defer fmt.Println("Bye!")
+	p := prompt.New(
+		func(cmd string) {
+			if cmd == "" || cmd == "\n" {
+				return
+			}
+			if cmd == "exit" || cmd == "quit" { // Allow user to quit
+				return
+			}
+			// Measure the start time
+			startTime := time.Now()
+			// Send command to Treds
+			err = sendCommand(conn, cmd)
+			if err != nil {
+				fmt.Println("Error sending command:", err)
+				return
+			}
+			// Read response from Treds
+			response, rerr := readAllData(conn)
+			if rerr != nil {
+				fmt.Println("Error reading response:", err)
+				return
+			}
+			// Print response
+			fmt.Println(response)
+			// Calculate the elapsed time
+			elapsedTime := time.Since(startTime)
+			// Print the time taken
+			fmt.Printf("Time taken: %v\n", elapsedTime)
+		},
+		completer,
+		prompt.OptionPrefix(">>> "),
+		prompt.OptionPrefixTextColor(prompt.Yellow),
+		prompt.OptionSuggestionTextColor(prompt.Yellow),
+		prompt.OptionSuggestionBGColor(prompt.Black),
+		prompt.OptionDescriptionBGColor(prompt.Black),
+		prompt.OptionDescriptionTextColor(prompt.Yellow),
+		prompt.OptionScrollbarBGColor(prompt.Black),
+	)
+	p.Run()
 }
