@@ -23,7 +23,7 @@ func validateZRangeLex() ValidationHook {
 		if len(args) < 2 {
 			return fmt.Errorf("expected minimum 2 argument, got %d", len(args))
 		}
-		if len(args) > 5 {
+		if len(args) > 6 {
 			return fmt.Errorf("expected maximum 3 argument, got %d", len(args))
 		}
 		return nil
@@ -40,11 +40,15 @@ func executeZRangeLex() ExecutionHook {
 		if len(args) > 3 {
 			withScore, _ = strconv.ParseBool(args[3])
 		}
-		prefix := ""
+		minKey := ""
 		if len(args) > 4 {
-			prefix = args[4]
+			minKey = args[4]
 		}
-		v, err := store.ZRangeByLexKVS(args[0], args[1], prefix, count, withScore)
+		maxKey := ""
+		if len(args) > 5 {
+			maxKey = args[5]
+		}
+		v, err := store.ZRangeByLexKVS(args[0], args[1], minKey, maxKey, count, withScore)
 		if err != nil {
 			return "", err
 		}

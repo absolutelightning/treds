@@ -1,5 +1,7 @@
 package store
 
+import "time"
+
 type Store interface {
 	Get(string) (string, error)
 	MGet([]string) (string, error)
@@ -8,7 +10,7 @@ type Store interface {
 	Delete(string) error
 	PrefixScan(string, string, string) (string, error)
 	PrefixScanKeys(string, string, string) (string, error)
-	DeletePrefix(string) error
+	DeletePrefix(string) (int, error)
 	Keys(string) (string, error)
 	KVS(string) (string, error)
 	Size() (string, error)
@@ -16,12 +18,12 @@ type Store interface {
 	ZRem([]string) error
 	ZCard(string) (int, error)
 	ZScore([]string) (string, error)
-	ZRangeByLexKVS(string, string, string, string, bool) (string, error)
-	ZRangeByLexKeys(string, string, string, string, bool) (string, error)
+	ZRangeByLexKVS(string, string, string, string, string, bool) (string, error)
+	ZRangeByLexKeys(string, string, string, string, string, bool) (string, error)
 	ZRangeByScoreKeys(string, string, string, string, string, bool) (string, error)
 	ZRangeByScoreKVS(string, string, string, string, string, bool) (string, error)
-	ZRevRangeByLexKVS(string, string, string, string, bool) (string, error)
-	ZRevRangeByLexKeys(string, string, string, string, bool) (string, error)
+	ZRevRangeByLexKVS(string, string, string, string, string, bool) (string, error)
+	ZRevRangeByLexKeys(string, string, string, string, string, bool) (string, error)
 	ZRevRangeByScoreKeys(string, string, string, string, string, bool) (string, error)
 	ZRevRangeByScoreKVS(string, string, string, string, string, bool) (string, error)
 	FlushAll() error
@@ -50,4 +52,7 @@ type Store interface {
 	HExists(string, string) (bool, error)
 	HKeys(string) (string, error)
 	HVals(string) (string, error)
+	CleanUpExpiredKeys()
+	Expire(key string, at time.Time) error
+	Ttl(key string) int
 }

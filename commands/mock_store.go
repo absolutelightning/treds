@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // MockStore is a mock implementation of the store interface for testing.
@@ -91,8 +92,8 @@ func (m *MockStore) PrefixScan(cursor, prefix, count string) (string, error) {
 	return res, nil
 }
 
-func (m *MockStore) DeletePrefix(prefix string) error {
-	return nil
+func (m *MockStore) DeletePrefix(prefix string) (int, error) {
+	return 0, nil
 }
 
 func (m *MockStore) Keys(regex string) (string, error) {
@@ -139,10 +140,10 @@ func (m *MockStore) ZRem([]string) error {
 	return nil
 }
 
-func (m *MockStore) ZRangeByLexKVS(string, string, string, string, bool) (string, error) {
+func (m *MockStore) ZRangeByLexKVS(string, string, string, string, string, bool) (string, error) {
 	return "", nil
 }
-func (m *MockStore) ZRangeByLexKeys(string, string, string, string, bool) (string, error) {
+func (m *MockStore) ZRangeByLexKeys(string, string, string, string, string, bool) (string, error) {
 	return "", nil
 }
 
@@ -161,10 +162,10 @@ func (m *MockStore) ZCard(string) (int, error) {
 	return 0, nil
 }
 
-func (m *MockStore) ZRevRangeByLexKVS(string, string, string, string, bool) (string, error) {
+func (m *MockStore) ZRevRangeByLexKVS(string, string, string, string, string, bool) (string, error) {
 	return "", nil
 }
-func (m *MockStore) ZRevRangeByLexKeys(string, string, string, string, bool) (string, error) {
+func (m *MockStore) ZRevRangeByLexKeys(string, string, string, string, string, bool) (string, error) {
 	return "", nil
 }
 
@@ -277,4 +278,15 @@ func (rs *MockStore) HKeys(key string) (string, error) {
 
 func (rs *MockStore) HVals(key string) (string, error) {
 	return "", nil
+}
+
+func (rs *MockStore) CleanUpExpiredKeys() {
+}
+
+func (rs *MockStore) Expire(key string, expiration time.Time) error {
+	return nil
+}
+
+func (rs *MockStore) Ttl(key string) int {
+	return 0
 }

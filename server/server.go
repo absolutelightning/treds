@@ -96,6 +96,12 @@ func New(port int) (*Server, error) {
 
 func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
 	fmt.Println("Server started on", ts.Port)
+	go func() {
+		for {
+			ts.tredsStore.CleanUpExpiredKeys()
+			time.Sleep(100 * time.Millisecond)
+		}
+	}()
 	return gnet.None
 }
 

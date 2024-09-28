@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -16,6 +17,10 @@ import (
 const DefaultPort = "7997"
 
 func main() {
+	portFlag := flag.String("port", DefaultPort, "Port at which server will listen")
+
+	flag.Parse()
+
 	var sigs = make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 
@@ -23,6 +28,10 @@ func main() {
 
 	if len(port) == 0 {
 		port = DefaultPort
+	}
+
+	if portFlag != nil && *portFlag != "" {
+		port = *portFlag
 	}
 
 	portInt, err := strconv.Atoi(port)
