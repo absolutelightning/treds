@@ -82,6 +82,7 @@ This graph shows the performance comparison between Treds - ZRangeScoreKeys and 
 * `MSET key1 value1 [key2 value2 key3 value3 ....]`- Set values for multiple keys
 * `MGET key1 [key2 key3 ....]`- Get values for multiple keys
 * `DELPREFIX prefix` - Delete all keys having a common prefix. Returns number of keys deleted
+* `LNGPREFIX prefix` - Returns the key value pair in which key is the longest prefix in given prefix
 * `DBSIZE` - Get number of keys in the db
 * `SCANKEYS cursor prefix count` - Returns the count number of keys matching prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor
 * `SCANKVS cursor prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor

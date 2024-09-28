@@ -1488,3 +1488,16 @@ func (rs *TredsStore) Ttl(key string) int {
 	}
 	return -2
 }
+
+func (rs *TredsStore) LongestPrefix(prefix string) (string, error) {
+	var res strings.Builder
+	key, val, found := rs.tree.Root().LongestPrefix([]byte(prefix))
+	if found {
+		res.WriteString(string(key))
+		res.WriteString("\n")
+		res.WriteString(val.(string))
+		res.WriteString("\n")
+		return res.String(), nil
+	}
+	return "", nil
+}
