@@ -3,12 +3,13 @@ package server
 import (
 	"bufio"
 	"fmt"
-	wal "github.com/hashicorp/raft-wal"
 	"io/fs"
 	"net"
 	"os"
 	"strings"
 	"time"
+
+	wal "github.com/hashicorp/raft-wal"
 
 	"treds/commands"
 	"treds/store"
@@ -129,7 +130,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	if commandReg.IsWrite {
 
 		// Only writes need to be forwarded to leader
-		forwarded, rspFwd, err := ts.forwarRequest(data)
+		forwarded, rspFwd, err := ts.forwardRequest(data)
 		if err != nil {
 			respondErr(c, err)
 			return gnet.None
@@ -210,7 +211,7 @@ func (ts *Server) OnClose(_ gnet.Conn, _ error) gnet.Action {
 	return gnet.None
 }
 
-func (ts *Server) forwarRequest(data []byte) (bool, string, error) {
+func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 	addr, id := ts.raft.LeaderWithID()
 	if string(id) == ts.id {
 		return false, "", nil
