@@ -4,7 +4,7 @@ import (
 	"treds/store"
 )
 
-const LongestPrefixCommand = "LONGESTPREFIX"
+const LongestPrefixCommand = "LNGPREFIX"
 
 func RegisterLongestPrefixCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
