@@ -99,7 +99,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "KVS", Description: "KVS regex - Returns all keys/values in which keys match a regex in lex order"},
 		{Text: "LINDEX", Description: "LINDEX key index - Returns the element at index of list with key"},
 		{Text: "LLEN", Description: "LLEN key - Returns the length of list with key"},
-		{Text: "LNGPREFIX", Description: "LNGPREFIX prefix - Returns the key value pair in which key is the longest prefix in given prefix"},
+		{Text: "LNGPREFIX", Description: "LNGPREFIX string - Returns the key value pair in which key is the longest prefix of given string"},
 		{Text: "LPOP", Description: "LPOP key count - Removes count elements from left of list with key and returns the popped elements"},
 		{Text: "LPUSH", Description: "LPUSH key element [element ...] - Adds elements to the left of list with key"},
 		{Text: "LRANGE", Description: "LRANGE key start stop - Returns the elements from start index to stop index in the list with key"},
