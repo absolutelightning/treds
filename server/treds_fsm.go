@@ -1,10 +1,11 @@
 package server
 
 import (
-	"github.com/hashicorp/raft"
-	"github.com/panjf2000/gnet/v2"
 	"io"
 	"strings"
+
+	"github.com/hashicorp/raft"
+	"github.com/panjf2000/gnet/v2"
 	"treds/commands"
 	"treds/store"
 )
