@@ -290,3 +290,7 @@ func (rs *MockStore) Expire(key string, expiration time.Time) error {
 func (rs *MockStore) Ttl(key string) int {
 	return 0
 }
+
+func (rs *MockStore) LongestPrefix(key string) (string, error) {
+	return "", nil
+}
