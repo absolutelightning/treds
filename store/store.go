@@ -55,4 +55,5 @@ type Store interface {
 	CleanUpExpiredKeys()
 	Expire(key string, at time.Time) error
 	Ttl(key string) int
+	LongestPrefix(string) (string, error)
 }
