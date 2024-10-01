@@ -42,7 +42,7 @@ func executeKeys() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
 		regex := ""
 		count := math.MaxInt64
-		if len(args) == 2 {
+		if len(args) >= 2 {
 			regex = args[1]
 		}
 		if len(args) == 3 {
