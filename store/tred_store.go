@@ -337,6 +337,7 @@ func (rs *TredsStore) Keys(cursor, regex string, count int) (string, error) {
 	if cursor == "0" {
 		seenHash = true
 	}
+	nextCursor := uint32(0)
 
 	for {
 		key, _, found := iterator.Next()
@@ -356,10 +357,20 @@ func (rs *TredsStore) Keys(cursor, regex string, count int) (string, error) {
 		}
 		if seenHash && count > 0 {
 			result.WriteString(fmt.Sprintf("%v\n", string(key)))
+			nextCursor, herr = hash(string(key))
+			if herr != nil {
+				return "", herr
+			}
 			count--
 		}
+		if count == 0 {
+			break
+		}
 	}
-
+	if count != 0 {
+		nextCursor = uint32(0)
+	}
+	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
 	return result.String(), nil
 }
 
@@ -377,6 +388,7 @@ func (rs *TredsStore) KVS(cursor, regex string, count int) (string, error) {
 	if cursor == "0" {
 		seenHash = true
 	}
+	nextCursor := uint32(0)
 
 	for {
 		key, value, found := iterator.Next()
@@ -396,10 +408,20 @@ func (rs *TredsStore) KVS(cursor, regex string, count int) (string, error) {
 		}
 		if seenHash && count > 0 {
 			result.WriteString(fmt.Sprintf("%v\n%v\n", string(key), value.(string)))
+			nextCursor, herr = hash(string(key))
+			if herr != nil {
+				return "", herr
+			}
 			count--
 		}
+		if count == 0 {
+			break
+		}
 	}
-
+	if count != 0 {
+		nextCursor = uint32(0)
+	}
+	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
 	return result.String(), nil
 }
 
