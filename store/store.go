@@ -11,8 +11,8 @@ type Store interface {
 	PrefixScan(string, string, string) (string, error)
 	PrefixScanKeys(string, string, string) (string, error)
 	DeletePrefix(string) (int, error)
-	Keys(string) (string, error)
-	KVS(string) (string, error)
+	Keys(string, string, int) (string, error)
+	KVS(string, string, int) (string, error)
 	Size() (string, error)
 	ZAdd([]string) error
 	ZRem([]string) error

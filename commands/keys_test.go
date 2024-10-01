@@ -14,20 +14,6 @@ func TestRegisterKeysCommand(t *testing.T) {
 	}
 }
 
-// TestValidateKeys tests the validateKeys function.
-func TestValidateKeys(t *testing.T) {
-	validationHook := validateKeys()
-
-	// The validateKeys function always returns nil, so we simply check that it does.
-	if err := validationHook([]string{}); err != nil {
-		t.Errorf("expected no error, got: %v", err)
-	}
-
-	if err := validationHook([]string{"someArg"}); err != nil {
-		t.Errorf("expected no error, got: %v", err)
-	}
-}
-
 // TestExecuteKeys tests the executeKeys function.
 func TestExecuteKeys(t *testing.T) {
 	tests := []struct {
@@ -39,21 +25,21 @@ func TestExecuteKeys(t *testing.T) {
 	}{
 		{
 			name:        "retrieve all keys",
-			args:        []string{},
+			args:        []string{"0"},
 			store:       &MockStore{data: map[string]string{"key1": "value1", "key2": "value2"}},
 			expectErr:   false,
 			expectedMsg: "key1\nkey2\n",
 		},
 		{
 			name:        "retrieve keys with matching prefix",
-			args:        []string{"key"},
+			args:        []string{"0", "^key"},
 			store:       &MockStore{data: map[string]string{"key1": "value1", "key2": "value2", "other": "value3"}},
 			expectErr:   false,
 			expectedMsg: "key1\nkey2\n",
 		},
 		{
 			name:        "no matching keys",
-			args:        []string{"nomatch"},
+			args:        []string{"0", "nomatch"},
 			store:       &MockStore{data: map[string]string{"key1": "value1", "key2": "value2"}},
 			expectErr:   false,
 			expectedMsg: "",
