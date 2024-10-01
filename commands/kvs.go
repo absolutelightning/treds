@@ -30,7 +30,7 @@ func validateKVS() ValidationHook {
 				return err
 			}
 		}
-		_, err := regexp.Compile(args[0])
+		_, err := regexp.Compile(args[1])
 		if err != nil {
 			return err
 		}
