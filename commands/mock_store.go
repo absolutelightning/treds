@@ -96,7 +96,7 @@ func (m *MockStore) DeletePrefix(prefix string) (int, error) {
 	return 0, nil
 }
 
-func (m *MockStore) Keys(regex string) (string, error) {
+func (m *MockStore) Keys(cursor, regex string, count int) (string, error) {
 	res := ""
 	keys := make([]string, 0)
 	for key, _ := range m.data {
@@ -112,7 +112,7 @@ func (m *MockStore) Keys(regex string) (string, error) {
 	return res, nil
 }
 
-func (m *MockStore) KVS(regex string) (string, error) {
+func (m *MockStore) KVS(cursor, regex string, count int) (string, error) {
 	res := ""
 	keys := make([]string, 0)
 	for key, _ := range m.data {

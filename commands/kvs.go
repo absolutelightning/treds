@@ -2,7 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"math"
 	"regexp"
+	"strconv"
 
 	"treds/store"
 )
@@ -32,10 +34,14 @@ func validateKVS() ValidationHook {
 func executeKVS() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
 		regex := ""
-		if len(args) == 1 {
+		count := math.MaxInt64
+		if len(args) == 2 {
 			regex = args[0]
 		}
-		v, err := store.KVS(regex)
+		if len(args) == 3 {
+			count, _ = strconv.Atoi(args[2])
+		}
+		v, err := store.KVS(args[0], regex, count)
 		if err != nil {
 			return "", err
 		}

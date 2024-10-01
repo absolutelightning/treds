@@ -162,7 +162,7 @@ func TestTredsStore_Keys(t *testing.T) {
 	store.Set("otherkey", "value3")
 
 	// Test retrieving keys matching a regex
-	result, err := store.Keys("^key.*")
+	result, err := store.Keys("0", "^key.*", 100000000)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -180,7 +180,7 @@ func TestTredsStore_KVS(t *testing.T) {
 	store.Set("otherkey", "value3")
 
 	// Test retrieving key-value pairs matching a regex
-	result, err := store.KVS("^key.*")
+	result, err := store.KVS("0", "^key.*", 10000000000000)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
