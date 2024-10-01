@@ -166,7 +166,7 @@ func TestTredsStore_Keys(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	expected := "key1\nkey2\n"
+	expected := "key1\nkey2\n0\n"
 	if result != expected {
 		t.Fatalf("expected %s, got %s", expected, result)
 	}
@@ -184,7 +184,7 @@ func TestTredsStore_KVS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	expected := "key1\nvalue1\nkey2\nvalue2\n"
+	expected := "key1\nvalue1\nkey2\nvalue2\n0\n"
 	if result != expected {
 		t.Fatalf("expected %s, got %s", expected, result)
 	}
