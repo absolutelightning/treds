@@ -86,8 +86,8 @@ This graph shows the performance comparison between Treds - ZRangeScoreKeys and 
 * `DBSIZE` - Get number of keys in the db
 * `SCANKEYS cursor prefix count` - Returns the count number of keys matching prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor
 * `SCANKVS cursor prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor
-* `KEYS regex` - Returns all keys matching a regex in lex order - (Not suitable to production use cases with huge number of keys)
-* `KVS regex` - Returns all keys/values in which keys match a regex in lex order - (Not suitable to production use cases with huge number of keys)
+* `KEYS cursor regex count` - Returns count number of keys matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
+* `KVS cursor regex count` - Returns count number of keys/values in which keys match a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
 * `ZADD key score member_key member_value [score member_key member_value ....]` - Add member_key with member value with score to a sorted map in key
 * `ZREM key member [member ...]` - Removes a member from sorted map in key
 * `ZCARD key` - Returns the count of key/value pairs in sorted map in key
