@@ -43,7 +43,7 @@ func executeKeys() ExecutionHook {
 		regex := ""
 		count := math.MaxInt64
 		if len(args) == 2 {
-			regex = args[0]
+			regex = args[1]
 		}
 		if len(args) == 3 {
 			count, _ = strconv.Atoi(args[2])

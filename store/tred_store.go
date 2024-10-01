@@ -334,6 +334,9 @@ func (rs *TredsStore) Keys(cursor, regex string, count int) (string, error) {
 
 	var result strings.Builder
 	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
 
 	for {
 		key, _, found := iterator.Next()
@@ -371,6 +374,9 @@ func (rs *TredsStore) KVS(cursor, regex string, count int) (string, error) {
 
 	var result strings.Builder
 	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
 
 	for {
 		key, value, found := iterator.Next()
