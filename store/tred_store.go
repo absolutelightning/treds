@@ -323,12 +323,21 @@ func (rs *TredsStore) DeletePrefix(prefix string) (int, error) {
 	return numDel, nil
 }
 
-func (rs *TredsStore) Keys(regex string) (string, error) {
+func (rs *TredsStore) Keys(cursor, regex string, count int) (string, error) {
+	startHash, err := strconv.Atoi(cursor)
+	if err != nil {
+		return "", err
+	}
 	iterator := rs.tree.Root().Iterator()
 	rx := regexp.MustCompile(regex)
 	iterator.PatternMatch(rx)
 
 	var result strings.Builder
+	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
+	nextCursor := uint32(0)
 
 	for {
 		key, _, found := iterator.Next()
@@ -338,18 +347,48 @@ func (rs *TredsStore) Keys(regex string) (string, error) {
 		if rs.hasExpired(string(key)) {
 			continue
 		}
-		result.WriteString(fmt.Sprintf("%v\n", string(key)))
+		hashKey, herr := hash(string(key))
+		if herr != nil {
+			return "", herr
+		}
+		if !seenHash && hashKey == uint32(startHash) {
+			seenHash = true
+			continue
+		}
+		if seenHash && count > 0 {
+			result.WriteString(fmt.Sprintf("%v\n", string(key)))
+			nextCursor, herr = hash(string(key))
+			if herr != nil {
+				return "", herr
+			}
+			count--
+		}
+		if count == 0 {
+			break
+		}
 	}
-
+	if count != 0 {
+		nextCursor = uint32(0)
+	}
+	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
 	return result.String(), nil
 }
 
-func (rs *TredsStore) KVS(regex string) (string, error) {
+func (rs *TredsStore) KVS(cursor, regex string, count int) (string, error) {
+	startHash, err := strconv.Atoi(cursor)
+	if err != nil {
+		return "", err
+	}
 	iterator := rs.tree.Root().Iterator()
 	rx := regexp.MustCompile(regex)
 	iterator.PatternMatch(rx)
 
 	var result strings.Builder
+	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
+	nextCursor := uint32(0)
 
 	for {
 		key, value, found := iterator.Next()
@@ -359,9 +398,30 @@ func (rs *TredsStore) KVS(regex string) (string, error) {
 		if rs.hasExpired(string(key)) {
 			continue
 		}
-		result.WriteString(fmt.Sprintf("%v\n%v\n", string(key), value.(string)))
+		hashKey, herr := hash(string(key))
+		if herr != nil {
+			return "", herr
+		}
+		if !seenHash && hashKey == uint32(startHash) {
+			seenHash = true
+			continue
+		}
+		if seenHash && count > 0 {
+			result.WriteString(fmt.Sprintf("%v\n%v\n", string(key), value.(string)))
+			nextCursor, herr = hash(string(key))
+			if herr != nil {
+				return "", herr
+			}
+			count--
+		}
+		if count == 0 {
+			break
+		}
 	}
-
+	if count != 0 {
+		nextCursor = uint32(0)
+	}
+	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
 	return result.String(), nil
 }
 
