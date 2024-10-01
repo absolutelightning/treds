@@ -6,6 +6,7 @@ A scan operation returns keys in their sorted sequence.
 ## How it is different from Redis?
 * Keys at root level having a common prefix can be queried optimally
 * `SCANKEYS/SCANKVS/KEYS/KVS` commands returns the results in sorted order
+* Unlike [Redis KEYS](https://redis.io/docs/latest/commands/keys/), Treds `KEYS` has cursor and matches any valid regex expression also it returns count number of data if data is there
 * Unlike [Redis SCAN](https://redis.io/docs/latest/commands/scan/), Treds `SCAN` **always** returns count number of data if data is there
 * Unlike [Redis ZRANGEBYLEX](https://redis.io/docs/latest/commands/zrangebylex/), Treds `ZRANGELEX` **always** returns data irrespective of score, basically data across different scores are returned
 * It has Sorted Maps instead of Sorted Sets. So we can create a Sorted Key/Value pair with associated with a score
@@ -82,11 +83,12 @@ This graph shows the performance comparison between Treds - ZRangeScoreKeys and 
 * `MSET key1 value1 [key2 value2 key3 value3 ....]`- Set values for multiple keys
 * `MGET key1 [key2 key3 ....]`- Get values for multiple keys
 * `DELPREFIX prefix` - Delete all keys having a common prefix. Returns number of keys deleted
+* `LNGPREFIX string` - Returns the key value pair in which key is the longest prefix of given string 
 * `DBSIZE` - Get number of keys in the db
 * `SCANKEYS cursor prefix count` - Returns the count number of keys matching prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor
 * `SCANKVS cursor prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor
-* `KEYS regex` - Returns all keys matching a regex in lex order - (Not suitable to production use cases with huge number of keys)
-* `KVS regex` - Returns all keys/values in which keys match a regex in lex order - (Not suitable to production use cases with huge number of keys)
+* `KEYS cursor regex count` - Returns count number of keys matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
+* `KVS cursor regex count` - Returns count number of keys/values in which keys match a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
 * `ZADD key score member_key member_value [score member_key member_value ....]` - Add member_key with member value with score to a sorted map in key
 * `ZREM key member [member ...]` - Removes a member from sorted map in key
 * `ZCARD key` - Returns the count of key/value pairs in sorted map in key

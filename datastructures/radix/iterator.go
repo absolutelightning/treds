@@ -14,10 +14,10 @@ type Iterator struct {
 	key            []byte
 	seekLowerBound bool
 	patternMatch   bool
-	pattern        string
+	pattern        *regexp.Regexp
 }
 
-func (i *Iterator) PatternMatch(regex string) {
+func (i *Iterator) PatternMatch(regex *regexp.Regexp) {
 	i.patternMatch = true
 	i.pattern = regex
 }
@@ -76,10 +76,7 @@ func (i *Iterator) Next() ([]byte, interface{}, bool) {
 	if i.patternMatch {
 
 		for i.leafNode != nil {
-			matched := true
-			if len(i.pattern) > 0 {
-				matched, _ = regexp.MatchString(i.pattern, string(i.leafNode.key))
-			}
+			matched := i.pattern.MatchString(string(i.leafNode.key))
 			if i.leafNode != nil && matched {
 				res := i.leafNode
 				i.leafNode = i.leafNode.GetNextLeaf()
