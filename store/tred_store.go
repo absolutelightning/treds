@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"hash/fnv"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -324,7 +325,8 @@ func (rs *TredsStore) DeletePrefix(prefix string) (int, error) {
 
 func (rs *TredsStore) Keys(regex string) (string, error) {
 	iterator := rs.tree.Root().Iterator()
-	iterator.PatternMatch(regex)
+	rx := regexp.MustCompile(regex)
+	iterator.PatternMatch(rx)
 
 	var result strings.Builder
 
@@ -344,7 +346,8 @@ func (rs *TredsStore) Keys(regex string) (string, error) {
 
 func (rs *TredsStore) KVS(regex string) (string, error) {
 	iterator := rs.tree.Root().Iterator()
-	iterator.PatternMatch(regex)
+	rx := regexp.MustCompile(regex)
+	iterator.PatternMatch(rx)
 
 	var result strings.Builder
 
