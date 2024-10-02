@@ -28,16 +28,16 @@ func validateSIsMemberCommand() ValidationHook {
 }
 
 func executeSIsMemberCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		res, err := store.SIsMember(key, strings.Join(args[1:], " "))
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
 		if res {
-			return "1", nil
+			return "1"
 		} else {
-			return "0", nil
+			return "0"
 		}
 	}
 }

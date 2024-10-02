@@ -17,7 +17,7 @@ type commandRegistry struct {
 }
 
 type ValidationHook func(args []string) error
-type ExecutionHook func(args []string, store store.Store) (string, error)
+type ExecutionHook func(args []string, store store.Store) string
 
 type CommandRegistration struct {
 	Name     string

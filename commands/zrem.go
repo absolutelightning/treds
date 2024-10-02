@@ -26,11 +26,11 @@ func validateZRem() ValidationHook {
 }
 
 func executeZRemCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		err := store.ZRem(args)
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return "OK\n", nil
+		return "OK\n"
 	}
 }

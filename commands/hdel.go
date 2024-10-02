@@ -27,12 +27,12 @@ func validateHDelCommand() ValidationHook {
 }
 
 func executeHDelCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		err := store.HDel(key, args[1:])
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return "OK\n", nil
+		return "OK\n"
 	}
 }

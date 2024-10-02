@@ -28,13 +28,13 @@ func validateTtlCommand() ValidationHook {
 }
 
 func executeTtlCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		ttl := store.Ttl(key)
 		ttlString := strconv.Itoa(ttl)
 		var res strings.Builder
 		res.WriteString(ttlString)
 		res.WriteString("\n")
-		return res.String(), nil
+		return res.String()
 	}
 }
