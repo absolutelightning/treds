@@ -49,14 +49,9 @@ func TestExecuteKVS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			executionHook := executeKVS()
-			result, err := executionHook(tt.args, tt.store)
-			if (err != nil) != tt.expectErr {
-				t.Errorf("expected error: %v, got: %v", tt.expectErr, err)
-			}
-			if err == nil && result != tt.expectedMsg {
+			result := executionHook(tt.args, tt.store)
+			if result != tt.expectedMsg {
 				t.Errorf("expected result: %s, got: %s", tt.expectedMsg, result)
-			} else if err != nil && err.Error() != tt.expectedMsg {
-				t.Errorf("expected error message: %s, got: %s", tt.expectedMsg, err.Error())
 			}
 		})
 	}

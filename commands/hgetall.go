@@ -27,8 +27,12 @@ func validateHGetAllCommand() ValidationHook {
 }
 
 func executeHGetAllCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
-		return store.HGetAll(key)
+		res, err := store.HGetAll(key)
+		if err != nil {
+			return err.Error()
+		}
+		return res
 	}
 }

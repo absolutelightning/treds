@@ -15,7 +15,7 @@ func RegisterPINGCommand(r CommandRegistry) {
 }
 
 func executePINGCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
-		return "PONG\n", nil
+	return func(args []string, store store.Store) string {
+		return "PONG\n"
 	}
 }

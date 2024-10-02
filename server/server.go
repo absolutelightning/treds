@@ -66,14 +66,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		}
 		return gnet.None
 	}
-	res, err := commandReg.Execute(commandStringParts[1:], ts.tredsStore)
-	if err != nil {
-		_, err = c.Write([]byte(fmt.Sprintf("Error Executing command - %v\n", err.Error())))
-		if err != nil {
-			fmt.Println("Error occurred writing to connection", err)
-		}
-		return gnet.None
-	}
+	res := commandReg.Execute(commandStringParts[1:], ts.tredsStore)
 	_, err = c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
 	if err != nil {
 		fmt.Println("Error occurred writing to connection", err)

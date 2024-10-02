@@ -27,7 +27,11 @@ func validateMGet() ValidationHook {
 }
 
 func executeMGet() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
-		return store.MGet(args)
+	return func(args []string, store store.Store) string {
+		res, err := store.MGet(args)
+		if err != nil {
+			return err.Error()
+		}
+		return res
 	}
 }

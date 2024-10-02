@@ -28,16 +28,16 @@ func validateLPopCommand() ValidationHook {
 }
 
 func executeLPopCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		count, err := strconv.Atoi(args[1])
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
 		res, err := store.LPop(key, count)
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return res, nil
+		return res
 	}
 }

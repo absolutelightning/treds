@@ -27,8 +27,12 @@ func validateHKeysCommand() ValidationHook {
 }
 
 func executeHKeysCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
-		return store.HKeys(key)
+		res, err := store.HKeys(key)
+		if err != nil {
+			return err.Error()
+		}
+		return res
 	}
 }

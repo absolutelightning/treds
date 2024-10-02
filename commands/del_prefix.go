@@ -27,11 +27,11 @@ func validateDeletePrefix() ValidationHook {
 }
 
 func executeDeletePrefix() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		numDel, err := store.DeletePrefix(args[0])
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return strconv.Itoa(numDel), nil
+		return strconv.Itoa(numDel)
 	}
 }
