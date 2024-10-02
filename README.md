@@ -111,8 +111,8 @@ This graph shows the performance comparison between Treds - ZRangeScoreKeys and 
 * `LRANGE key start stop` - Returns the elements from start index to stop index in the list with key
 * `LLEN key` - Returns the length of list with key
 * `LINDEX key index` - Returns the element at index of list with key
-* `SADD member [member ...]` - Adds the members to a set with key
-* `SREM member [member ...]` - Removes the members from a set with key
+* `SADD key member [member ...]` - Adds the members to a set with key
+* `SREM key member [member ...]` - Removes the members from a set with key
 * `SMEMBERS key` - Returns all members of a set with key
 * `SISMEMBER key member` - Return 1 if member is present in set with key, 0 otherwise
 * `SCARD key` - Returns the size of the set with key
