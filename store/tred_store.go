@@ -183,7 +183,7 @@ func (rs *TredsStore) Set(k string, v string) error {
 	if kd != -1 && kd != KeyValueStore {
 		return fmt.Errorf("not key value store")
 	}
-	validKey := validateKey(v)
+	validKey := validateKey(k)
 	if !validKey {
 		return fmt.Errorf("invalid key: %s", v)
 	}
