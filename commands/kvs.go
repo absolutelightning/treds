@@ -39,7 +39,7 @@ func validateKVS() ValidationHook {
 }
 
 func executeKVS() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		regex := ""
 		count := math.MaxInt64
 		if len(args) >= 2 {
@@ -50,8 +50,8 @@ func executeKVS() ExecutionHook {
 		}
 		v, err := store.KVS(args[0], regex, count)
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return fmt.Sprintf("%v", v), nil
+		return fmt.Sprintf("%v", v)
 	}
 }

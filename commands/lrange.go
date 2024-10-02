@@ -28,20 +28,20 @@ func validateLRangeCommand() ValidationHook {
 }
 
 func executeLRangeCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		start, err := strconv.Atoi(args[1])
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
 		stop, err := strconv.Atoi(args[2])
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
 		res, err := store.LRange(key, start, stop)
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return res, nil
+		return res
 	}
 }

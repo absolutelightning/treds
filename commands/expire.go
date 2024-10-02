@@ -32,11 +32,15 @@ func validateExpireCommand() ValidationHook {
 }
 
 func executeExpireCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		seconds, _ := strconv.Atoi(args[1])
 		now := time.Now()
 		expiryTime := now.Add(time.Duration(seconds) * time.Second)
-		return "OK\n", store.Expire(key, expiryTime)
+		err := store.Expire(key, expiryTime)
+		if err != nil {
+			return err.Error()
+		}
+		return "OK\n"
 	}
 }

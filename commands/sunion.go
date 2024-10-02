@@ -27,11 +27,11 @@ func validateSUnionCommand() ValidationHook {
 }
 
 func executeSUnionCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		res, err := store.SUnion(args)
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return res, nil
+		return res
 	}
 }

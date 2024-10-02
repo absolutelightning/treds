@@ -180,11 +180,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			respondErr(c, err)
 			return gnet.None
 		}
-		res, err := commandReg.Execute(commandStringParts[1:], ts.tredsStore)
-		if err != nil {
-			respondErr(c, err)
-			return gnet.None
-		}
+		res  := commandReg.Execute(commandStringParts[1:], ts.tredsStore)
 		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
 		if errConn != nil {
 			fmt.Println("Error occurred writing to connection", errConn)
