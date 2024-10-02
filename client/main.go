@@ -122,7 +122,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "SREM", Description: "SREM key member [member ...] - Removes the members from a set with key"},
 		{Text: "SUNION", Description: "SUNION key [key ...] - Returns the union of sets with the give keys"},
 		{Text: "TTL", Description: "TTL key - Returns the time in seconds remaining before key expires. -1 if key has no expiry, -2 if key is not present"},
-		{Text: "ZADD", Description: "ZADD key score member_key member_value [member_key member_value ....] - Add member_key with member value with score to a sorted map in key"},
+		{Text: "ZADD", Description: "ZADD key score member_key member_value [score member_key member_value ....] - Add member_key with member value with score to a sorted map in key"},
 		{Text: "ZCARD", Description: "ZCARD key - Returns the count of key/value pairs in sorted map in key"},
 		{Text: "ZRANGELEXKEYS", Description: "ZRANGELEXKEYS key offset count withscore min max - Returns the count number of keys are greater than min and less than max starting from an index in a sorted map in lex order. WithScore can be true or false"},
 		{Text: "ZRANGELEXKVS", Description: "ZRANGELEXKVS key offset count withscore min max - Returns the count number of key/value pair in which keys are greater than min and less than max starting from an index in a sorted map in lex order. WithScore can be true or false"},

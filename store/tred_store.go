@@ -472,13 +472,13 @@ func (rs *TredsStore) ZAdd(args []string) error {
 	if !ok {
 		sortedKeyMap = radix_tree.New()
 	}
-	for itr := 1; itr < len(parsedArgs)-2; itr += 3 {
+	for itr := 0; itr < len(parsedArgs)-2; itr += 3 {
 		validKey = validateKey(parsedArgs[itr+1])
 		if !validKey {
 			return fmt.Errorf("invalid key")
 		}
 	}
-	for itr := 1; itr < len(parsedArgs)-2; itr += 3 {
+	for itr := 0; itr < len(parsedArgs)-2; itr += 3 {
 		score, err := strconv.ParseFloat(parsedArgs[itr], 64)
 		if err != nil {
 			return err
@@ -578,7 +578,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 	rs.sortedMaps[args[0]] = storedTm
 	for _, arg := range args[1:] {
 		delete(rs.sortedMapsScore[args[0]], arg)
-		rs.sortedMapsKeys[args[0]].Delete([]byte(arg))
+		rs.sortedMapsKeys[args[0]], _, _ = rs.sortedMapsKeys[args[0]].Delete([]byte(arg))
 	}
 	return nil
 }
