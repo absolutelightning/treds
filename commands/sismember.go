@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 
 	"treds/store"
 )
@@ -18,7 +19,7 @@ func RegisterSIsMemberCommand(r CommandRegistry) {
 
 func validateSIsMemberCommand() ValidationHook {
 	return func(args []string) error {
-		if len(args) != 2 {
+		if len(args) < 2 {
 			return fmt.Errorf("expected 2 argument, got %d", len(args))
 		}
 
@@ -29,7 +30,7 @@ func validateSIsMemberCommand() ValidationHook {
 func executeSIsMemberCommand() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
 		key := args[0]
-		res, err := store.SIsMember(key, args[1])
+		res, err := store.SIsMember(key, strings.Join(args[1:], " "))
 		if err != nil {
 			return "", err
 		}

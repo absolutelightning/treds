@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 
 	"treds/store"
 )
@@ -18,7 +19,7 @@ func RegisterSetCommand(r CommandRegistry) {
 
 func validateSet() ValidationHook {
 	return func(args []string) error {
-		if len(args) != 2 {
+		if len(args) < 2 {
 			return fmt.Errorf("expected 2 argument, got %d", len(args))
 		}
 
@@ -28,7 +29,8 @@ func validateSet() ValidationHook {
 
 func executeSet() ExecutionHook {
 	return func(args []string, store store.Store) (string, error) {
-		err := store.Set(args[0], args[1])
+		value := strings.Join(args[1:], " ")
+		err := store.Set(args[0], value)
 		if err != nil {
 			return "", err
 		}
