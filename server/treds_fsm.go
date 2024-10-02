@@ -23,11 +23,7 @@ func (t TredsFsm) Apply(log *raft.Log) interface{} {
 	if err != nil {
 		return err
 	}
-	res, err := commandReg.Execute(commandStringParts[1:], t.tredsStore)
-	if err != nil {
-		return err
-	}
-	return res
+	return commandReg.Execute(commandStringParts[1:], t.tredsStore)
 }
 
 func (t TredsFsm) Snapshot() (raft.FSMSnapshot, error) {
