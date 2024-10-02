@@ -15,8 +15,12 @@ func RegisterLongestPrefixCommand(r CommandRegistry) {
 }
 
 func executeLongestPrefixCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		prefix := args[0]
-		return store.LongestPrefix(prefix)
+		res, err := store.LongestPrefix(prefix)
+		if err != nil {
+			return err.Error()
+		}
+		return res
 	}
 }

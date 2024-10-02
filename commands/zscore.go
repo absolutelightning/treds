@@ -26,7 +26,11 @@ func validateZScore() ValidationHook {
 }
 
 func executeZScoreCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
-		return store.ZScore(args)
+	return func(args []string, store store.Store) string {
+		res, err := store.ZScore(args)
+		if err != nil {
+			return err.Error()
+		}
+		return res
 	}
 }

@@ -27,11 +27,11 @@ func validateSInterCommand() ValidationHook {
 }
 
 func executeSInterCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		res, err := store.SInter(args)
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return res, nil
+		return res
 	}
 }

@@ -31,15 +31,15 @@ func validatePrefixScan() ValidationHook {
 }
 
 func executePrefixScan() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		count := strconv.Itoa(math.MaxInt64)
 		if len(args) == 3 {
 			count = args[2]
 		}
 		v, err := store.PrefixScan(args[0], args[1], count)
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return v, nil
+		return v
 	}
 }

@@ -18,7 +18,7 @@ func RegisterZRevRangeLexKeysCommand(r CommandRegistry) {
 }
 
 func executeZRevRangeLexKeys() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		count := strconv.Itoa(math.MaxInt64)
 		if len(args) > 2 {
 			count = args[2]
@@ -37,8 +37,8 @@ func executeZRevRangeLexKeys() ExecutionHook {
 		}
 		v, err := store.ZRevRangeByLexKeys(args[0], args[1], minKey, maxKey, count, withScore)
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return v, nil
+		return v
 	}
 }

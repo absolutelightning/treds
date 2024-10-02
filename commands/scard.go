@@ -27,12 +27,12 @@ func validateSCardCommand() ValidationHook {
 }
 
 func executeSCardCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		size, err := store.SCard(key)
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return strconv.Itoa(size), nil
+		return strconv.Itoa(size)
 	}
 }

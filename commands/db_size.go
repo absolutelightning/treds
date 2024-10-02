@@ -21,7 +21,11 @@ func validateDBSize() ValidationHook {
 }
 
 func executeDBSize() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
-		return store.Size()
+	return func(args []string, store store.Store) string {
+		res, err := store.Size()
+		if err != nil {
+			return err.Error()
+		}
+		return res
 	}
 }
