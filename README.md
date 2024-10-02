@@ -7,10 +7,11 @@ A scan operation returns keys in their sorted sequence.
 * Keys at root level having a common prefix can be queried optimally
 * `SCANKEYS/SCANKVS/KEYS/KVS` commands returns the results in sorted order
 * Unlike [Redis KEYS](https://redis.io/docs/latest/commands/keys/), Treds `KEYS` has cursor and matches any valid regex expression also it returns count number of data if data is there
-* Unlike [Redis SCAN](https://redis.io/docs/latest/commands/scan/), Treds `SCAN` **always** returns count number of data if data is there
+* Unlike [Redis SCAN](https://redis.io/docs/latest/commands/scan/), Treds `SCAN` **always** returns count number of data if data is there. Treds `SCAN` works on prefix only.
 * Unlike [Redis ZRANGEBYLEX](https://redis.io/docs/latest/commands/zrangebylex/), Treds `ZRANGELEX` **always** returns data irrespective of score, basically data across different scores are returned
 * It has Sorted Maps instead of Sorted Sets. So we can create a Sorted Key/Value pair with associated with a score
 * New command - `DELPREFIX` - Deletes all keys having a common prefix and returns number of keys deleted
+* New command - `LNGPREFIX` - Returns the key value pair in which key is the longest prefix of given string
 * Currently, it only has Key/Value store, Sorted Maps store, List store, Set store and Hash store and only supports strings/number as values
 
 ## Internals
