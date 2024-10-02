@@ -120,12 +120,21 @@ func (rs *TredsStore) Get(k string) (string, error) {
 }
 
 func (rs *TredsStore) MSet(kvs []string) error {
+	args := strings.Join(kvs, " ")
+	keyValues, err := splitCommandWithQuotes(args)
+	if err != nil {
+		return err
+	}
 	var g errgroup.Group
 	var mu sync.Mutex
-	for itr := 0; itr < len(kvs); itr += 2 {
+	for itr := 0; itr < len(keyValues); itr += 2 {
 		g.Go(func() error {
 			mu.Lock()
-			err := rs.Set(kvs[itr], kvs[itr+1])
+			validKey := validateKey(keyValues[itr])
+			if !validKey {
+				return fmt.Errorf("invalid key: %s", keyValues[itr])
+			}
+			err = rs.Set(keyValues[itr], keyValues[itr+1])
 			mu.Unlock()
 			if err != nil {
 				return err
@@ -174,7 +183,15 @@ func (rs *TredsStore) Set(k string, v string) error {
 	if kd != -1 && kd != KeyValueStore {
 		return fmt.Errorf("not key value store")
 	}
-	rs.tree, _, _ = rs.tree.Insert([]byte(k), v)
+	validKey := validateKey(v)
+	if !validKey {
+		return fmt.Errorf("invalid key: %s", v)
+	}
+	parsedArgs, err := splitCommandWithQuotes(v)
+	if err != nil {
+		return err
+	}
+	rs.tree, _, _ = rs.tree.Insert([]byte(k), parsedArgs[0])
 	return nil
 }
 
@@ -435,6 +452,14 @@ func (rs *TredsStore) ZAdd(args []string) error {
 	if kd != -1 && kd != SortedMapStore {
 		return fmt.Errorf("not sorted map store")
 	}
+	parsedArgs, pErr := splitCommandWithQuotes(strings.Join(args[1:], " "))
+	if pErr != nil {
+		return pErr
+	}
+	validKey := validateKey(args[0])
+	if !validKey {
+		return fmt.Errorf("invalid key")
+	}
 	tm := treemap.NewWith(utils.Float64Comparator)
 	if storedTm, ok := rs.sortedMaps[args[0]]; ok {
 		tm = storedTm
@@ -447,19 +472,25 @@ func (rs *TredsStore) ZAdd(args []string) error {
 	if !ok {
 		sortedKeyMap = radix_tree.New()
 	}
-	for itr := 1; itr < len(args)-2; itr += 3 {
-		score, err := strconv.ParseFloat(args[itr], 64)
+	for itr := 0; itr < len(parsedArgs)-2; itr += 3 {
+		validKey = validateKey(parsedArgs[itr+1])
+		if !validKey {
+			return fmt.Errorf("invalid key")
+		}
+	}
+	for itr := 0; itr < len(parsedArgs)-2; itr += 3 {
+		score, err := strconv.ParseFloat(parsedArgs[itr], 64)
 		if err != nil {
 			return err
 		}
-		sm[args[itr+1]] = score
+		sm[parsedArgs[itr+1]] = score
 		radixTree := radix_tree.New()
 		storedRadixTree, found := tm.Get(score)
 		if found {
 			radixTree = storedRadixTree.(*radix_tree.Tree)
 		}
-		sortedKeyMap, _, _ = sortedKeyMap.Insert([]byte(args[itr+1]), args[itr+2])
-		radixTree, _, _ = radixTree.Insert([]byte(args[itr+1]), args[itr+2])
+		sortedKeyMap, _, _ = sortedKeyMap.Insert([]byte(parsedArgs[itr+1]), parsedArgs[itr+2])
+		radixTree, _, _ = radixTree.Insert([]byte(parsedArgs[itr+1]), parsedArgs[itr+2])
 		tm.Put(score, radixTree)
 		_, radixTreeFloor := tm.Floor(score - Epsilon)
 		if radixTreeFloor != nil {
@@ -547,7 +578,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 	rs.sortedMaps[args[0]] = storedTm
 	for _, arg := range args[1:] {
 		delete(rs.sortedMapsScore[args[0]], arg)
-		rs.sortedMapsKeys[args[0]].Delete([]byte(arg))
+		rs.sortedMapsKeys[args[0]], _, _ = rs.sortedMapsKeys[args[0]].Delete([]byte(arg))
 	}
 	return nil
 }
@@ -1075,11 +1106,19 @@ func (rs *TredsStore) LPush(args []string) error {
 	if kd != -1 && kd != ListStore {
 		return fmt.Errorf("not list store")
 	}
+	validKey := validateKey(key)
+	if !validKey {
+		return fmt.Errorf("invalid key")
+	}
 	storedList, ok := rs.lists[key]
 	if !ok {
 		storedList = doublylinkedlist.New()
 	}
-	for _, arg := range args[1:] {
+	parsedArgs, err := splitCommandWithQuotes(strings.Join(args[1:], " "))
+	if err != nil {
+		return err
+	}
+	for _, arg := range parsedArgs {
 		storedList.Prepend(arg)
 	}
 	rs.lists[key] = storedList
@@ -1092,11 +1131,19 @@ func (rs *TredsStore) RPush(args []string) error {
 	if kd != -1 && kd != ListStore {
 		return fmt.Errorf("not list store")
 	}
+	validKey := validateKey(key)
+	if !validKey {
+		return fmt.Errorf("invalid key")
+	}
 	storedList, ok := rs.lists[key]
 	if !ok {
 		storedList = doublylinkedlist.New()
 	}
-	for _, arg := range args[1:] {
+	parsedArgs, err := splitCommandWithQuotes(strings.Join(args[1:], " "))
+	if err != nil {
+		return err
+	}
+	for _, arg := range parsedArgs {
 		storedList.Append(arg)
 	}
 	rs.lists[key] = storedList
@@ -1256,12 +1303,20 @@ func (rs *TredsStore) SAdd(key string, members []string) error {
 	if kd != -1 && kd != SetStore {
 		return fmt.Errorf("not set store")
 	}
+	validKey := validateKey(key)
+	if !validKey {
+		return fmt.Errorf("invalid key")
+	}
+	parsedArgs, err := splitCommandWithQuotes(strings.Join(members, " "))
+	if err != nil {
+		return err
+	}
 	storedSet, ok := rs.sets[key]
 	if !ok {
 		storedSet = hashset.New()
 		rs.sets[key] = storedSet
 	}
-	for _, member := range members {
+	for _, member := range parsedArgs {
 		storedSet.Add(member)
 	}
 	return nil
@@ -1272,11 +1327,15 @@ func (rs *TredsStore) SRem(key string, members []string) error {
 	if kd != -1 && kd != SetStore {
 		return fmt.Errorf("not set store")
 	}
+	parsedArgs, err := splitCommandWithQuotes(strings.Join(members, " "))
+	if err != nil {
+		return err
+	}
 	storedSet, ok := rs.sets[key]
 	if !ok {
 		return nil
 	}
-	for _, member := range members {
+	for _, member := range parsedArgs {
 		storedSet.Remove(member)
 	}
 	return nil
@@ -1412,13 +1471,27 @@ func (rs *TredsStore) HSet(key string, args []string) error {
 	if kd != -1 && kd != HashStore {
 		return fmt.Errorf("not hash store")
 	}
+	validKey := validateKey(key)
+	if !validKey {
+		return fmt.Errorf("invalid key")
+	}
 	storedMap, ok := rs.hashes[key]
 	if !ok {
 		storedMap = hashmap.New()
 		rs.hashes[key] = storedMap
 	}
-	for iter := 0; iter < len(args); iter += 2 {
-		storedMap.Put(args[iter], args[iter+1])
+	parsedArgs, err := splitCommandWithQuotes(strings.Join(args, " "))
+	if err != nil {
+		return err
+	}
+	for iter := 0; iter < storedMap.Size(); iter += 2 {
+		validKey = validateKey(parsedArgs[iter])
+		if !validKey {
+			return fmt.Errorf("invalid key")
+		}
+	}
+	for iter := 0; iter < len(parsedArgs); iter += 2 {
+		storedMap.Put(parsedArgs[iter], parsedArgs[iter+1])
 	}
 	return nil
 }
