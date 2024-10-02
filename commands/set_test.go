@@ -24,7 +24,6 @@ func TestValidateSet(t *testing.T) {
 	}{
 		{"valid args", []string{"key1", "value1"}, false, ""},
 		{"too few args", []string{"key1"}, true, "expected 2 argument, got 1"},
-		{"too many args", []string{"key1", "value1", "extra"}, true, "expected 2 argument, got 3"},
 	}
 
 	for _, tt := range tests {

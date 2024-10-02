@@ -21,7 +21,6 @@ func validateMSet() ValidationHook {
 		if len(args) < 2 {
 			return fmt.Errorf("expected minimum 2 argument, got %d", len(args))
 		}
-
 		return nil
 	}
 }
