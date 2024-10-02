@@ -28,16 +28,16 @@ func validateLSetCommand() ValidationHook {
 }
 
 func executeLSetCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		index, err := strconv.Atoi(args[1])
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
 		err = store.LSet(key, index, strings.Join(args[2:], " "))
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return "OK\n", nil
+		return "OK\n"
 	}
 }

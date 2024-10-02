@@ -28,12 +28,12 @@ func validateHExistsCommand() ValidationHook {
 }
 
 func executeHExistsCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		found, err := store.HExists(key, args[1])
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return strconv.FormatBool(found), nil
+		return strconv.FormatBool(found)
 	}
 }

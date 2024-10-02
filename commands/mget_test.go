@@ -75,10 +75,7 @@ func TestExecuteMGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			executionHook := executeMGet()
-			result, err := executionHook(tt.args, tt.store)
-			if (err != nil) != tt.expectErr {
-				t.Errorf("expected error: %v, got: %v", tt.expectErr, err)
-			}
+			result := executionHook(tt.args, tt.store)
 			if result != tt.expectedMsg {
 				t.Errorf("expected result: %s, got: %s", tt.expectedMsg, result)
 			}
