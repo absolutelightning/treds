@@ -24,7 +24,6 @@ func TestValidateSet(t *testing.T) {
 	}{
 		{"valid args", []string{"key1", "value1"}, false, ""},
 		{"too few args", []string{"key1"}, true, "expected 2 argument, got 1"},
-		{"too many args", []string{"key1", "value1", "extra"}, true, "expected 2 argument, got 3"},
 	}
 
 	for _, tt := range tests {
@@ -69,11 +68,8 @@ func TestExecuteSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			executionHook := executeSet()
-			result, err := executionHook(tt.args, tt.store)
-			if (err != nil) != tt.expectErr {
-				t.Errorf("expected error: %v, got: %v", tt.expectErr, err)
-			}
-			if err == nil && result != tt.expectedMsg {
+			result := executionHook(tt.args, tt.store)
+			if result != tt.expectedMsg {
 				t.Errorf("expected result: %s, got: %s", tt.expectedMsg, result)
 			}
 

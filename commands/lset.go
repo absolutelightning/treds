@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"treds/store"
 )
@@ -19,7 +20,7 @@ func RegisterLSetCommand(r CommandRegistry) {
 
 func validateLSetCommand() ValidationHook {
 	return func(args []string) error {
-		if len(args) != 3 {
+		if len(args) < 3 {
 			return fmt.Errorf("expected 3 argument, got %d", len(args))
 		}
 		return nil
@@ -27,16 +28,16 @@ func validateLSetCommand() ValidationHook {
 }
 
 func executeLSetCommand() ExecutionHook {
-	return func(args []string, store store.Store) (string, error) {
+	return func(args []string, store store.Store) string {
 		key := args[0]
 		index, err := strconv.Atoi(args[1])
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		err = store.LSet(key, index, args[2])
+		err = store.LSet(key, index, strings.Join(args[2:], " "))
 		if err != nil {
-			return "", err
+			return err.Error()
 		}
-		return "OK\n", nil
+		return "OK\n"
 	}
 }
