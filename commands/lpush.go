@@ -13,6 +13,7 @@ func RegisterLPushCommand(r CommandRegistry) {
 		Name:     LPushCommand,
 		Validate: validateLPushCommand(),
 		Execute:  executeLPushCommand(),
+		IsWrite:  true,
 	})
 }
 

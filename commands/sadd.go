@@ -13,6 +13,7 @@ func RegisterSAddCommand(r CommandRegistry) {
 		Name:     SAddCommand,
 		Validate: validateSAddCommand(),
 		Execute:  executeSAddCommand(),
+		IsWrite:  true,
 	})
 }
 

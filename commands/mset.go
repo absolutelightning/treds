@@ -13,6 +13,7 @@ func RegisterMSetCommand(r CommandRegistry) {
 		Name:     MSETCommand,
 		Validate: validateMSet(),
 		Execute:  executeMSet(),
+		IsWrite:  true,
 	})
 }
 
