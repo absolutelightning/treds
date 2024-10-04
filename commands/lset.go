@@ -15,6 +15,7 @@ func RegisterLSetCommand(r CommandRegistry) {
 		Name:     LSetCommand,
 		Validate: validateLSetCommand(),
 		Execute:  executeLSetCommand(),
+		IsWrite:  true,
 	})
 }
 
