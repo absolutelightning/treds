@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"strings"
@@ -35,6 +36,9 @@ type snapshot struct {
 func (s *snapshot) Persist(sink raft.SnapshotSink) error {
 	if _, err := sink.Write(s.storageSnapshot); err != nil {
 		return err
+	}
+	if err := sink.Close(); err != nil {
+		return fmt.Errorf("failed to close snapshot sink: %v", err)
 	}
 	return nil
 }

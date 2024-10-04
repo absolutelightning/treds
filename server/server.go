@@ -72,7 +72,12 @@ func New(port int) (*Server, error) {
 		return nil, err
 	}
 
-	r, err := raft.NewRaft(config, NewTredsFsm(commandRegistry, tredsStore), w, w, raft.NewInmemSnapshotStore(), transport)
+	snapshotStore, err := raft.NewFileSnapshotStore("data", 3, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := raft.NewRaft(config, NewTredsFsm(commandRegistry, tredsStore), w, w, snapshotStore, transport)
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +106,12 @@ func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
 		for {
 			ts.tredsStore.CleanUpExpiredKeys()
 			time.Sleep(100 * time.Millisecond)
+		}
+	}()
+	go func() {
+		for {
+			time.Sleep(60 * time.Second)
+			ts.raft.Snapshot()
 		}
 	}()
 	return gnet.None
@@ -181,7 +192,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			respondErr(c, err)
 			return gnet.None
 		}
-		res  := commandReg.Execute(commandStringParts[1:], ts.tredsStore)
+		res := commandReg.Execute(commandStringParts[1:], ts.tredsStore)
 		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
 		if errConn != nil {
 			fmt.Println("Error occurred writing to connection", errConn)
