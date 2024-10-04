@@ -14,6 +14,7 @@ import (
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/emirpasic/gods/utils"
+	"github.com/vmihailenco/msgpack/v5"
 	"golang.org/x/sync/errgroup"
 	radix_tree "treds/datastructures/radix"
 )
@@ -1636,4 +1637,12 @@ func (rs *TredsStore) LongestPrefix(prefix string) (string, error) {
 		return res.String(), nil
 	}
 	return "", nil
+}
+
+func (rs *TredsStore) Snapshot() ([]byte, error) {
+	return msgpack.Marshal(rs)
+}
+
+func (rs *TredsStore) Restore(data []byte) error {
+	return msgpack.Unmarshal(data, &rs)
 }

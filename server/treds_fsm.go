@@ -2,7 +2,9 @@ package server
 
 import (
 	"io"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/raft"
 	"github.com/panjf2000/gnet/v2"
@@ -26,17 +28,47 @@ func (t TredsFsm) Apply(log *raft.Log) interface{} {
 	return commandReg.Execute(commandStringParts[1:], t.tredsStore)
 }
 
-func (t TredsFsm) Snapshot() (raft.FSMSnapshot, error) {
-	//TODO: implement snapshot creation
-	//This need to read the full im mem data, serialize it and write it to the snapshot
-	panic("implement me")
+type snapshot struct {
+	storageSnapshot []byte
 }
 
-func (t TredsFsm) Restore(_ io.ReadCloser) error {
-	//TODO: implement snapshot creation
-	//This need to read from the snapshot, parse the commands,
-	//use the registry to retrieve the right command and execute it with the data
-	panic("implement me")
+func (s *snapshot) Persist(sink raft.SnapshotSink) error {
+	if _, err := sink.Write(s.storageSnapshot); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *snapshot) Release() {}
+
+func (t TredsFsm) Snapshot() (raft.FSMSnapshot, error) {
+	defer func(start time.Time) {
+		log.Println("snapshot created", "duration", time.Since(start).String())
+	}(time.Now())
+
+	storageSnapshot, err := t.tredsStore.Snapshot()
+	if err != nil {
+		return nil, err
+	}
+
+	return &snapshot{
+		storageSnapshot: storageSnapshot,
+	}, nil
+}
+
+func (t TredsFsm) Restore(old io.ReadCloser) error {
+	defer old.Close()
+	data, err := io.ReadAll(old)
+	if err != nil {
+		return err
+	}
+	ts := store.NewTredsStore()
+	err = ts.Restore(data)
+	if err != nil {
+		return err
+	}
+	t.tredsStore = ts
+	return nil
 }
 
 func NewTredsFsm(registry commands.CommandRegistry, store store.Store) *TredsFsm {

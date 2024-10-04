@@ -56,4 +56,6 @@ type Store interface {
 	Expire(key string, at time.Time) error
 	Ttl(key string) int
 	LongestPrefix(string) (string, error)
+	Snapshot() ([]byte, error)
+	Restore([]byte) error
 }
