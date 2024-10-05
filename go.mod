@@ -9,7 +9,6 @@ require (
 	github.com/hashicorp/raft v1.7.1
 	github.com/hashicorp/raft-wal v0.4.1
 	github.com/panjf2000/gnet/v2 v2.5.7
-	github.com/vmihailenco/msgpack/v5 v5.4.1
 	golang.org/x/sync v0.8.0
 )
 

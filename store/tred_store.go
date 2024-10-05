@@ -14,9 +14,10 @@ import (
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/emirpasic/gods/utils"
-	"github.com/vmihailenco/msgpack/v5"
+	protob "github.com/golang/protobuf/proto"
 	"golang.org/x/sync/errgroup"
 	radix_tree "treds/datastructures/radix"
+	proto "treds/store/proto"
 )
 
 const NilResp = "(nil)\n"
@@ -1640,9 +1641,36 @@ func (rs *TredsStore) LongestPrefix(prefix string) (string, error) {
 }
 
 func (rs *TredsStore) Snapshot() ([]byte, error) {
-	return msgpack.Marshal(rs)
+	data, err := protob.Marshal(rs.getSerializedStore())
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func (rs *TredsStore) Restore(data []byte) error {
-	return msgpack.Unmarshal(data, &rs)
+	st := &proto.Store{}
+	err := protob.Unmarshal(data, st)
+	if err != nil {
+		return err
+	}
+	rs.restore(st)
+	return nil
+}
+
+func (rs *TredsStore) getSerializedStore() *proto.Store {
+	protoStore := &proto.Store{}
+	protoStore.Tree = &proto.RadixTree{
+		Root: &proto.Node{},
+	}
+	protoStore.SortedMaps = make(map[string]*proto.SortedMap)
+	protoStore.SortedMapsScore = make(map[string]*proto.SortedMapScore)
+	protoStore.SortedMapsKeys = make(map[string]*proto.RadixTree)
+	protoStore.Lists = make(map[string]*proto.DoublyLinkedList)
+	protoStore.Sets = make(map[string]*proto.Set)
+	protoStore.Hashes = make(map[string]*proto.Hash)
+	protoStore.Expiry = make(map[string]int64)
+}
+
+func (rs *TredsStore) restore(st *proto.SerializedStore) int {
 }

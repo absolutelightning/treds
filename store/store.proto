@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package store;
+
+option go_package = "./proto";
+
+message Store {
+    RadixTree tree = 1;
+    map<string, SortedMap> sortedMaps = 2;
+    map<string, SortedMapScore> sortedMapsScore = 3;
+    map<string, RadixTree> sortedMapsKeys = 4;
+    map<string, DoublyLinkedList> lists = 5;
+    map<string, Set> sets = 6;
+    map<string, Hash> hashes = 7;
+    map<string, int64> expiry = 8;
+}
+
+message RadixTree {
+    Node root = 1;
+    int32 size = 2;
+}
+
+message Node {
+    LeafNode leaf = 1;
+    LeafNode minLeaf = 2;
+    LeafNode maxLeaf = 3;
+    bytes prefix = 4;
+    repeated Edge edges = 5;
+}
+
+message Edge {
+    bytes label = 1;
+    Node node = 2;
+}
+
+message LeafNode {
+    bytes key = 1;
+    bytes val = 2;
+    bytes nextLeaf = 3;
+    bytes prevLeaf = 4;
+}
+
+message SortedMap {
+    map<string, bytes> entries = 1;
+}
+
+message SortedMapScore {
+    map<string, double> scores = 1;
+}
+
+message DoublyLinkedList {
+    repeated bytes values = 1;
+}
+
+message Set {
+    repeated bytes elements = 1;
+}
+
+message Hash {
+    map<string, bytes> entries = 1;
+}
