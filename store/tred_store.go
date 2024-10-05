@@ -1659,10 +1659,18 @@ func (rs *TredsStore) Restore(data []byte) error {
 }
 
 func (rs *TredsStore) getSerializedStore() *proto.Store {
-	protoStore := &proto.Store{}
-	protoStore.Tree = &proto.RadixTree{
-		Root: &proto.Node{},
+	walkTreeAndSerialize := func(tree *radix_tree.Tree) *proto.RadixTree {
+		uuidMap := make(map[*radix_tree.LeafNode]string)
+
+		protoTree := &proto.RadixTree{
+			Size: int32(tree.Len()),
+			Root: walkAndConvertNode(tree.Root(), uuidMap),
+		}
+		return protoTree
 	}
+
+	protoStore := &proto.Store{}
+	protoStore.Tree = walkTreeAndSerialize(rs.tree)
 	protoStore.SortedMaps = make(map[string]*proto.SortedMap)
 	protoStore.SortedMapsScore = make(map[string]*proto.SortedMapScore)
 	protoStore.SortedMapsKeys = make(map[string]*proto.RadixTree)
@@ -1670,6 +1678,7 @@ func (rs *TredsStore) getSerializedStore() *proto.Store {
 	protoStore.Sets = make(map[string]*proto.Set)
 	protoStore.Hashes = make(map[string]*proto.Hash)
 	protoStore.Expiry = make(map[string]int64)
+	return protoStore
 }
 
 func (rs *TredsStore) restore(st *proto.SerializedStore) int {

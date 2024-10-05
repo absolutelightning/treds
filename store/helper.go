@@ -4,6 +4,10 @@ import (
 	"errors"
 	"strings"
 	"unicode"
+
+	"github.com/google/uuid"
+	radix_tree "treds/datastructures/radix"
+	"treds/store/proto"
 )
 
 const maxKeyLength = 512 * 1024 * 1024 // 512 MB
@@ -130,4 +134,65 @@ func splitCommandWithQuotes(command string) ([]string, error) {
 	}
 
 	return result, nil
+}
+
+func walkAndConvertNode(node *radix_tree.Node, uuidMap map[*radix_tree.LeafNode]string) *proto.Node {
+	if node == nil {
+		return nil
+	}
+
+	protoNode := &proto.Node{
+		Leaf:   convertLeaf(node.GetLeaf(), uuidMap),
+		Prefix: node.GetPrefix(),
+	}
+
+	for _, edge := range node.GetEdges() {
+		protoNode.Edges = append(protoNode.Edges, &proto.Edge{
+			Label: []byte{edge.Label()},
+			Node:  walkAndConvertNode(edge.Node(), uuidMap),
+		})
+	}
+	return protoNode
+}
+
+func convertLeaf(leaf *radix_tree.LeafNode, uuidMap map[*radix_tree.LeafNode]string) *proto.LeafNode {
+	if leaf == nil {
+		return nil
+	}
+
+	// If this leaf already has a UUID in the map, reuse it
+	leafUUID, exists := uuidMap[leaf]
+	if !exists {
+		// Assign a new UUID if it doesn't exist in the map
+		leafUUID = uuid.New().String()
+		uuidMap[leaf] = leafUUID
+	}
+
+	nextUUID := ""
+	prevUUID := ""
+
+	// Use the UUIDs of nextLeaf and prevLeaf if they exist
+	if leaf.GetNextLeaf() != nil {
+		if nextLeafUUID, ok := uuidMap[leaf.GetNextLeaf()]; ok {
+			nextUUID = nextLeafUUID
+		} else {
+			nextUUID = uuid.New().String()
+			uuidMap[leaf.GetNextLeaf()] = nextUUID
+		}
+	}
+	if leaf.GetNextLeaf() != nil {
+		if prevLeafUUID, ok := uuidMap[leaf.GetPrevLeaf()]; ok {
+			prevUUID = prevLeafUUID
+		} else {
+			prevUUID = uuid.New().String()
+			uuidMap[leaf.GetPrevLeaf()] = prevUUID
+		}
+	}
+
+	return &proto.LeafNode{
+		Key:      leaf.Key(),
+		Val:      []byte(leaf.Value().(string)),
+		NextLeaf: nextUUID,
+		PrevLeaf: prevUUID,
+	}
 }

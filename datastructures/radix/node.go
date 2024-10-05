@@ -42,10 +42,18 @@ func (n *LeafNode) GetPrevLeaf() *LeafNode {
 	return n.prevLeaf
 }
 
-// edge is used to represent an edge node
-type edge struct {
+// Edge is used to represent an Edge node
+type Edge struct {
 	label byte
 	node  *Node
+}
+
+func (e *Edge) Label() byte {
+	return e.label
+}
+
+func (e *Edge) Node() *Node {
+	return e.node
 }
 
 // Node is an immutable node in the radix tree
@@ -62,7 +70,22 @@ type Node struct {
 	// Edges should be stored in-order for iteration.
 	// We avoid a fully materialized slice to save memory,
 	// since in most cases we expect to be sparse
-	edges edges
+	edges Edges
+}
+
+func (n *Node) GetPrefix() []byte {
+	return n.prefix
+}
+
+func (n *Node) GetEdges() Edges {
+	return n.edges
+}
+
+func (n *Node) GetLeaf() *LeafNode {
+	if n.isLeaf() {
+		return n.leaf
+	}
+	return nil
 }
 
 func (n *Node) isLeaf() bool {
@@ -110,7 +133,7 @@ func (n *Node) computeLinks() {
 	}
 }
 
-func (n *Node) addEdge(e edge) {
+func (n *Node) addEdge(e Edge) {
 	num := len(n.edges)
 	idx := sort.Search(num, func(i int) bool {
 		return n.edges[i].label >= e.label
@@ -138,7 +161,7 @@ func (n *Node) MaximumLeaf() (*LeafNode, bool) {
 	return nil, false
 }
 
-func (n *Node) replaceEdge(e edge) {
+func (n *Node) replaceEdge(e Edge) {
 	num := len(n.edges)
 	idx := sort.Search(num, func(i int) bool {
 		return n.edges[i].label >= e.label
@@ -147,7 +170,7 @@ func (n *Node) replaceEdge(e edge) {
 		n.edges[idx].node = e.node
 		return
 	}
-	panic("replacing missing edge")
+	panic("replacing missing Edge")
 }
 
 func (n *Node) getEdge(label byte) (int, *Node) {
@@ -180,7 +203,7 @@ func (n *Node) delEdge(label byte) {
 	})
 	if idx < num && n.edges[idx].label == label {
 		copy(n.edges[idx:], n.edges[idx+1:])
-		n.edges[len(n.edges)-1] = edge{}
+		n.edges[len(n.edges)-1] = Edge{}
 		n.edges = n.edges[:len(n.edges)-1]
 	}
 }
@@ -196,7 +219,7 @@ func (n *Node) Search(k []byte) (interface{}, bool) {
 			break
 		}
 
-		// Look for an edge
+		// Look for an Edge
 		_, n = n.getEdge(search[0])
 		if n == nil {
 			break
@@ -235,7 +258,7 @@ func (n *Node) LongestPrefix(k []byte) ([]byte, interface{}, bool) {
 			break
 		}
 
-		// Look for an edge
+		// Look for an Edge
 		_, n = n.getEdge(search[0])
 		if n == nil {
 			break
@@ -317,7 +340,7 @@ func (n *Node) WalkPrefix(prefix []byte, fn WalkFn) {
 			return
 		}
 
-		// Look for an edge
+		// Look for an Edge
 		_, n = n.getEdge(search[0])
 		if n == nil {
 			break
@@ -354,7 +377,7 @@ func (n *Node) WalkPath(path []byte, fn WalkFn) {
 			return
 		}
 
-		// Look for an edge
+		// Look for an Edge
 		_, n = n.getEdge(search[0])
 		if n == nil {
 			return

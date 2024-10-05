@@ -75,7 +75,7 @@ func (t *Txn) trackChannelsAndCount(n *Node) int {
 }
 
 // mergeChild is called to collapse the given node with its child. This is only
-// called when the given node is not a leaf and has a single edge.
+// called when the given node is not a leaf and has a single Edge.
 func (t *Txn) mergeChild(n *Node) {
 	// Mark the child node as being mutated since we are about to abandon
 	// it. We don't need to mark the leaf since we are retaining it if it
@@ -88,7 +88,7 @@ func (t *Txn) mergeChild(n *Node) {
 	n.leaf = child.leaf
 	n.minLeaf = child.leaf
 	if len(child.edges) != 0 {
-		n.edges = make([]edge, len(child.edges))
+		n.edges = make([]Edge, len(child.edges))
 		copy(n.edges, child.edges)
 	} else {
 		n.edges = nil
@@ -114,16 +114,16 @@ func (t *Txn) insert(n *Node, k, search []byte, v interface{}) (*Node, interface
 		return n, oldVal, didUpdate
 	}
 
-	// Look for the edge
+	// Look for the Edge
 	idx, child := n.getEdge(search[0])
 
-	// No edge, create one
+	// No Edge, create one
 	if child == nil {
 		leaf := &LeafNode{
 			key: k,
 			val: v,
 		}
-		e := edge{
+		e := Edge{
 			label: search[0],
 			node: &Node{
 				leaf:    leaf,
@@ -154,13 +154,13 @@ func (t *Txn) insert(n *Node, k, search []byte, v interface{}) (*Node, interface
 	splitNode := &Node{
 		prefix: search[:commonPrefix],
 	}
-	n.replaceEdge(edge{
+	n.replaceEdge(Edge{
 		label: search[0],
 		node:  splitNode,
 	})
 
 	// Restore the existing child node
-	splitNode.addEdge(edge{
+	splitNode.addEdge(Edge{
 		label: child.prefix[commonPrefix],
 		node:  child,
 	})
@@ -182,8 +182,8 @@ func (t *Txn) insert(n *Node, k, search []byte, v interface{}) (*Node, interface
 		return n, nil, false
 	}
 
-	// Create a new edge for the node
-	splitNode.addEdge(edge{
+	// Create a new Edge for the node
+	splitNode.addEdge(Edge{
 		label: search[0],
 		node: &Node{
 			leaf:    leaf,
@@ -222,7 +222,7 @@ func (t *Txn) delete(parent, n *Node, search []byte) (*Node, *LeafNode) {
 		return n, oldLeaf
 	}
 
-	// Look for an edge
+	// Look for an Edge
 	label := search[0]
 	idx, child := n.getEdge(label)
 	if child == nil || !bytes.HasPrefix(search, child.prefix) {
@@ -236,7 +236,7 @@ func (t *Txn) delete(parent, n *Node, search []byte) (*Node, *LeafNode) {
 		return nil, nil
 	}
 
-	// Delete the edge if the node has no edges
+	// Delete the Edge if the node has no edges
 	if newChild.leaf == nil && len(newChild.edges) == 0 {
 		n.delEdge(label)
 		if n != t.root && len(n.edges) == 1 && !n.isLeaf() {
@@ -262,7 +262,7 @@ func (t *Txn) deletePrefix(n *Node, search []byte) (*Node, int) {
 		return n, delSize
 	}
 
-	// Look for an edge
+	// Look for an Edge
 	label := search[0]
 	idx, child := n.getEdge(label)
 	// We make sure that either the child node's prefix starts with the search term, or the search term starts with the child node's prefix
@@ -281,7 +281,7 @@ func (t *Txn) deletePrefix(n *Node, search []byte) (*Node, int) {
 	if newChild == nil {
 		return nil, 0
 	}
-	// Delete the edge if the node has no edges
+	// Delete the Edge if the node has no edges
 	if newChild.leaf == nil && len(newChild.edges) == 0 {
 		n.delEdge(label)
 		if n != t.root && len(n.edges) == 1 && !n.isLeaf() {

@@ -2,20 +2,20 @@ package radix
 
 import "sort"
 
-type edges []edge
+type Edges []Edge
 
-func (e edges) Len() int {
+func (e Edges) Len() int {
 	return len(e)
 }
 
-func (e edges) Less(i, j int) bool {
+func (e Edges) Less(i, j int) bool {
 	return e[i].label < e[j].label
 }
 
-func (e edges) Swap(i, j int) {
+func (e Edges) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
-func (e edges) Sort() {
+func (e Edges) Sort() {
 	sort.Sort(e)
 }

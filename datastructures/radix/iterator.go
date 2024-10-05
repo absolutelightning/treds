@@ -9,7 +9,7 @@ import (
 // in pre-order
 type Iterator struct {
 	node           *Node
-	stack          []edges
+	stack          []Edges
 	leafNode       *LeafNode
 	key            []byte
 	seekLowerBound bool
@@ -38,7 +38,7 @@ func (i *Iterator) SeekPrefixWatch(prefix []byte) (watch <-chan struct{}) {
 			return
 		}
 
-		// Look for an edge
+		// Look for an Edge
 		_, n = n.getEdge(search[0])
 		if n == nil {
 			i.node = nil

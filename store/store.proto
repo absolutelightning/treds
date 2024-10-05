@@ -36,8 +36,8 @@ message Edge {
 message LeafNode {
     bytes key = 1;
     bytes val = 2;
-    bytes nextLeaf = 3;
-    bytes prevLeaf = 4;
+    string nextLeaf = 3;
+    string prevLeaf = 4;
 }
 
 message SortedMap {
