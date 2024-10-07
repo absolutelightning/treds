@@ -23,6 +23,7 @@ type CommandRegistration struct {
 	Name     string
 	Validate ValidationHook
 	Execute  ExecutionHook
+	IsWrite  bool
 }
 
 func NewRegistry() CommandRegistry {
