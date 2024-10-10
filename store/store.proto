@@ -4,58 +4,74 @@ package store;
 
 option go_package = "./proto";
 
-message Store {
-    RadixTree tree = 1;
-    map<string, SortedMap> sortedMaps = 2;
-    map<string, SortedMapScore> sortedMapsScore = 3;
-    map<string, RadixTree> sortedMapsKeys = 4;
-    map<string, DoublyLinkedList> lists = 5;
-    map<string, Set> sets = 6;
-    map<string, Hash> hashes = 7;
-    map<string, int64> expiry = 8;
-}
-
-message RadixTree {
-    Node root = 1;
-    int32 size = 2;
-}
-
-message Node {
-    LeafNode leaf = 1;
-    LeafNode minLeaf = 2;
-    LeafNode maxLeaf = 3;
-    bytes prefix = 4;
-    repeated Edge edges = 5;
-}
-
-message Edge {
-    bytes label = 1;
-    Node node = 2;
-}
-
+// LeafNode message
 message LeafNode {
-    bytes key = 1;
-    bytes val = 2;
-    string nextLeaf = 3;
-    string prevLeaf = 4;
+    bytes key = 1;               // The key of the leaf node
+    bytes val = 2;               // The value associated with the key
+    LeafNode nextLeaf = 3;       // Pointer to the next leaf node
+    LeafNode prevLeaf = 4;       // Pointer to the previous leaf node
 }
 
+// Node message
+message Node {
+    LeafNode leaf = 1;           // Leaf node associated with this node
+    LeafNode minLeaf = 2;        // Minimum leaf node
+    LeafNode maxLeaf = 3;        // Maximum leaf node
+    bytes prefix = 4;            // Common prefix to ignore
+    repeated Edge edges = 5;     // Edges leading to child nodes
+}
+
+// Edge message (if you have edges defined)
+message Edge {
+    bytes label = 1;             // Label for the edge
+    Node node = 2;               // Child node
+}
+
+// Tree message
+message Tree {
+    Node root = 1;               // Root node of the tree
+    int32 size = 2;              // Size of the tree
+}
+
+// SortedMap message
 message SortedMap {
-    map<string, bytes> entries = 1;
+    repeated KeyValuePair entries = 1; // Key-value pairs in the sorted map
 }
 
-message SortedMapScore {
-    map<string, double> scores = 1;
+// KeyValuePair message for SortedMap
+message KeyValuePair {
+    string key = 1;              // The key of the entry
+    bytes value = 2;             // The value associated with the key
 }
 
-message DoublyLinkedList {
-    repeated bytes values = 1;
+// Scores message for sortedMapsScore
+message Scores {
+    map<string, float> scores = 1; // Mapping of string to float64 scores
 }
 
+// List message (for lists)
+message List {
+    repeated bytes items = 1;     // List of items
+}
+
+// Set message (for sets)
 message Set {
-    repeated bytes elements = 1;
+    repeated bytes items = 1;     // Set of unique items
 }
 
+// Hash message (for hashes)
 message Hash {
-    map<string, bytes> entries = 1;
+    map<string, bytes> fields = 1; // Mapping of fields in the hash
+}
+
+// TredsStore message
+message TredsStore {
+    Tree tree = 1;                        // The tree structure
+    map<string, SortedMap> sortedMaps = 2; // Sorted maps
+    map<string, Scores> sortedMapsScore = 3; // Scores for sorted maps
+    map<string, Tree> sortedMapsKeys = 4; // Trees for sorted maps
+    map<string, List> lists = 5;          // Lists
+    map<string, Set> sets = 6;            // Sets
+    map<string, Hash> hashes = 7;         // Hashes
+    map<string, int64> expiry = 8;        // Expiry timestamps
 }

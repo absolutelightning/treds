@@ -1649,7 +1649,7 @@ func (rs *TredsStore) Snapshot() ([]byte, error) {
 }
 
 func (rs *TredsStore) Restore(data []byte) error {
-	st := &proto.Store{}
+	st := &proto.TredsStore{}
 	err := protob.Unmarshal(data, st)
 	if err != nil {
 		return err
@@ -1658,27 +1658,182 @@ func (rs *TredsStore) Restore(data []byte) error {
 	return nil
 }
 
-func (rs *TredsStore) getSerializedStore() *proto.Store {
-	walkTreeAndSerialize := func(tree *radix_tree.Tree) *proto.RadixTree {
-		uuidMap := make(map[*radix_tree.LeafNode]string)
+func (rs *TredsStore) getSerializedStore() *proto.TredsStore {
+	if rs == nil {
+		return nil
+	}
+	return &proto.TredsStore{
+		Tree:            ConvertTreeToProto(rs.tree),
+		SortedMaps:      ConvertSortedMapsToProto(rs.sortedMaps),
+		SortedMapsScore: ConvertScoresToProto(rs.sortedMapsScore),
+		SortedMapsKeys:  ConvertSortedMapsKeysToProto(rs.sortedMapsKeys),
+		Lists:           ConvertListsToProto(rs.lists),
+		Sets:            ConvertSetsToProto(rs.sets),
+		Hashes:          ConvertHashesToProto(rs.hashes),
+		Expiry:          ConvertExpiryToProto(rs.expiry),
+	}
+}
 
-		protoTree := &proto.RadixTree{
-			Size: int32(tree.Len()),
-			Root: walkAndConvertNode(tree.Root(), uuidMap),
-		}
-		return protoTree
+func ConvertLeafNodeToProto(leaf *radix_tree.LeafNode) *proto.LeafNode {
+	if leaf == nil {
+		return nil
+	}
+	return &proto.LeafNode{
+		Key:      leaf.Key(),
+		Val:      []byte(fmt.Sprintf("%v", leaf.Value())), // Serialize value appropriately
+		NextLeaf: ConvertLeafNodeToProto(leaf.GetNextLeaf()),
+		PrevLeaf: ConvertLeafNodeToProto(leaf.GetPrevLeaf()),
+	}
+}
+
+// ConvertNodeToProto converts a Node to a Node Protobuf message
+func ConvertNodeToProto(node *radix_tree.Node) *proto.Node {
+	if node == nil {
+		return nil
 	}
 
-	protoStore := &proto.Store{}
-	protoStore.Tree = walkTreeAndSerialize(rs.tree)
-	protoStore.SortedMaps = make(map[string]*proto.SortedMap)
-	protoStore.SortedMapsScore = make(map[string]*proto.SortedMapScore)
-	protoStore.SortedMapsKeys = make(map[string]*proto.RadixTree)
-	protoStore.Lists = make(map[string]*proto.DoublyLinkedList)
-	protoStore.Sets = make(map[string]*proto.Set)
-	protoStore.Hashes = make(map[string]*proto.Hash)
-	protoStore.Expiry = make(map[string]int64)
-	return protoStore
+	minL, _ := node.MinimumLeaf()
+	maxL, _ := node.MaximumLeaf()
+
+	return &proto.Node{
+		Leaf:    ConvertLeafNodeToProto(node.GetLeaf()),
+		MinLeaf: ConvertLeafNodeToProto(minL),
+		MaxLeaf: ConvertLeafNodeToProto(maxL),
+		Prefix:  node.GetPrefix(),
+		// Handle edges here, assuming you have a function to convert edges
+		Edges: ConvertEdgesToProto(node.GetEdges()),
+	}
+}
+
+// ConvertTreeToProto converts a Tree to a Tree Protobuf message
+func ConvertTreeToProto(tree *radix_tree.Tree) *proto.Tree {
+	if tree == nil {
+		return nil
+	}
+
+	return &proto.Tree{
+		Root: ConvertNodeToProto(tree.Root()),
+		Size: int32(tree.Len()),
+	}
+}
+
+// ConvertSortedMapToProto converts a SortedMap to a SortedMap Protobuf message
+func ConvertSortedMapToProto(sortedMap map[string]*radix_tree.Tree) *proto.SortedMap {
+	if sortedMap == nil {
+		return nil
+	}
+
+	pbMap := &proto.SortedMap{}
+	for key, value := range sortedMap { // Assuming sortedMap.entries is a slice of key-value pairs
+		pbMap.Entries = append(pbMap.Entries, &proto.KeyValuePair{
+			Key:   key,
+			Value: value,
+		})
+	}
+	return pbMap
+}
+
+// ConvertSortedMapsToProto converts a map of sorted maps to a Protobuf representation
+func ConvertSortedMapsToProto(sortedMaps map[string]*radix_tree.Tree) map[string]*treds.SortedMap {
+	sortedMapsProto := make(map[string]*proto.SortedMap)
+	for key, sortedMap := range sortedMaps {
+		sortedMapsProto[key] = ConvertSortedMapToProto(sortedMap)
+	}
+	return sortedMapsProto
+}
+
+// ConvertScoresToProto converts a map of scores to a Scores Protobuf message
+func ConvertScoresToProto(scores map[string]map[string]float64) map[string]*treds.Scores {
+	if scores == nil {
+		return nil
+	}
+
+	protoScores := make(map[string]*treds.Scores)
+	for key, scoreMap := range scores {
+		scoreProto := &treds.Scores{
+			Scores: scoreMap,
+		}
+		protoScores[key] = scoreProto
+	}
+	return protoScores
+}
+
+// ConvertSortedMapsKeysToProto converts a map of trees to a Protobuf representation
+func ConvertSortedMapsKeysToProto(sortedMapsKeys map[string]*Tree) map[string]*treds.Tree {
+	protoSortedMapsKeys := make(map[string]*treds.Tree)
+	for key, tree := range sortedMapsKeys {
+		protoSortedMapsKeys[key] = ConvertTreeToProto(tree)
+	}
+	return protoSortedMapsKeys
+}
+
+// ConvertListToProto converts a List to a List Protobuf message
+func ConvertListToProto(list *List) *treds.List {
+	if list == nil {
+		return nil
+	}
+
+	return &treds.List{
+		Items: list.items, // Assuming list.items is a slice of byte slices
+	}
+}
+
+// ConvertListsToProto converts a map of lists to a Protobuf representation
+func ConvertListsToProto(lists map[string]*List) map[string]*treds.List {
+	protoLists := make(map[string]*treds.List)
+	for key, list := range lists {
+		protoLists[key] = ConvertListToProto(list)
+	}
+	return protoLists
+}
+
+// ConvertSetToProto converts a Set to a Set Protobuf message
+func ConvertSetToProto(set *Set) *treds.Set {
+	if set == nil {
+		return nil
+	}
+
+	return &treds.Set{
+		Items: set.items, // Assuming set.items is a slice of byte slices
+	}
+}
+
+// ConvertSetsToProto converts a map of sets to a Protobuf representation
+func ConvertSetsToProto(sets map[string]*Set) map[string]*treds.Set {
+	protoSets := make(map[string]*treds.Set)
+	for key, set := range sets {
+		protoSets[key] = ConvertSetToProto(set)
+	}
+	return protoSets
+}
+
+// ConvertHashToProto converts a Hash to a Hash Protobuf message
+func ConvertHashToProto(hash *Hash) *treds.Hash {
+	if hash == nil {
+		return nil
+	}
+
+	return &treds.Hash{
+		Fields: hash.fields, // Assuming hash.fields is a map[string][]byte
+	}
+}
+
+// ConvertHashesToProto converts a map of hashes to a Protobuf representation
+func ConvertHashesToProto(hashes map[string]*Hash) map[string]*treds.Hash {
+	protoHashes := make(map[string]*treds.Hash)
+	for key, hash := range hashes {
+		protoHashes[key] = ConvertHashToProto(hash)
+	}
+	return protoHashes
+}
+
+// ConvertExpiryToProto converts the expiry map to a Protobuf representation (with Unix timestamps)
+func ConvertExpiryToProto(expiry map[string]time.Time) map[string]int64 {
+	expiryProto := make(map[string]int64)
+	for key, t := range expiry {
+		expiryProto[key] = t.Unix() // Store expiry as Unix timestamp
+	}
+	return expiryProto
 }
 
 func (rs *TredsStore) restore(st *proto.SerializedStore) int {
