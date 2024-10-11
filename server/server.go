@@ -108,12 +108,6 @@ func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
-	go func() {
-		for {
-			time.Sleep(60 * time.Second)
-			ts.raft.Snapshot()
-		}
-	}()
 	return gnet.None
 }
 
