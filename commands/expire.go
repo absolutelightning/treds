@@ -15,6 +15,7 @@ func RegisterExpireCommand(r CommandRegistry) {
 		Name:     ExpireCommand,
 		Validate: validateExpireCommand(),
 		Execute:  executeExpireCommand(),
+		IsWrite:  true,
 	})
 }
 

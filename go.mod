@@ -9,6 +9,7 @@ require (
 	github.com/hashicorp/raft v1.7.1
 	github.com/hashicorp/raft-wal v0.4.1
 	github.com/panjf2000/gnet/v2 v2.5.7
+	github.com/vmihailenco/msgpack/v5 v5.4.1
 	golang.org/x/sync v0.8.0
 )
 
@@ -29,6 +30,7 @@ require (
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/pkg/term v1.2.0-beta.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect

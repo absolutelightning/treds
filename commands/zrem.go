@@ -13,6 +13,7 @@ func RegisterZRemCommand(r CommandRegistry) {
 		Name:     ZRemCommand,
 		Validate: validateZRem(),
 		Execute:  executeZRemCommand(),
+		IsWrite:  true,
 	})
 }
 

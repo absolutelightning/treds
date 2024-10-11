@@ -14,6 +14,7 @@ func RegisterDeletePrefixCommand(r CommandRegistry) {
 		Name:     DeletePrefixCommand,
 		Validate: validateDeletePrefix(),
 		Execute:  executeDeletePrefix(),
+		IsWrite:  true,
 	})
 }
 

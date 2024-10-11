@@ -14,6 +14,7 @@ func RegisterLRemCommand(r CommandRegistry) {
 		Name:     LRemCommand,
 		Validate: validateLRemCommand(),
 		Execute:  executeLRemCommand(),
+		IsWrite:  true,
 	})
 }
 
