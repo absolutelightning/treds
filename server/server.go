@@ -31,7 +31,7 @@ type Server struct {
 	*gnet.BuiltinEventEngine
 	raft              *raft.Raft
 	id                string
-	tcpConnectionPool func() (net.Conn, error)
+	tcpConnectionPool pool.Pool
 }
 
 func New(port int) (*Server, error) {
@@ -131,6 +131,11 @@ func New(port int) (*Server, error) {
 
 	// Create a factory() to be used with channel based pool
 	factory := func() (net.Conn, error) { return net.Dial("tcp", string(leaderAddr)) }
+	p, err := pool.NewChannelPool(5, 30, factory)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return &Server{
 		Port:                 port,
@@ -138,7 +143,7 @@ func New(port int) (*Server, error) {
 		tredsCommandRegistry: commandRegistry,
 		raft:                 r,
 		id:                   string(config.LocalID),
-		tcpConnectionPool:    factory,
+		tcpConnectionPool:    p,
 	}, nil
 }
 
@@ -259,8 +264,7 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 	// capacity of 30. The factory will create 5 initial connections and put it
 	// into the pool.
 
-	p, err := pool.NewChannelPool(5, 30, ts.tcpConnectionPool)
-	conn, err := p.Get()
+	conn, err := ts.tcpConnectionPool.Get()
 	if err != nil {
 		return false, "", nil
 	}
