@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -33,6 +34,8 @@ type Server struct {
 }
 
 func New(port int) (*Server, error) {
+	const dataDir = "data"
+
 	commandRegistry := commands.NewRegistry()
 	commands.RegisterCommands(commandRegistry)
 	tredsStore := store.NewTredsStore()
@@ -40,10 +43,41 @@ func New(port int) (*Server, error) {
 	//TODO: Default config is good enough for now, but probably need to be tweaked
 	config := raft.DefaultConfig()
 
-	//TODO: server id need to be persisted locally on disk in each node
-	// so on restart we keep the same ID, this is important for raft operations
-	id := uuid.New()
-	config.LocalID = raft.ServerID(id.String())
+	serverIdFileName := filepath.Join(dataDir, "server-id")
+
+	if _, err := os.Stat(serverIdFileName); err == nil {
+		// File exists, read the UUID
+		fmt.Println("File found. Reading UUID from file...")
+		data, readErr := os.ReadFile(serverIdFileName)
+		if readErr != nil {
+			fmt.Println("Error reading UUID from file:", err)
+		}
+		// Parse the UUID
+		id, parseErr := uuid.Parse(string(data))
+		if parseErr != nil {
+			fmt.Println("Error parsing UUID:", parseErr)
+		}
+		fmt.Println("UUID read from file:", id)
+		config.LocalID = raft.ServerID(id.String())
+
+	} else if os.IsNotExist(err) {
+		// File does not exist, generate a new UUID
+		fmt.Println("File not found. Generating a new UUID...")
+		id := uuid.New()
+
+		// Write the UUID to the file
+		err = os.WriteFile(serverIdFileName, []byte(id.String()), 0644)
+		if err != nil {
+			fmt.Println("Error writing UUID to file:", err)
+		}
+		fmt.Println("New UUID generated and written to file:", id)
+		config.LocalID = raft.ServerID(id.String())
+	} else {
+		// Other errors (e.g., permission issues)
+		fmt.Println("Error checking file:", err)
+		id := uuid.New()
+		config.LocalID = raft.ServerID(id.String())
+	}
 
 	//This is the port used by raft for replication and such
 	// We can keep it as a separate port or do multiplexing over TCP
@@ -58,7 +92,7 @@ func New(port int) (*Server, error) {
 	}
 
 	// Use raft wal as a backend store for raft
-	dir := fmt.Sprintf("/tmp/%s", id.String())
+	dir := filepath.Join(dataDir, string(config.LocalID))
 
 	err = os.MkdirAll(dir, fs.ModeDir|fs.ModePerm)
 	if err != nil {
@@ -97,7 +131,7 @@ func New(port int) (*Server, error) {
 		tredsStore:           tredsStore,
 		tredsCommandRegistry: commandRegistry,
 		raft:                 r,
-		id:                   id.String(),
+		id:                   string(config.LocalID),
 	}, nil
 }
 
