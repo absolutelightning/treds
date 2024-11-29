@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/pool"
 	wal "github.com/hashicorp/raft-wal"
 
 	"treds/commands"
@@ -218,13 +219,20 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 		return false, "", nil
 	}
 
-	//TODO: Add connection pooling to avoid opening a connection per request to the server
-	conn, err := net.Dial("tcp", string(addr))
+	// Create a factory() to be used with channel based pool
+	factory := func() (net.Conn, error) { return net.Dial("tcp", string(addr)) }
+
+	// create a new channel based pool with an initial capacity of 5 and maximum
+	// capacity of 30. The factory will create 5 initial connections and put it
+	// into the pool.
+
+	p, err := pool.NewChannelPool(5, 30, factory)
+	conn, err := p.Get()
 	if err != nil {
 		return false, "", nil
 	}
 	defer conn.Close()
-	_, err = conn.Write([]byte(data))
+	_, err = conn.Write(data)
 	if err != nil {
 		return false, "", nil
 	}
