@@ -34,7 +34,7 @@ type Server struct {
 	tcpConnectionPool pool.Pool
 }
 
-func New(port int) (*Server, error) {
+func New(port int, bindAddr, advertiseAddr string) (*Server, error) {
 	const dataDir = "data"
 
 	commandRegistry := commands.NewRegistry()
@@ -82,10 +82,9 @@ func New(port int) (*Server, error) {
 
 	//This is the port used by raft for replication and such
 	// We can keep it as a separate port or do multiplexing over TCP
-	addr := fmt.Sprintf("localhost:%d", 8300)
+	addr := fmt.Sprintf("%s:%d", bindAddr, 8300)
 
-	//TODO: add config for addr and port
-	transport, err := raft.NewTCPTransport(addr, &net.TCPAddr{IP: net.IP("localhost"), Port: port}, 10, time.Second, os.Stdout)
+	transport, err := raft.NewTCPTransport(addr, &net.TCPAddr{IP: net.IP(advertiseAddr), Port: port}, 10, time.Second, os.Stdout)
 
 	//TODO: do not panic
 	if err != nil {
