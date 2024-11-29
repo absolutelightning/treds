@@ -34,7 +34,7 @@ type Server struct {
 	tcpConnectionPool pool.Pool
 }
 
-func New(port int, bindAddr, advertiseAddr string) (*Server, error) {
+func New(port, segmentSize int, bindAddr, advertiseAddr string) (*Server, error) {
 	const dataDir = "data"
 
 	commandRegistry := commands.NewRegistry()
@@ -100,8 +100,7 @@ func New(port int, bindAddr, advertiseAddr string) (*Server, error) {
 		return nil, err
 	}
 
-	//TODO: make segment as a configuration, or chose the right size.
-	w, err := wal.Open(dir, wal.WithSegmentSize(200))
+	w, err := wal.Open(dir, wal.WithSegmentSize(segmentSize))
 	if err != nil {
 
 		return nil, err

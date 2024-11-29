@@ -17,9 +17,11 @@ import (
 const DefaultPort = "7997"
 const DefaultBind = "localhost"
 const DefaultAdvertise = "localhost"
+const DefaultSegmentSize = 200
 
 func main() {
 	portFlag := flag.String("port", DefaultPort, "Port at which server will listen")
+	segmentSize := flag.Int("segmentSize", DefaultSegmentSize, "Segment size")
 	bindAddr := flag.String("bind", DefaultBind, "Bind Address")
 	advertiseAddr := flag.String("advertise", DefaultAdvertise, "Advertise Address")
 
@@ -44,7 +46,7 @@ func main() {
 		panic(err)
 	}
 
-	tredsServer, err := server.New(portInt, *bindAddr, *advertiseAddr)
+	tredsServer, err := server.New(portInt, *segmentSize, *bindAddr, *advertiseAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
