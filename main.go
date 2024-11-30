@@ -53,13 +53,13 @@ func parseServers(input string) []server.BootStrapServer {
 }
 
 func main() {
-	serverId := flag.String("id", "", "Server Id")
+	serverId := flag.String("id", "", "Server Id - must be a uuid, if not given a new one will be generated")
 	portFlag := flag.String("port", DefaultPort, "Port at which server will listen")
 	segmentSize := flag.Int("segmentSize", DefaultSegmentSize, "Segment size")
 	bindAddr := flag.String("bind", DefaultBind, "Bind Address")
 	advertiseAddr := flag.String("advertise", DefaultAdvertise, "Advertise Address")
 	applyTimeout := flag.Duration("raftApplyTimeout", 1*time.Second, "Raft Apply Timeout")
-	servers := flag.String("servers", "", "Comma-separated list of servers in the format id:host:port (e.g., '1:127.0.0.1:8080,2:192.168.1.1:9090')")
+	servers := flag.String("servers", "", "Comma-separated list of servers in the format id:host:port (e.g., 'uuid1:127.0.0.1:8080,uuid2:192.168.1.1:9090')")
 
 	flag.Parse()
 
