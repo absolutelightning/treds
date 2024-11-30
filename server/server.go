@@ -14,7 +14,6 @@ import (
 
 	"github.com/fatih/pool"
 	wal "github.com/hashicorp/raft-wal"
-
 	"treds/commands"
 	"treds/store"
 
@@ -25,6 +24,12 @@ import (
 
 const Snapshot = "SNAPSHOT"
 const Restore = "RESTORE"
+
+type BootStrapServer struct {
+	ID   string
+	Host string
+	Port int
+}
 
 type Server struct {
 	Addr string
@@ -40,7 +45,7 @@ type Server struct {
 	raftApplyTimeout  time.Duration
 }
 
-func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyTimeout time.Duration) (*Server, error) {
+func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyTimeout time.Duration, servers []BootStrapServer) (*Server, error) {
 
 	commandRegistry := commands.NewRegistry()
 	commands.RegisterCommands(commandRegistry)
@@ -163,9 +168,16 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		return nil, err
 	}
 
-	//TODO: For now bootstrapping is done for a single node, but we need to either add some command to add nodes to a cluster and then bootstrap it
-	// or make the nodes as part of a config
-	cluster := r.BootstrapCluster(raft.Configuration{Servers: []raft.Server{{ID: config.LocalID, Address: raft.ServerAddress(addr), Suffrage: raft.Voter}}})
+	bootStrapServers := []raft.Server{{ID: config.LocalID, Address: raft.ServerAddress(addr), Suffrage: raft.Voter}}
+
+	for _, server := range servers {
+		bootStrapServers = append(bootStrapServers, raft.Server{
+			ID:      raft.ServerID(server.ID),
+			Address: raft.ServerAddress(fmt.Sprintf("%s:%d", server.Host, server.Port)),
+		})
+	}
+
+	cluster := r.BootstrapCluster(raft.Configuration{Servers: bootStrapServers})
 
 	err = cluster.Error()
 	if err != nil {
