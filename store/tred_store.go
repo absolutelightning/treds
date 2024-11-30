@@ -14,9 +14,10 @@ import (
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/emirpasic/gods/utils"
-	"github.com/vmihailenco/msgpack/v5"
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/errgroup"
 	radix_tree "treds/datastructures/radix"
+	kvstore "treds/store/proto"
 )
 
 const NilResp = "(nil)\n"
@@ -1639,10 +1640,56 @@ func (rs *TredsStore) LongestPrefix(prefix string) (string, error) {
 	return "", nil
 }
 
+func convertToString(value interface{}) (string, error) {
+	str, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("value is not a string")
+	}
+	return str, nil
+}
+
 func (rs *TredsStore) Snapshot() ([]byte, error) {
-	return msgpack.Marshal(rs)
+	// For now just persisting the root level key value store
+	// That is tree *radix_tree.Tree in the Store
+	store := &kvstore.KeyValueStore{
+		Pairs: make([]*kvstore.KeyValue, 0),
+	}
+	minLeaf, found := rs.tree.Root().MinimumLeaf()
+	if !found {
+		return []byte{}, nil
+	}
+	for minLeaf != nil {
+		value := minLeaf.Value()
+		valueString, err := convertToString(value)
+		if err != nil {
+			return nil, err
+		}
+		store.Pairs = append(store.Pairs, &kvstore.KeyValue{
+			Key:   string(minLeaf.Key()),
+			Value: valueString,
+		})
+		minLeaf = minLeaf.GetNextLeaf()
+	}
+	data, err := proto.Marshal(store)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func (rs *TredsStore) Restore(data []byte) error {
-	return msgpack.Unmarshal(data, &rs)
+	var deserializedStore kvstore.KeyValueStore
+	err := proto.Unmarshal(data, &deserializedStore)
+	if err != nil {
+		fmt.Println("Error deserializing KeyValueStore:", err)
+		return err
+	}
+	// Print the deserialized key-value pairs
+	rs.tree = radix_tree.New()
+	fmt.Println("Deserialized KeyValueStore:")
+	for _, pair := range deserializedStore.Pairs {
+		fmt.Printf("Key: %s, Value: %s\n", pair.Key, pair.Value)
+		rs.tree, _, _ = rs.tree.Insert([]byte(pair.Key), pair.Value)
+	}
+	return nil
 }

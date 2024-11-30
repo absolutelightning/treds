@@ -2,7 +2,9 @@ package server
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"net"
 	"os"
@@ -28,10 +30,10 @@ type Server struct {
 	Addr string
 	Port int
 
-	tredsStore           store.Store
 	tredsCommandRegistry commands.CommandRegistry
 
 	*gnet.BuiltinEventEngine
+	fsm               *TredsFsm
 	raft              *raft.Raft
 	id                string
 	tcpConnectionPool pool.Pool
@@ -155,7 +157,8 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		return nil, err
 	}
 
-	r, err := raft.NewRaft(config, NewTredsFsm(commandRegistry, tredsStore), w, w, snapshotStore, transport)
+	fsm := NewTredsFsm(commandRegistry, tredsStore)
+	r, err := raft.NewRaft(config, fsm, w, w, snapshotStore, transport)
 	if err != nil {
 		return nil, err
 	}
@@ -171,8 +174,8 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 
 	return &Server{
 		Port:                 port,
-		tredsStore:           tredsStore,
 		tredsCommandRegistry: commandRegistry,
+		fsm:                  fsm,
 		raft:                 r,
 		id:                   string(config.LocalID),
 		raftApplyTimeout:     applyTimeout,
@@ -183,7 +186,7 @@ func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
 	fmt.Println("Server started on", ts.Port)
 	go func() {
 		for {
-			ts.tredsStore.CleanUpExpiredKeys()
+			ts.fsm.tredsStore.CleanUpExpiredKeys()
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
@@ -219,31 +222,91 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	}
 
 	if strings.ToUpper(inp) == Snapshot {
+
 		// Only writes need to be forwarded to leader
-		_, leaderId := ts.raft.LeaderWithID()
+		forwarded, rspFwd, err := ts.forwardRequest(data)
+		if err != nil {
+			respondErr(c, err)
+			return gnet.None
+		}
 
-		if string(leaderId) != ts.id {
-			// Only writes need to be forwarded to leader
-			forwarded, rspFwd, err := ts.forwardRequest(data)
-			if err != nil {
-				respondErr(c, err)
-				return gnet.None
+		// If request is forwarded we just send back the answer from the leader to the client
+		// and stop processing
+		if forwarded {
+			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			if errConn != nil {
+				fmt.Println("Error occurred writing to connection", errConn)
 			}
-
-			// If request is forwarded we just send back the answer from the leader to the client
-			// and stop processing
-			if forwarded {
-				_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
-				if errConn != nil {
-					fmt.Println("Error occurred writing to connection", errConn)
-				}
-				return gnet.None
-			}
+			return gnet.None
 		}
 
 		future := ts.raft.Snapshot()
 		if future.Error() != nil {
 			respondErr(c, future.Error())
+			return gnet.None
+		}
+		res := "OK"
+		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		if errConn != nil {
+			respondErr(c, errConn)
+		}
+		return gnet.None
+	}
+
+	if strings.ToUpper(strings.Split(inp, " ")[0]) == Restore {
+		// Only writes need to be forwarded to leader
+		forwarded, rspFwd, err := ts.forwardRequest(data)
+		if err != nil {
+			respondErr(c, err)
+			return gnet.None
+		}
+
+		// If request is forwarded we just send back the answer from the leader to the client
+		// and stop processing
+		if forwarded {
+			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			if errConn != nil {
+				fmt.Println("Error occurred writing to connection", errConn)
+			}
+			return gnet.None
+		}
+
+		snapshotPath := strings.Split(inp, " ")[1]
+
+		metaFile := filepath.Join(snapshotPath, "meta.json")
+
+		// Read the file contents
+		metaData, err := os.ReadFile(metaFile)
+		if err != nil {
+			fmt.Println("Error reading file:", err)
+			respondErr(c, err)
+			return gnet.None
+		}
+
+		// Unmarshal the JSON into the SnapshotMeta struct
+		var metaSnapshot *raft.SnapshotMeta
+		err = json.Unmarshal(metaData, &metaSnapshot)
+		if err != nil {
+			fmt.Println("Error unmarshaling JSON:", err)
+			respondErr(c, err)
+			return gnet.None
+		}
+
+		file, err := os.Open(filepath.Join(snapshotPath, "state.bin"))
+		if err != nil {
+			fmt.Println("Error opening file:", err)
+			respondErr(c, err)
+			return gnet.None
+		}
+		// Ensure the file is closed when done
+		defer file.Close()
+
+		// Since *os.File implements io.Reader, you can directly use it as an io.Reader
+		var reader io.Reader = file
+
+		err = ts.raft.Restore(metaSnapshot, reader, 2*time.Minute)
+		if err != nil {
+			respondErr(c, err)
 			return gnet.None
 		}
 		res := "OK"
@@ -262,25 +325,21 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	}
 	if commandReg.IsWrite {
 
-		_, leaderId := ts.raft.LeaderWithID()
+		// Only writes need to be forwarded to leader
+		forwarded, rspFwd, err := ts.forwardRequest(data)
+		if err != nil {
+			respondErr(c, err)
+			return gnet.None
+		}
 
-		if string(leaderId) != ts.id {
-			// Only writes need to be forwarded to leader
-			forwarded, rspFwd, err := ts.forwardRequest(data)
-			if err != nil {
-				respondErr(c, err)
-				return gnet.None
+		// If request is forwarded we just send back the answer from the leader to the client
+		// and stop processing
+		if forwarded {
+			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			if errConn != nil {
+				fmt.Println("Error occurred writing to connection", errConn)
 			}
-
-			// If request is forwarded we just send back the answer from the leader to the client
-			// and stop processing
-			if forwarded {
-				_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
-				if errConn != nil {
-					fmt.Println("Error occurred writing to connection", errConn)
-				}
-				return gnet.None
-			}
+			return gnet.None
 		}
 
 		// Validation need to be done before raft Apply so an error is returned before persisting
@@ -314,7 +373,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			respondErr(c, err)
 			return gnet.None
 		}
-		res := commandReg.Execute(commandStringParts[1:], ts.tredsStore)
+		res := commandReg.Execute(commandStringParts[1:], ts.fsm.tredsStore)
 		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
 		if errConn != nil {
 			fmt.Println("Error occurred writing to connection", errConn)

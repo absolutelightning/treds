@@ -5,9 +5,7 @@ import (
 	"io"
 	"log"
 	"strings"
-	"sync/atomic"
 	"time"
-	"unsafe"
 
 	"github.com/hashicorp/raft"
 	"github.com/panjf2000/gnet/v2"
@@ -21,20 +19,20 @@ const (
 
 type TredsFsm struct {
 	cmdRegistry commands.CommandRegistry
-	tredsStore  atomic.Pointer[store.Store]
+	tredsStore  store.Store
 	conn        gnet.Conn
 }
 
-func (t TredsFsm) Apply(log *raft.Log) interface{} {
+func (t *TredsFsm) Apply(log *raft.Log) interface{} {
 	inp := string(log.Data)
 	commandStringParts := parseCommand(inp)
 	commandReg, err := t.cmdRegistry.Retrieve(strings.ToUpper(commandStringParts[0]))
 	if err != nil {
 		return err
 	}
-	currentStore := t.tredsStore.Load()
+	currentStore := t.tredsStore
 	if currentStore != nil {
-		return commandReg.Execute(commandStringParts[1:], *currentStore)
+		return commandReg.Execute(commandStringParts[1:], currentStore)
 	}
 	return NilStore
 }
@@ -55,25 +53,23 @@ func (s *snapshot) Persist(sink raft.SnapshotSink) error {
 
 func (s *snapshot) Release() {}
 
-func (t TredsFsm) Snapshot() (raft.FSMSnapshot, error) {
+func (t *TredsFsm) Snapshot() (raft.FSMSnapshot, error) {
 	defer func(start time.Time) {
 		log.Println("snapshot created", "duration", time.Since(start).String())
 	}(time.Now())
+	fmt.Println("called snapstho")
 
-	currentStore := t.tredsStore.Load()
-	if currentStore != nil {
-		storageSnapshot, err := (*currentStore).Snapshot()
-		if err != nil {
-			return nil, err
-		}
-		return &snapshot{
-			storageSnapshot: storageSnapshot,
-		}, nil
+	storageSnapshot, err := t.tredsStore.Snapshot()
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf(NilStore)
+	return &snapshot{
+		storageSnapshot: storageSnapshot,
+	}, nil
 }
 
-func (t TredsFsm) Restore(old io.ReadCloser) error {
+func (t *TredsFsm) Restore(old io.ReadCloser) error {
+	fmt.Println("called restore")
 	defer old.Close()
 	data, err := io.ReadAll(old)
 	if err != nil {
@@ -81,15 +77,15 @@ func (t TredsFsm) Restore(old io.ReadCloser) error {
 	}
 	ts := store.NewTredsStore()
 	err = ts.Restore(data)
+	t.tredsStore = ts
 	if err != nil {
 		return err
 	}
-	t.tredsStore.Store((*store.Store)(unsafe.Pointer(ts)))
 	return nil
 }
 
 func NewTredsFsm(registry commands.CommandRegistry, store store.Store) *TredsFsm {
 	fsm := &TredsFsm{cmdRegistry: registry}
-	fsm.tredsStore.Store(&store)
+	fsm.tredsStore = store
 	return fsm
 }
