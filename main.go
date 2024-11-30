@@ -20,10 +20,12 @@ const DefaultAdvertise = "localhost"
 const DefaultSegmentSize = 200
 
 func main() {
+	serverId := flag.String("id", "", "Server Id")
 	portFlag := flag.String("port", DefaultPort, "Port at which server will listen")
 	segmentSize := flag.Int("segmentSize", DefaultSegmentSize, "Segment size")
 	bindAddr := flag.String("bind", DefaultBind, "Bind Address")
 	advertiseAddr := flag.String("advertise", DefaultAdvertise, "Advertise Address")
+	applyTimeout := flag.Duration("raftApplyTimeout", 1*time.Second, "Raft Apply Timeout")
 
 	flag.Parse()
 
@@ -46,7 +48,7 @@ func main() {
 		panic(err)
 	}
 
-	tredsServer, err := server.New(portInt, *segmentSize, *bindAddr, *advertiseAddr)
+	tredsServer, err := server.New(portInt, *segmentSize, *bindAddr, *advertiseAddr, *serverId, *applyTimeout)
 	if err != nil {
 		log.Fatal(err)
 	}

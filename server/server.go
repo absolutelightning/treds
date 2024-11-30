@@ -32,10 +32,10 @@ type Server struct {
 	raft              *raft.Raft
 	id                string
 	tcpConnectionPool pool.Pool
+	raftApplyTimeout  time.Duration
 }
 
-func New(port, segmentSize int, bindAddr, advertiseAddr string) (*Server, error) {
-	const dataDir = "data"
+func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyTimeout time.Duration) (*Server, error) {
 
 	commandRegistry := commands.NewRegistry()
 	commands.RegisterCommands(commandRegistry)
@@ -44,40 +44,81 @@ func New(port, segmentSize int, bindAddr, advertiseAddr string) (*Server, error)
 	//TODO: Default config is good enough for now, but probably need to be tweaked
 	config := raft.DefaultConfig()
 
-	serverIdFileName := filepath.Join(dataDir, "server-id")
+	serverIdFileName := "server-id"
 
-	if _, err := os.Stat(serverIdFileName); err == nil {
-		// File exists, read the UUID
-		fmt.Println("File found. Reading UUID from file...")
-		data, readErr := os.ReadFile(serverIdFileName)
-		if readErr != nil {
-			fmt.Println("Error reading UUID from file:", err)
-		}
-		// Parse the UUID
-		id, parseErr := uuid.Parse(string(data))
-		if parseErr != nil {
-			fmt.Println("Error parsing UUID:", parseErr)
-		}
-		fmt.Println("UUID read from file:", id)
-		config.LocalID = raft.ServerID(id.String())
+	if serverId == "" {
+		// try reading from file
+		if _, err := os.Stat(serverIdFileName); err == nil {
+			// File exists, read the UUID
+			fmt.Println("File found. Reading UUID from file...")
+			data, readErr := os.ReadFile(serverIdFileName)
+			if readErr != nil {
+				fmt.Println("Error reading UUID from file:", err)
+			}
+			// Parse the UUID
+			id, parseErr := uuid.Parse(string(data))
+			if parseErr != nil {
+				fmt.Println("Error parsing UUID:", parseErr)
+			}
+			fmt.Println("UUID read from file:", id)
+			config.LocalID = raft.ServerID(id.String())
 
-	} else if os.IsNotExist(err) {
-		// File does not exist, generate a new UUID
-		fmt.Println("File not found. Generating a new UUID...")
-		id := uuid.New()
+		} else if os.IsNotExist(err) {
+			// File does not exist, generate a new UUID
+			fmt.Println("File not found. Generating a new UUID...")
+			id := uuid.New()
 
-		// Write the UUID to the file
-		err = os.WriteFile(serverIdFileName, []byte(id.String()), 0644)
-		if err != nil {
-			fmt.Println("Error writing UUID to file:", err)
+			// Write the UUID to the file
+			err = os.WriteFile(serverIdFileName, []byte(id.String()), 0644)
+			if err != nil {
+				fmt.Println("Error writing UUID to file:", err)
+			}
+			fmt.Println("New UUID generated and written to file:", id)
+			config.LocalID = raft.ServerID(id.String())
+		} else {
+			// Other errors (e.g., permission issues)
+			fmt.Println("Error checking file:", err)
+			id := serverId
+			config.LocalID = raft.ServerID(id)
 		}
-		fmt.Println("New UUID generated and written to file:", id)
-		config.LocalID = raft.ServerID(id.String())
 	} else {
-		// Other errors (e.g., permission issues)
-		fmt.Println("Error checking file:", err)
-		id := uuid.New()
-		config.LocalID = raft.ServerID(id.String())
+		// try reading from file
+		if _, err := os.Stat(serverIdFileName); err == nil {
+			// File exists, read the UUID
+			fmt.Println("File found. Reading UUID from file...")
+			data, readErr := os.ReadFile(serverIdFileName)
+			if readErr != nil {
+				fmt.Println("Error reading UUID from file:", err)
+			}
+			// Parse the UUID
+			id, parseErr := uuid.Parse(string(data))
+			if parseErr != nil {
+				fmt.Println("Error parsing UUID:", parseErr)
+			}
+			if id.String() != serverId {
+				return nil, fmt.Errorf("UUID does not match")
+			}
+			fmt.Println("UUID read from file:", id)
+			config.LocalID = raft.ServerID(id.String())
+
+		} else if os.IsNotExist(err) {
+			// File does not exist, generate a new UUID
+			fmt.Println("File not found. Generating a new UUID...")
+			id := serverId
+
+			// Write the UUID to the file
+			err = os.WriteFile(serverIdFileName, []byte(id), 0644)
+			if err != nil {
+				fmt.Println("Error writing UUID to file:", err)
+			}
+			fmt.Println("New UUID generated and written to file:", id)
+			config.LocalID = raft.ServerID(id)
+		} else {
+			// Other errors (e.g., permission issues)
+			fmt.Println("Error checking file:", err)
+			id := serverId
+			config.LocalID = raft.ServerID(id)
+		}
 	}
 
 	//This is the port used by raft for replication and such
@@ -92,7 +133,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr string) (*Server, error)
 	}
 
 	// Use raft wal as a backend store for raft
-	dir := filepath.Join(dataDir, string(config.LocalID))
+	dir := filepath.Join("data", string(config.LocalID))
 
 	err = os.MkdirAll(dir, fs.ModeDir|fs.ModePerm)
 	if err != nil {
@@ -131,6 +172,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr string) (*Server, error)
 		tredsCommandRegistry: commandRegistry,
 		raft:                 r,
 		id:                   string(config.LocalID),
+		raftApplyTimeout:     applyTimeout,
 	}, nil
 }
 
@@ -177,9 +219,6 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		respondErr(c, err)
 		return gnet.None
 	}
-	//TODO: Make writes only happen on leader, we can have 2 possible strategies here:
-	// - forward to leader
-	// - return a special error to the client/sdk and they will retry on the new leader
 	if commandReg.IsWrite {
 
 		// Only writes need to be forwarded to leader
@@ -205,11 +244,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			return gnet.None
 		}
 
-		//TODO: make timeout configurable
-		// For now we are passing the raw data to raft and then parsing it again in the fsm
-		// We could probably parse once in here and pass a serialized data struct to raft,
-		// to avoid re-parsing in the fsm
-		future := ts.raft.Apply(data, 1*time.Second)
+		future := ts.raft.Apply(data, ts.raftApplyTimeout)
 
 		if err := future.Error(); err != nil {
 			respondErr(c, err)
