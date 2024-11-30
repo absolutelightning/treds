@@ -322,8 +322,10 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	if commandReg.IsWrite {
 
 		// Only writes need to be forwarded to leader
-		forwarded, rspFwd, err := ts.forwardRequest(data)
-		if err != nil {
+		forwarded, rspFwd, forwardErr := ts.forwardRequest(data)
+
+		if forwardErr != nil {
+			fmt.Println("forward error:", forwardErr.Error())
 			respondErr(c, err)
 			return gnet.None
 		}
@@ -402,6 +404,9 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 	// into the pool.
 
 	addr, leaderId := ts.raft.LeaderWithID()
+
+	fmt.Println("leader id", leaderId)
+	fmt.Println("current node id", ts.id)
 
 	if ts.id == string(leaderId) {
 		return false, "", nil
