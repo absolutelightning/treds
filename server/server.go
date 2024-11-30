@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/pool"
 	wal "github.com/hashicorp/raft-wal"
 	"treds/commands"
 	"treds/store"
@@ -38,11 +37,10 @@ type Server struct {
 	tredsCommandRegistry commands.CommandRegistry
 
 	*gnet.BuiltinEventEngine
-	fsm               *TredsFsm
-	raft              *raft.Raft
-	id                string
-	tcpConnectionPool pool.Pool
-	raftApplyTimeout  time.Duration
+	fsm              *TredsFsm
+	raft             *raft.Raft
+	id               string
+	raftApplyTimeout time.Duration
 }
 
 func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyTimeout time.Duration, servers []BootStrapServer) (*Server, error) {
@@ -199,20 +197,6 @@ func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
 	go func() {
 		for {
 			ts.fsm.tredsStore.CleanUpExpiredKeys()
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
-	go func() {
-		for {
-			leaderAddr, leaderId := ts.raft.LeaderWithID()
-			if string(leaderId) == ts.id {
-				return
-			}
-
-			// Create a factory() to be used with channel based pool
-			factory := func() (net.Conn, error) { return net.Dial("tcp", string(leaderAddr)) }
-			p, _ := pool.NewChannelPool(5, 30, factory)
-			ts.tcpConnectionPool = p
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
@@ -417,13 +401,13 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 	// capacity of 30. The factory will create 5 initial connections and put it
 	// into the pool.
 
-	_, leaderId := ts.raft.LeaderWithID()
+	addr, leaderId := ts.raft.LeaderWithID()
 
 	if ts.id == string(leaderId) {
 		return false, "", nil
 	}
 
-	conn, err := ts.tcpConnectionPool.Get()
+	conn, err := net.Dial("tcp", string(addr))
 	if err != nil {
 		return false, "", nil
 	}
