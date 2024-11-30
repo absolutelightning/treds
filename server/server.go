@@ -405,9 +405,6 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 
 	addr, leaderId := ts.raft.LeaderWithID()
 
-	fmt.Println("leader id", leaderId)
-	fmt.Println("current node id", ts.id)
-
 	if ts.id == leaderId {
 		return false, "", nil
 	}
