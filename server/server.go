@@ -39,7 +39,7 @@ type Server struct {
 	*gnet.BuiltinEventEngine
 	fsm              *TredsFsm
 	raft             *raft.Raft
-	id               string
+	id               raft.ServerID
 	raftApplyTimeout time.Duration
 }
 
@@ -187,7 +187,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		tredsCommandRegistry: commandRegistry,
 		fsm:                  fsm,
 		raft:                 r,
-		id:                   string(config.LocalID),
+		id:                   config.LocalID,
 		raftApplyTimeout:     applyTimeout,
 	}, nil
 }
@@ -408,7 +408,7 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 	fmt.Println("leader id", leaderId)
 	fmt.Println("current node id", ts.id)
 
-	if ts.id == string(leaderId) {
+	if ts.id == leaderId {
 		return false, "", nil
 	}
 
