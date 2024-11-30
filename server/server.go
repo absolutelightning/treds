@@ -21,6 +21,9 @@ import (
 	"github.com/panjf2000/gnet/v2"
 )
 
+const Snapshot = "SNAPSHOT"
+const Restore = "RESTORE"
+
 type Server struct {
 	Addr string
 	Port int
@@ -207,12 +210,50 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	inp := string(data)
 	if inp == "" {
 		err := fmt.Errorf("empty command")
-		_, errConn := c.Write([]byte(fmt.Sprintf("Error Executing command - %v\n", err.Error())))
+		respErr := fmt.Sprintf("Error Executing command - %v\n", err.Error())
+		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(respErr), respErr)))
 		if errConn != nil {
 			fmt.Println("Error occurred writing to connection", errConn)
 		}
 		return gnet.None
 	}
+
+	if strings.ToUpper(inp) == Snapshot {
+		// Only writes need to be forwarded to leader
+		_, leaderId := ts.raft.LeaderWithID()
+
+		if string(leaderId) != ts.id {
+			// Only writes need to be forwarded to leader
+			forwarded, rspFwd, err := ts.forwardRequest(data)
+			if err != nil {
+				respondErr(c, err)
+				return gnet.None
+			}
+
+			// If request is forwarded we just send back the answer from the leader to the client
+			// and stop processing
+			if forwarded {
+				_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+				if errConn != nil {
+					fmt.Println("Error occurred writing to connection", errConn)
+				}
+				return gnet.None
+			}
+		}
+
+		future := ts.raft.Snapshot()
+		if future.Error() != nil {
+			respondErr(c, future.Error())
+			return gnet.None
+		}
+		res := "OK"
+		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		if errConn != nil {
+			respondErr(c, errConn)
+		}
+		return gnet.None
+	}
+
 	commandStringParts := parseCommand(inp)
 	commandReg, err := ts.tredsCommandRegistry.Retrieve(strings.ToUpper(commandStringParts[0]))
 	if err != nil {
@@ -221,21 +262,25 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	}
 	if commandReg.IsWrite {
 
-		// Only writes need to be forwarded to leader
-		forwarded, rspFwd, err := ts.forwardRequest(data)
-		if err != nil {
-			respondErr(c, err)
-			return gnet.None
-		}
+		_, leaderId := ts.raft.LeaderWithID()
 
-		// If request is forwarded we just send back the answer from the leader to the client
-		// and stop processing
-		if forwarded {
-			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
-			if errConn != nil {
-				fmt.Println("Error occurred writing to connection", errConn)
+		if string(leaderId) != ts.id {
+			// Only writes need to be forwarded to leader
+			forwarded, rspFwd, err := ts.forwardRequest(data)
+			if err != nil {
+				respondErr(c, err)
+				return gnet.None
 			}
-			return gnet.None
+
+			// If request is forwarded we just send back the answer from the leader to the client
+			// and stop processing
+			if forwarded {
+				_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+				if errConn != nil {
+					fmt.Println("Error occurred writing to connection", errConn)
+				}
+				return gnet.None
+			}
 		}
 
 		// Validation need to be done before raft Apply so an error is returned before persisting
@@ -285,7 +330,8 @@ func parseCommand(inp string) []string {
 }
 
 func respondErr(c gnet.Conn, err error) {
-	_, errConn := c.Write([]byte(fmt.Sprintf("Error Executing command - %v\n", err.Error())))
+	respErr := fmt.Sprintf("Error Executing command - %v\n", err.Error())
+	_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(respErr), respErr)))
 	if errConn != nil {
 		fmt.Println("Error occurred writing to connection", errConn)
 	}
