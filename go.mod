@@ -5,7 +5,6 @@ go 1.22
 require (
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/emirpasic/gods v1.18.1
-	github.com/fatih/pool v3.0.0+incompatible
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/raft v1.7.1
