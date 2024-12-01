@@ -208,6 +208,6 @@ On Server 3 run
 
 
 ## Future Work
-* Currently on KV Store gets persisted in Snapshot, add support for other store.
+* Currently only KV Store gets persisted in Snapshot, add support for other store.
 * Add RESP support.
 * More Commands ...
