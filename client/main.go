@@ -108,6 +108,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "MGET", Description: "MGET key1 [key2 key3 ....]- Get values for multiple keys"},
 		{Text: "MSET", Description: "MSET key1 value1 [key2 value2 key3 value3 ....]- Set values for multiple keys"},
 		{Text: "PING", Description: "PING - Replies with a PONG"},
+		{Text: "RESTORE", Description: "RESTORE folder_path - Restores data from a file to in-mem store"},
 		{Text: "RPOP", Description: "RPOP key count - Removes count elements from right of list with key and returns the popped elements"},
 		{Text: "RPUSH", Description: "RPUSH key element [element ...] - Adds elements to the right of list with key"},
 		{Text: "SADD", Description: "SADD key member [member ...] - Adds the members to a set with key"},
@@ -119,6 +120,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "SINTER", Description: "SINTER key [key ...] - Returns the intersection of sets with the given keys"},
 		{Text: "SISMEMBER", Description: "SISMEMBER key member - Return 1 if member is present in set with key, 0 otherwise"},
 		{Text: "SMEMBERS", Description: "SMEMBERS key - Returns all members of a set with key"},
+		{Text: "SNAPSHOT", Description: "SNAPSHOT Creates a current db snapshot and persists on dist"},
 		{Text: "SREM", Description: "SREM key member [member ...] - Removes the members from a set with key"},
 		{Text: "SUNION", Description: "SUNION key [key ...] - Returns the union of sets with the give keys"},
 		{Text: "TTL", Description: "TTL key - Returns the time in seconds remaining before key expires. -1 if key has no expiry, -2 if key is not present"},
@@ -134,6 +136,9 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "ZREVRANGESCOREKEYS", Description: "ZREVRANGESCOREKEYS key min max offset count withscore - Returns the count number of keys with the score between min/max in reverser sorted order of score. WithScore can be true or false"},
 		{Text: "ZREVRANGESCOREKVS", Description: "ZREVRANGESCOREKVS key min max offset count withscore - Returns the count number of key/value pair with the score between min/max in reverse sorted order of score. WithScore can be true or false"},
 		{Text: "ZSCORE", Description: "ZSCORE key member - Returns the score of a member in sorted map in key"},
+		{Text: "MULTI", Description: "MULTI - Starts a transaction"},
+		{Text: "EXEC", Description: "EXEC - Executes a transaction"},
+		{Text: "DISCARD", Description: "DISCARD - Discards a transaction"},
 	}
 	return prompt.FilterHasPrefix(s, firstWord, true)
 }

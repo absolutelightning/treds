@@ -13,6 +13,7 @@ func RegisterRPopCommand(r CommandRegistry) {
 		Name:     RPopCommand,
 		Validate: validateLPopCommand(),
 		Execute:  executeRPopCommand(),
+		IsWrite:  true,
 	})
 }
 

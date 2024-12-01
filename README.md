@@ -32,12 +32,12 @@ For Redis setup see - [Redis Prefix Bench Repo](https://github.com/absolutelight
 ### Treds - ScanKeys vs Redis - Scan
 
 Treds Command -
-```text
+```bash
 scankeys 0 prefix 100000000000
 ```
 
 Redis Command - 
-```text
+```bash
 scan 0 match prefix count 100000000000 
 ```
 This graph shows the performance comparison between Treds - ScanKeys and Redis - Scan:
@@ -47,12 +47,12 @@ This graph shows the performance comparison between Treds - ScanKeys and Redis -
 ### Treds - ScanKVS vs RedisSearch FT.SEARCH
 
 Treds Command -
-```text
+```bash
 scankvs 0 prefix 1000
 ```
 
 Redis Command -
-```text
+```bash
 FT.SEARCH idx:user prefix SORTBY name LIMIT 0 1000
 ```
 
@@ -64,12 +64,12 @@ This graph shows the performance comparison between Treds - ScanKVS and Redis FT
 
 ### Treds - ZRangeScoreKeys vs Redis - ZRangeByScore
 Treds Command -
-```text
+```bash
 zrangescorekeys key 0 max 0 100000000000 false
 ```
 
 Redis Command -
-```text
+```bash
 zrangebyscore key 0 max
 ```
 This graph shows the performance comparison between Treds - ZRangeScoreKeys and Redis - ZRangeByScore:
@@ -130,24 +130,29 @@ This graph shows the performance comparison between Treds - ZRangeScoreKeys and 
 * `FLUSHALL` - Deletes all keys
 * `EXPIRE key seconds` - Expire key after given seconds
 * `TTL key` - Returns the time in seconds remaining before key expires. -1 if key has no expiry, -2 if key is not present.
+* `SNAPSHOT` - Persist the Key Value Store data on disk immediately.
+* `RESTORE folder_path` - Restore the persisted snapshot on disk immediately.
+* `MULTI` - Starts a transaction
+* `EXEC` - Execute all commands in the transaction and close the transaction
+* `DISCARD` - Discard all commands in the transaction and close the transaction
 
-## Run 
+## Run Local 
 
 To run server run the following command on repository root
 
-```text
+```bash
 export TREDS_PORT=7997
 go run main.go -port 7997
 ```
 
 Using docker
-```text
+```bash
 docker run -p 7997:7997 absolutelightning/treds
 ```
 
 For CLI run the following command in the `client` folder in the repo
 
-```text
+```bash
 cd ./client
 export TREDS_PORT=7997
 go run main.go -port 7997
@@ -161,26 +166,49 @@ go run main.go -port 7997
 To build the binary for the treds server, run following command in repo root - 
 Binary named `treds` will be generated in repo root.
 
-```text
+```bash
 make build             
 ```
-```text
+```bash
 GOOS=linux GOARCH=arm64 make build
 ```
 
 To build the binary for the treds cli, run following command in repo root -
 Binary named `treds-cli` will be generated in repo root.
 
-```text
+```bash
 make build-cli             
 ```
-```text
+```bash
 GOOS=linux GOARCH=arm64 make build-cli
+```
+
+## Run Production
+
+It is advised to run Treds cluster on production. To bootstrap a 3 node cluster, lets say we have 3 servers
+
+Sever 1, Server 2 and Server 3
+
+On Server 1 run
+
+```bash
+./treds -bind 0.0.0.0 -advertise ip-server-1 -servers 'uuid-server-2:ip-server-2:8300,uuid-server-3:ip-server-3:8300' -id uuid-server-1
+```
+
+On Server 2 run
+
+```bash
+./treds -bind 0.0.0.0 -advertise ip-server-2 -servers 'uuid-server-1:ip-server-1:8300,uuid-server-3:ip-server-3:8300' -id uuid-server-2
+```
+
+On Server 3 run
+
+```bash
+./treds -bind 0.0.0.0 -advertise ip-server-3 -servers 'uuid-server-1:ip-server-1:8300,uuid-server-2:ip-server-2:8300' -id uuid-server-3
 ```
 
 
 ## Future Work
-* Add Raft for HA and Persistence
-* Transactions
-* Pipelines
+* Currently only KV Store gets persisted in Snapshot, add support for other store.
+* Add RESP support.
 * More Commands ...
