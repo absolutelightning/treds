@@ -136,6 +136,9 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "ZREVRANGESCOREKEYS", Description: "ZREVRANGESCOREKEYS key min max offset count withscore - Returns the count number of keys with the score between min/max in reverser sorted order of score. WithScore can be true or false"},
 		{Text: "ZREVRANGESCOREKVS", Description: "ZREVRANGESCOREKVS key min max offset count withscore - Returns the count number of key/value pair with the score between min/max in reverse sorted order of score. WithScore can be true or false"},
 		{Text: "ZSCORE", Description: "ZSCORE key member - Returns the score of a member in sorted map in key"},
+		{Text: "MULTI", Description: "MULTI - Starts a transaction"},
+		{Text: "EXEC", Description: "EXEC - Executes a transaction"},
+		{Text: "DISCARD", Description: "DISCARD - Discards a transaction"},
 	}
 	return prompt.FilterHasPrefix(s, firstWord, true)
 }
