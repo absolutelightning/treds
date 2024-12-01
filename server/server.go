@@ -104,7 +104,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 				fmt.Println("Error parsing UUID:", parseErr)
 			}
 			if id.String() != serverId {
-				return nil, fmt.Errorf("UUID does not match")
+				return nil, fmt.Errorf("UUID does not match, please fix 'server-id' file")
 			}
 			fmt.Println("UUID read from file:", id)
 			config.LocalID = raft.ServerID(id.String())
