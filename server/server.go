@@ -537,6 +537,48 @@ func (ts *Server) convertRaftToTredsAddress(raftAddr string) (string, error) {
 	return net.JoinHostPort(host, stringPort), nil
 }
 
+// Read all data from the server
+func readAllData(conn net.Conn) (string, error) {
+	reader := bufio.NewReader(conn)
+
+	length, err := readUntilNewline(reader)
+	if err != nil {
+		return "", err
+	}
+	lengthInt, err := strconv.Atoi(length[:len(length)-1])
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := readFixedBytes(reader, lengthInt)
+	if err != nil {
+		return "", err
+	}
+	return string(resp), nil
+}
+
+// Function to read from the connection until a newline character
+func readUntilNewline(reader *bufio.Reader) (string, error) {
+	// Read until '\n'
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return line, nil
+}
+
+func readFixedBytes(reader *bufio.Reader, n int) ([]byte, error) {
+	// Create a buffer of size n to hold the data
+	buffer := make([]byte, n)
+
+	// Read exactly n bytes into the buffer
+	_, err := io.ReadFull(reader, buffer)
+	if err != nil {
+		return nil, err
+	}
+	return buffer, nil
+}
+
 func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 	// create a new channel based pool with an initial capacity of 5 and maximum
 	// capacity of 30. The factory will create 5 initial connections and put it
@@ -563,10 +605,9 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 	if err != nil {
 		return false, "", nil
 	}
-	reader := bufio.NewReader(conn)
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		return false, "", err
+	line, rerr := readAllData(conn)
+	if rerr != nil {
+		return false, "", nil
 	}
 	return true, line, nil
 }
