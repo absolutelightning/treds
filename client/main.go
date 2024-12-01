@@ -108,7 +108,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "MGET", Description: "MGET key1 [key2 key3 ....]- Get values for multiple keys"},
 		{Text: "MSET", Description: "MSET key1 value1 [key2 value2 key3 value3 ....]- Set values for multiple keys"},
 		{Text: "PING", Description: "PING - Replies with a PONG"},
-		{Text: "RESTORE", Description: "RESTORE filepath - Restores data from a file to in-mem store"},
+		{Text: "RESTORE", Description: "RESTORE folder_path - Restores data from a file to in-mem store"},
 		{Text: "RPOP", Description: "RPOP key count - Removes count elements from right of list with key and returns the popped elements"},
 		{Text: "RPUSH", Description: "RPUSH key element [element ...] - Adds elements to the right of list with key"},
 		{Text: "SADD", Description: "SADD key member [member ...] - Adds the members to a set with key"},
