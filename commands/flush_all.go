@@ -11,6 +11,7 @@ func RegisterFlushAllCommand(r CommandRegistry) {
 		Name:     FlushAll,
 		Validate: validateDBSize(),
 		Execute:  executeFlushAll(),
+		IsWrite:  true,
 	})
 }
 

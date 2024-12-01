@@ -14,6 +14,7 @@ func RegisterLPopCommand(r CommandRegistry) {
 		Name:     LPopCommand,
 		Validate: validateLPopCommand(),
 		Execute:  executeLPopCommand(),
+		IsWrite:  true,
 	})
 }
 
