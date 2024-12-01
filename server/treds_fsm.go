@@ -57,7 +57,7 @@ func (t *TredsFsm) Snapshot() (raft.FSMSnapshot, error) {
 	defer func(start time.Time) {
 		log.Println("snapshot created", "duration", time.Since(start).String())
 	}(time.Now())
-	fmt.Println("called snapstho")
+	fmt.Println("generating snapshot")
 
 	storageSnapshot, err := t.tredsStore.Snapshot()
 	if err != nil {
@@ -69,7 +69,7 @@ func (t *TredsFsm) Snapshot() (raft.FSMSnapshot, error) {
 }
 
 func (t *TredsFsm) Restore(old io.ReadCloser) error {
-	fmt.Println("called restore")
+	fmt.Println("restoring snapshot")
 	defer old.Close()
 	data, err := io.ReadAll(old)
 	if err != nil {
