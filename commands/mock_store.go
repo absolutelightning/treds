@@ -294,3 +294,11 @@ func (rs *MockStore) Ttl(key string) int {
 func (rs *MockStore) LongestPrefix(key string) (string, error) {
 	return "", nil
 }
+
+func (rs *MockStore) Snapshot() ([]byte, error) {
+	return nil, nil
+}
+
+func (rs *MockStore) Restore(data []byte) error {
+	return nil
+}
