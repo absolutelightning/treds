@@ -191,19 +191,19 @@ Sever 1, Server 2 and Server 3
 On Server 1 run
 
 ```bash
-./treds -bind 0.0.0.0 -servers 'uuid-server-2:ip-server-2:8300,uuid-server-3:ip-server-3:8300' -id uuid-server-1
+./treds -bind 0.0.0.0 -advertise ip-server-1 -servers 'uuid-server-2:ip-server-2:8300,uuid-server-3:ip-server-3:8300' -id uuid-server-1
 ```
 
 On Server 2 run
 
 ```bash
-./treds -bind 0.0.0.0 -servers 'uuid-server-1:ip-server-1:8300,uuid-server-3:ip-server-3:8300' -id uuid-server-2
+./treds -bind 0.0.0.0 -advertise ip-server-2 -servers 'uuid-server-1:ip-server-1:8300,uuid-server-3:ip-server-3:8300' -id uuid-server-2
 ```
 
 On Server 3 run
 
 ```bash
-./treds -bind 0.0.0.0 -servers 'uuid-server-1:ip-server-1:8300,uuid-server-2:ip-server-2:8300' -id uuid-server-3
+./treds -bind 0.0.0.0 -advertise ip-server-3 -servers 'uuid-server-1:ip-server-1:8300,uuid-server-2:ip-server-2:8300' -id uuid-server-3
 ```
 
 
