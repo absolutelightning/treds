@@ -23,6 +23,9 @@ import (
 
 const Snapshot = "SNAPSHOT"
 const Restore = "RESTORE"
+const Multi = "MULTI"
+const Exec = "EXEC"
+const Discard = "DISCARD"
 
 type BootStrapServer struct {
 	ID   string
@@ -35,6 +38,7 @@ type Server struct {
 	Port int
 
 	tredsCommandRegistry commands.CommandRegistry
+	clientTransaction    map[string][]string
 
 	*gnet.BuiltinEventEngine
 	fsm              *TredsFsm
@@ -189,6 +193,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		raft:                 r,
 		id:                   config.LocalID,
 		raftApplyTimeout:     applyTimeout,
+		clientTransaction:    make(map[string][]string),
 	}, nil
 }
 
@@ -217,7 +222,14 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		return gnet.None
 	}
 
+	// Server Commands
+
 	if strings.ToUpper(inp) == Snapshot {
+
+		if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
+			respondErr(c, fmt.Errorf("please run this command outside transaction"))
+			return gnet.None
+		}
 
 		// Only writes need to be forwarded to leader
 		forwarded, rspFwd, err := ts.forwardRequest(data)
@@ -250,6 +262,12 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	}
 
 	if strings.ToUpper(strings.Split(inp, " ")[0]) == Restore {
+
+		if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
+			respondErr(c, fmt.Errorf("please run this command outside transaction"))
+			return gnet.None
+		}
+
 		// Only writes need to be forwarded to leader
 		forwarded, rspFwd, err := ts.forwardRequest(data)
 		if err != nil {
@@ -313,6 +331,114 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		return gnet.None
 	}
 
+	if strings.ToUpper(inp) == Multi {
+		// Only writes need to be forwarded to leader
+		forwarded, rspFwd, err := ts.forwardRequest(data)
+		if err != nil {
+			respondErr(c, err)
+			return gnet.None
+		}
+
+		// If request is forwarded we just send back the answer from the leader to the client
+		// and stop processing
+		if forwarded {
+			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			if errConn != nil {
+				fmt.Println("Error occurred writing to connection", errConn)
+			}
+			return gnet.None
+		}
+
+		ts.clientTransaction[c.RemoteAddr().String()] = make([]string, 0)
+
+		res := "OK"
+		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		if errConn != nil {
+			respondErr(c, errConn)
+		}
+		return gnet.None
+	}
+
+	if strings.ToUpper(inp) == Exec {
+		// Only writes need to be forwarded to leader
+		forwarded, rspFwd, err := ts.forwardRequest(data)
+		if err != nil {
+			respondErr(c, err)
+			return gnet.None
+		}
+
+		// If request is forwarded we just send back the answer from the leader to the client
+		// and stop processing
+		if forwarded {
+			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			if errConn != nil {
+				fmt.Println("Error occurred writing to connection", errConn)
+			}
+			return gnet.None
+		}
+
+		if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
+			for _, command := range ts.clientTransaction[c.RemoteAddr().String()] {
+				ts.executeCommand(command, c)
+			}
+			delete(ts.clientTransaction, c.RemoteAddr().String())
+		}
+
+		res := "OK"
+		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		if errConn != nil {
+			respondErr(c, errConn)
+		}
+		return gnet.None
+	}
+
+	if strings.ToUpper(inp) == Discard {
+		// Only writes need to be forwarded to leader
+		forwarded, rspFwd, err := ts.forwardRequest(data)
+		if err != nil {
+			respondErr(c, err)
+			return gnet.None
+		}
+
+		// If request is forwarded we just send back the answer from the leader to the client
+		// and stop processing
+		if forwarded {
+			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			if errConn != nil {
+				fmt.Println("Error occurred writing to connection", errConn)
+			}
+			return gnet.None
+		}
+
+		delete(ts.clientTransaction, c.RemoteAddr().String())
+
+		res := "OK"
+		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		if errConn != nil {
+			respondErr(c, errConn)
+		}
+		return gnet.None
+	}
+
+	// Store Commands
+
+	// Check for transaction first, if transaction just enqueue the command
+
+	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
+		ts.clientTransaction[c.RemoteAddr().String()] = append(ts.clientTransaction[c.RemoteAddr().String()], inp)
+		res := "OK"
+		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		if errConn != nil {
+			respondErr(c, errConn)
+		}
+		return gnet.None
+	}
+
+	// No Transaction - Now execute the command
+	return ts.executeCommand(inp, c)
+}
+
+func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 	commandStringParts := parseCommand(inp)
 	commandReg, err := ts.tredsCommandRegistry.Retrieve(strings.ToUpper(commandStringParts[0]))
 	if err != nil {
@@ -322,7 +448,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	if commandReg.IsWrite {
 
 		// Only writes need to be forwarded to leader
-		forwarded, rspFwd, forwardErr := ts.forwardRequest(data)
+		forwarded, rspFwd, forwardErr := ts.forwardRequest([]byte(inp))
 
 		if forwardErr != nil {
 			fmt.Println("forward error:", forwardErr.Error())
@@ -346,7 +472,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			return gnet.None
 		}
 
-		future := ts.raft.Apply(data, ts.raftApplyTimeout)
+		future := ts.raft.Apply([]byte(inp), ts.raftApplyTimeout)
 
 		if err := future.Error(); err != nil {
 			respondErr(c, err)
