@@ -13,6 +13,7 @@ func RegisterHSetCommand(r CommandRegistry) {
 		Name:     HSetCommand,
 		Validate: validateHSetCommand(),
 		Execute:  executeHSetCommand(),
+		IsWrite:  true,
 	})
 }
 

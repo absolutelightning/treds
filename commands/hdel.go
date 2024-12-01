@@ -13,6 +13,7 @@ func RegisterHDelCommand(r CommandRegistry) {
 		Name:     HDelCommand,
 		Validate: validateHDelCommand(),
 		Execute:  executeHDelCommand(),
+		IsWrite:  true,
 	})
 }
 

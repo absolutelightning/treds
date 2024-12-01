@@ -13,6 +13,7 @@ func RegisterDeleteCommand(r CommandRegistry) {
 		Name:     DeleteCommand,
 		Validate: validateDel(),
 		Execute:  executeDel(),
+		IsWrite:  true,
 	})
 }
 
