@@ -592,21 +592,27 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 
 	tredsAddr, err := ts.convertRaftToTredsAddress(string(addr))
 
+	fmt.Println("Treds Leader Address", tredsAddr)
+
 	if err != nil {
+		fmt.Println("Error occurred converting raft to treds address", addr)
 		return false, "", err
 	}
 
 	conn, err := net.Dial("tcp", tredsAddr)
 	if err != nil {
+		fmt.Println("Error occurred connecting to treds server", tredsAddr)
 		return false, "", nil
 	}
 	defer conn.Close()
 	_, err = conn.Write(data)
 	if err != nil {
+		fmt.Println("Error occurred writing to connection", tredsAddr)
 		return false, "", nil
 	}
 	line, rerr := readAllData(conn)
 	if rerr != nil {
+		fmt.Println("Error occurred reading from connection", tredsAddr)
 		return false, "", nil
 	}
 	return true, line, nil
