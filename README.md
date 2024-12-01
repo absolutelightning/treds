@@ -184,7 +184,8 @@ GOOS=linux GOARCH=arm64 make build-cli
 ```
 
 ## Run Production
-It is advised to run treds cluster on production. To bootstrap a 3 node cluster, lets say we have 3 servers
+
+It is advised to run Treds cluster on production. To bootstrap a 3 node cluster, lets say we have 3 servers
 
 Sever 1, Server 2 and Server 3
 
