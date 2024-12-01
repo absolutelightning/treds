@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -534,7 +535,11 @@ func (ts *Server) convertRaftToTredsAddress(raftAddr string) (string, error) {
 
 	// Replace Raft port (8300) with Treds port (7997)
 	stringPort := strconv.Itoa(ts.Port)
-	return net.JoinHostPort(host, stringPort), nil
+	decodedAddr, err := decodeHexAddress(host)
+	if err != nil {
+		return "", fmt.Errorf("invalid Raft address: %s", raftAddr)
+	}
+	return net.JoinHostPort(decodedAddr, stringPort), nil
 }
 
 // Read all data from the server
@@ -577,6 +582,17 @@ func readFixedBytes(reader *bufio.Reader, n int) ([]byte, error) {
 		return nil, err
 	}
 	return buffer, nil
+}
+
+func decodeHexAddress(hexAddr string) (string, error) {
+	if strings.HasPrefix(hexAddr, "?") {
+		hexAddr = hexAddr[1:] // Strip the `?` prefix
+	}
+	bytes, err := hex.DecodeString(hexAddr)
+	if err != nil {
+		return "", fmt.Errorf("invalid hex address: %v", err)
+	}
+	return string(bytes), nil
 }
 
 func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
