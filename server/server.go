@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -524,6 +525,18 @@ func (ts *Server) OnClose(_ gnet.Conn, _ error) gnet.Action {
 	return gnet.None
 }
 
+func (ts *Server) convertRaftToTredsAddress(raftAddr string) (string, error) {
+	// Split the Raft address into host and port
+	host, _, err := net.SplitHostPort(raftAddr)
+	if err != nil {
+		return "", fmt.Errorf("invalid Raft address: %s", raftAddr)
+	}
+
+	// Replace Raft port (8300) with Treds port (7997)
+	stringPort := strconv.Itoa(ts.Port)
+	return net.JoinHostPort(host, stringPort), nil
+}
+
 func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 	// create a new channel based pool with an initial capacity of 5 and maximum
 	// capacity of 30. The factory will create 5 initial connections and put it
@@ -535,7 +548,13 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 		return false, "", nil
 	}
 
-	conn, err := net.Dial("tcp", string(addr))
+	tredsAddr, err := ts.convertRaftToTredsAddress(string(addr))
+
+	if err != nil {
+		return false, "", err
+	}
+
+	conn, err := net.Dial("tcp", tredsAddr)
 	if err != nil {
 		return false, "", nil
 	}
