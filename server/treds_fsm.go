@@ -85,7 +85,6 @@ func (t *TredsFsm) Restore(old io.ReadCloser) error {
 }
 
 func NewTredsFsm(registry commands.CommandRegistry, store store.Store) *TredsFsm {
-	fsm := &TredsFsm{cmdRegistry: registry}
-	fsm.tredsStore = store
+	fsm := &TredsFsm{cmdRegistry: registry, tredsStore: store}
 	return fsm
 }
