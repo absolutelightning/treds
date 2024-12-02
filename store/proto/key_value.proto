@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package kvstore;
+
+// A collection of key-value pairs
+message KeyValueStore {
+  repeated KeyValue pairs = 1;
+}
+
+// A single key-value pair
+message KeyValue {
+  string key = 1;
+  string value = 2;
+}
