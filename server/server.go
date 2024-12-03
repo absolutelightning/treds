@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"treds/server/connPool"
 
 	wal "github.com/hashicorp/raft-wal"
 	"treds/commands"
@@ -47,6 +48,7 @@ type Server struct {
 	raft             *raft.Raft
 	id               raft.ServerID
 	raftApplyTimeout time.Duration
+	connP            *connPool.ConnPool
 }
 
 func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyTimeout time.Duration, servers []BootStrapServer) (*Server, error) {
@@ -196,6 +198,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		id:                   config.LocalID,
 		raftApplyTimeout:     applyTimeout,
 		clientTransaction:    make(map[string][]string),
+		connP:                connPool.NewConnPool(time.Second * 5),
 	}, nil
 }
 
@@ -523,6 +526,10 @@ func respondErr(c gnet.Conn, err error) {
 }
 
 func (ts *Server) OnClose(_ gnet.Conn, _ error) gnet.Action {
+	err := ts.connP.Close()
+	if err != nil {
+		fmt.Println("Error occurred closing connection", err.Error())
+	}
 	return gnet.None
 }
 
@@ -615,7 +622,7 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 		return false, "", err
 	}
 
-	conn, err := net.Dial("tcp", tredsAddr)
+	conn, err := ts.connP.Dial("tcp", tredsAddr)
 	if err != nil {
 		fmt.Println("Error occurred connecting to treds server", tredsAddr)
 		return false, "", nil
