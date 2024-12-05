@@ -203,6 +203,29 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 }
 
 func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
+	setCommand, _ := ts.tredsCommandRegistry.Retrieve("SET")
+
+	for i := 0; i <= 10000000; i++ {
+		setCommand.Execute([]string{"user:" + strconv.Itoa(i), "value_" + strconv.Itoa(i)}, ts.fsm.tredsStore)
+	}
+
+	setCommand, _ = ts.tredsCommandRegistry.Retrieve("ZADD")
+
+	args := make([]string, 0)
+	args = append(args, "ss")
+	for i := 0; i <= 10000000; i++ {
+		args = append(args, strings.Split(fmt.Sprintf("%v user:%v %v", 0, i, i), " ")...)
+	}
+	setCommand.Execute(args, ts.fsm.tredsStore)
+
+	setCommand, _ = ts.tredsCommandRegistry.Retrieve("ZADD")
+
+	args = make([]string, 0)
+	args = append(args, "ssd")
+	for i := 0; i <= 10000000; i++ {
+		args = append(args, strings.Split(fmt.Sprintf("%v user:%v %v", i, i, i), " ")...)
+	}
+	setCommand.Execute(args, ts.fsm.tredsStore)
 	fmt.Println("Server started on", ts.Port)
 	go func() {
 		for {
