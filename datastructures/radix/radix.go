@@ -179,6 +179,7 @@ func (t *Txn) insert(n *Node, k, search []byte, v interface{}) (*Node, interface
 		splitNode.minLeaf = leaf
 		splitNode.maxLeaf = leaf
 		splitNode.computeLinks()
+		n.computeLinks()
 		return n, nil, false
 	}
 

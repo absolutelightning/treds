@@ -27,7 +27,8 @@ For more details - check out the [medium article](https://ashesh-vidyut.medium.c
 Both Treds and Redis are filled with 10 Million Keys in KeyValue Store and 10 Million Keys in a Sorted Map/Set respectively
 Each key is of format `user:%d`, so every key has prefix `user:`
 The commands are run in Golang program and redirecting the output to a file `go run main.go > out`.
-For Redis setup see - [Redis Prefix Bench Repo](https://github.com/absolutelightning/redis-prefix-bench)
+For Redis setup see - [Redis Prefix Bench Repo](https://github.com/absolutelightning/redis-prefix-bench).
+For Etcd setup see - [Etcd Prefix Bench Repo](https://github.com/absolutelightning/etcd-bench-prefix)
 
 ### Treds - ScanKeys vs Redis - Scan
 
@@ -42,7 +43,7 @@ scan 0 match prefix count 100000000000
 ```
 This graph shows the performance comparison between Treds - ScanKeys and Redis - Scan:
 
-![ScanKeys Comparison](./benchmark/scan-comparison.png)
+![ScanKeys Comparison](./benchmark/redis-scan-comparison.png)
 
 ### Treds - ScanKVS vs RedisSearch FT.SEARCH
 
@@ -60,7 +61,7 @@ Prefix for redis command can be replaced by "User*", "User1*", "User10*" ... etc
 
 This graph shows the performance comparison between Treds - ScanKVS and Redis FT.Search:
 
-![ScanKVS Comparison](./benchmark/scankvs-comparision.png)
+![ScanKVS Comparison](./benchmark/redis-scankvs-comparision.png)
 
 ### Treds - ZRangeScoreKeys vs Redis - ZRangeByScore
 Treds Command -
@@ -74,7 +75,23 @@ zrangebyscore key 0 max
 ```
 This graph shows the performance comparison between Treds - ZRangeScoreKeys and Redis - ZRangeByScore:
 
-![ZRangeScore Comparison](./benchmark/zrange-score-comparison.png)
+![ZRangeScore Comparison](./benchmark/redis-zrange-score-comparison.png)
+
+
+### Treds - ScanKeys vs Etcd - Get --prefix
+Treds Command -
+```bash
+scankeys 0 prefix 100000000000
+```
+
+Etcd Command -
+```bash
+etcdctl get prefix --prefix --keys-only
+```
+This graph shows the performance comparison between Treds - ScanKeys and Etcd get --prefix command:
+
+![Etcd Comparison](./benchmark/etcd-prefix-comparison.png)
+
 
 ## Commands 
 * `PING` - Replies with a `PONG`
