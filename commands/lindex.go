@@ -33,6 +33,6 @@ func executeLIndexCommand() ExecutionHook {
 		if err != nil {
 			return resp.EncodeError(err.Error())
 		}
-		return resp.EncodeStringArray(res)
+		return resp.EncodeBulkString(res)
 	}
 }

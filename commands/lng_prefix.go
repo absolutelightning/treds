@@ -22,6 +22,6 @@ func executeLongestPrefixCommand() ExecutionHook {
 		if err != nil {
 			return resp.EncodeError(err.Error())
 		}
-		return res
+		return resp.EncodeStringArray(res)
 	}
 }
