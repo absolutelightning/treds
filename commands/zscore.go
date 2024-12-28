@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -29,8 +30,8 @@ func executeZScoreCommand() ExecutionHook {
 	return func(args []string, store store.Store) string {
 		res, err := store.ZScore(args)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return res
+		return resp.EncodeBulkString(res)
 	}
 }

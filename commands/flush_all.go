@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"treds/resp"
 	"treds/store"
 )
 
@@ -19,8 +20,8 @@ func executeFlushAll() ExecutionHook {
 	return func(args []string, store store.Store) string {
 		err := store.FlushAll()
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return "OK\n"
+		return resp.EncodeSimpleString("OK")
 	}
 }

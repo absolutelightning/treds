@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -38,8 +39,8 @@ func executePrefixScanKeys() ExecutionHook {
 		}
 		v, err := store.PrefixScanKeys(args[0], args[1], count)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return v
+		return resp.EncodeStringArray(v)
 	}
 }

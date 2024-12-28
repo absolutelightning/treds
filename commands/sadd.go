@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -32,8 +33,8 @@ func executeSAddCommand() ExecutionHook {
 		key := args[0]
 		err := store.SAdd(key, args[1:])
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return "OK\n"
+		return resp.EncodeSimpleString("OK")
 	}
 }

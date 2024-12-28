@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"treds/resp"
 	"treds/store"
 )
 
@@ -20,8 +21,8 @@ func executeSRemCommand() ExecutionHook {
 		key := args[0]
 		err := store.SRem(key, args[1:])
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return "OK\n"
+		return resp.EncodeSimpleString("OK")
 	}
 }
