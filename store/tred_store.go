@@ -843,26 +843,26 @@ func (rs *TredsStore) ZCard(key string) (int, error) {
 	return store.Len(), nil
 }
 
-func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	iterator := radixTree.Root().ReverseIterator()
 	startIndex, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	index := 0
-	var result strings.Builder
+	result := make([]string, 0)
 	sortedMapKey := rs.sortedMapsScore[key]
 	for {
 		storedKey, value, found := iterator.Previous()
@@ -873,17 +873,12 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, wit
 			if withScore {
 				keyScore, _ := sortedMapKey[string(storedKey)]
 				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64)
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
-				result.WriteString(value.(string))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(storedKey))
+				result = append(result, value.(string))
 			} else {
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
-				result.WriteString(value.(string))
-				result.WriteString("\n")
+				result = append(result, string(storedKey))
+				result = append(result, value.(string))
 			}
 			countInt--
 		}
@@ -892,29 +887,29 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, wit
 		}
 		index += 1
 	}
-	return result.String(), nil
+	return result, nil
 }
 
-func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	iterator := radixTree.Root().ReverseIterator()
 	startIndex, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	index := 0
-	var result strings.Builder
+	result := make([]string, 0)
 	sortedMapKey := rs.sortedMapsScore[key]
 	for {
 		storedKey, _, found := iterator.Previous()
@@ -927,14 +922,11 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, wi
 				keyScore, _ := sortedMapKey[string(storedKey)]
 				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // -1 preserves full precision
 				// Append keyScore and storedKey to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(storedKey))
 			} else {
 				// Append only the storedKey to the result
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
+				result = append(result, string(storedKey))
 			}
 			countInt--
 		}
@@ -943,39 +935,39 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, wi
 		}
 		index += 1
 	}
-	return result.String(), nil
+	return result, nil
 }
 
-func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	sortedMap := rs.sortedMaps[key]
 	if sortedMap == nil {
-		return "", nil
+		return nil, nil
 	}
 	minFloat, err := strconv.ParseFloat(min, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	maxFloat, err := strconv.ParseFloat(max, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	offsetInt, err := strconv.Atoi(offset)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var result strings.Builder
+	result := make([]string, 0)
 	index := 0
 	_, radixTree := sortedMap.Floor(maxFloat)
 	if radixTree == nil {
-		return "", nil
+		return nil, nil
 	}
 	maxKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
 	sortedMapKey := rs.sortedMapsScore[key]
@@ -992,57 +984,52 @@ func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, w
 				// Convert the floating-point score to a string
 				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string
 				// Append score, key, and value to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(maxKV.Key()))
-				result.WriteString("\n")
-				result.WriteString(maxKV.Value().(string))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(maxKV.Key()))
+				result = append(result, maxKV.Value().(string))
 			} else {
 				// Append only key and value to the result
-				result.WriteString(string(maxKV.Key()))
-				result.WriteString("\n")
-				result.WriteString(maxKV.Value().(string))
-				result.WriteString("\n")
+				result = append(result, string(maxKV.Key()))
+				result = append(result, maxKV.Value().(string))
 			}
 			countInt--
 		}
 		index++
 		maxKV = maxKV.GetPrevLeaf()
 	}
-	return result.String(), nil
+	return result, nil
 }
 
-func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	sortedMap := rs.sortedMaps[key]
 	if sortedMap == nil {
-		return "", nil
+		return nil, nil
 	}
 	minFloat, err := strconv.ParseFloat(min, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	maxFloat, err := strconv.ParseFloat(max, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	offsetInt, err := strconv.Atoi(offset)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var result strings.Builder
+	result := make([]string, 0)
 	index := 0
 	_, radixTree := sortedMap.Floor(maxFloat)
 	if radixTree == nil {
-		return "", nil
+		return nil, nil
 	}
 	maxKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
 	sortedMapKey := rs.sortedMapsScore[key]
@@ -1060,21 +1047,18 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string
 
 				// Append score and key to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(maxKV.Key()))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(maxKV.Key()))
 			} else {
 				// Append only key to the result
-				result.WriteString(string(maxKV.Key()))
-				result.WriteString("\n")
+				result = append(result, string(maxKV.Key()))
 			}
 			countInt--
 		}
 		index++
 		maxKV = maxKV.GetPrevLeaf()
 	}
-	return result.String(), nil
+	return result, nil
 }
 
 func (rs *TredsStore) FlushAll() error {
