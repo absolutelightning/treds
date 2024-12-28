@@ -20,7 +20,7 @@ import (
 	kvstore "treds/store/proto"
 )
 
-const NilResp = "(nil)\n"
+const NilResp = "(nil)"
 const Epsilon = 1.19209e-07
 
 type Type int
@@ -112,13 +112,11 @@ func (rs *TredsStore) Get(k string) (string, error) {
 	if storeType != KeyValueStore {
 		return NilResp, nil
 	}
-	var res strings.Builder
 	v, ok := rs.tree.Get([]byte(k))
 	if !ok {
 		return NilResp, nil
 	}
-	res.WriteString(fmt.Sprintf("%v\n", v))
-	return res.String(), nil
+	return v.(string), nil
 }
 
 func (rs *TredsStore) MSet(kvs []string) error {
@@ -1472,10 +1470,7 @@ func (rs *TredsStore) HGet(key string, field string) (string, error) {
 	if !found {
 		return "", nil
 	}
-	var res strings.Builder
-	res.WriteString(val.(string))
-	res.WriteString("\n")
-	return res.String(), nil
+	return val.(string), nil
 }
 
 func (rs *TredsStore) HGetAll(key string) ([]string, error) {
