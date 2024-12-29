@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -554,31 +555,95 @@ func (ts *Server) convertRaftToTredsAddress(raftAddr string) (string, error) {
 	return net.JoinHostPort(decodedAddr, stringPort), nil
 }
 
-// Read all data from the server
-func readAllData(conn net.Conn) (string, error) {
+// Read all RESP data from the server and parse it into a string
+func readAllData(conn net.Conn) ([]interface{}, error) {
 	defer conn.Close()
+	reader := bufio.NewReader(conn)
 
-	// Create a buffer to read the data
-	var data []byte
-	buffer := make([]byte, 1024) // Temporary buffer
+	var result []interface{}
 
 	for {
-		// Read data into the buffer
-		n, err := conn.Read(buffer)
+		// Peek the first byte to determine the RESP type
+		prefix, err := reader.Peek(1)
 		if err != nil {
 			if err == io.EOF {
 				// End of data
 				break
 			}
-			return "", err
+			return nil, err
 		}
 
-		// Append the read data to the result
-		data = append(data, buffer[:n]...)
+		switch prefix[0] {
+		case '+': // Simple String
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, strings.TrimSuffix(line[1:], "\r\n"))
+		case '-': // Error
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, fmt.Errorf(strings.TrimSuffix(line[1:], "\r\n")))
+		case ':': // Integer
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				return nil, err
+			}
+			number, err := strconv.Atoi(strings.TrimSuffix(line[1:], "\r\n"))
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, number)
+		case '$': // Bulk String
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				return nil, err
+			}
+			length, err := strconv.Atoi(strings.TrimSuffix(line[1:], "\r\n"))
+			if err != nil || length < 0 {
+				result = append(result, nil) // Null bulk string
+				continue
+			}
+			// Read the bulk string value
+			value := make([]byte, length)
+			_, err = io.ReadFull(reader, value)
+			if err != nil {
+				return nil, err
+			}
+			// Consume trailing \r\n
+			_, err = reader.Discard(2)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, string(value))
+		case '*': // Array
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				return nil, err
+			}
+			length, err := strconv.Atoi(strings.TrimSuffix(line[1:], "\r\n"))
+			if err != nil || length < 0 {
+				result = append(result, nil) // Null array
+				continue
+			}
+			// Parse the array elements recursively
+			array := make([]interface{}, length)
+			for i := 0; i < length; i++ {
+				element, err := readAllRESPData(conn)
+				if err != nil {
+					return nil, err
+				}
+				array[i] = element
+			}
+			result = append(result, array)
+		default:
+			return nil, fmt.Errorf("unknown RESP prefix: %c", prefix[0])
+		}
 	}
 
-	// Convert the byte slice to a string and return it
-	return string(data), nil
+	return result, nil
 }
 
 func decodeHexAddress(hexAddr string) (string, error) {
