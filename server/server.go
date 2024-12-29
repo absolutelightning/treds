@@ -512,7 +512,7 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 
 		if forwardErr != nil {
 			fmt.Println("forward error:", forwardErr.Error())
-			respondErr(c, err)
+			respondErr(c, forwardErr)
 			return gnet.None
 		}
 
