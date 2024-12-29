@@ -22,7 +22,7 @@ type TredsFsm struct {
 	cmdRegistry commands.CommandRegistry
 	tredsStore  store.Store
 	conn        gnet.Conn
-	storeLock   sync.Mutex
+	storeLock   *sync.Mutex
 }
 
 func (t *TredsFsm) Apply(log *raft.Log) interface{} {
@@ -96,5 +96,5 @@ func (t *TredsFsm) Restore(old io.ReadCloser) error {
 }
 
 func NewTredsFsm(registry commands.CommandRegistry, store store.Store) *TredsFsm {
-	return &TredsFsm{cmdRegistry: registry, tredsStore: store, storeLock: sync.Mutex{}}
+	return &TredsFsm{cmdRegistry: registry, tredsStore: store, storeLock: &sync.Mutex{}}
 }

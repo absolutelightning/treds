@@ -45,7 +45,7 @@ type Server struct {
 
 	tredsCommandRegistry  commands.CommandRegistry
 	clientTransaction     map[string][]string
-	clientTransactionLock sync.Mutex
+	clientTransactionLock *sync.Mutex
 
 	*gnet.BuiltinEventEngine
 	fsm              *TredsFsm
@@ -202,7 +202,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		id:                    config.LocalID,
 		raftApplyTimeout:      applyTimeout,
 		clientTransaction:     make(map[string][]string),
-		clientTransactionLock: sync.Mutex{},
+		clientTransactionLock: &sync.Mutex{},
 		connP:                 connPool.NewConnPool(time.Second * 5),
 	}, nil
 }
