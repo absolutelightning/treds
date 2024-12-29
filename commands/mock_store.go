@@ -22,11 +22,11 @@ func (m *MockStore) Get(key string) (string, error) {
 	return val, nil
 }
 
-func (m *MockStore) MGet(keys []string) (string, error) {
-	res := ""
+func (m *MockStore) MGet(keys []string) ([]string, error) {
+	res := make([]string, 0)
 	for _, key := range keys {
 		val, _ := m.Get(key)
-		res += val + "\n"
+		res = append(res, val)
 	}
 	return res, nil
 }
@@ -48,8 +48,8 @@ func (m *MockStore) Delete(key string) error {
 	return nil
 }
 
-func (m *MockStore) PrefixScanKeys(cursor, prefix, count string) (string, error) {
-	res := ""
+func (m *MockStore) PrefixScanKeys(cursor, prefix, count string) ([]string, error) {
+	res := make([]string, 0)
 	keys := make([]string, 0)
 	for key, _ := range m.data {
 		keys = append(keys, key)
@@ -63,15 +63,15 @@ func (m *MockStore) PrefixScanKeys(cursor, prefix, count string) (string, error)
 				cursorInt--
 				continue
 			}
-			res += key + "\n"
+			res = append(res, key)
 			countInt--
 		}
 	}
 	return res, nil
 }
 
-func (m *MockStore) PrefixScan(cursor, prefix, count string) (string, error) {
-	res := ""
+func (m *MockStore) PrefixScan(cursor, prefix, count string) ([]string, error) {
+	res := make([]string, 0)
 	keys := make([]string, 0)
 	for key, _ := range m.data {
 		keys = append(keys, key)
@@ -85,7 +85,8 @@ func (m *MockStore) PrefixScan(cursor, prefix, count string) (string, error) {
 				cursorInt--
 				continue
 			}
-			res += key + "\n" + m.data[key] + "\n"
+			res = append(res, key)
+			res = append(res, m.data[key])
 			countInt--
 		}
 	}
@@ -96,8 +97,8 @@ func (m *MockStore) DeletePrefix(prefix string) (int, error) {
 	return 0, nil
 }
 
-func (m *MockStore) Keys(cursor, regex string, count int) (string, error) {
-	res := ""
+func (m *MockStore) Keys(cursor, regex string, count int) ([]string, error) {
+	res := make([]string, 0)
 	keys := make([]string, 0)
 	for key, _ := range m.data {
 		keys = append(keys, key)
@@ -106,14 +107,14 @@ func (m *MockStore) Keys(cursor, regex string, count int) (string, error) {
 	for _, key := range keys {
 		match, _ := regexp.MatchString(regex, key)
 		if match {
-			res += key + "\n"
+			res = append(res, key)
 		}
 	}
 	return res, nil
 }
 
-func (m *MockStore) KVS(cursor, regex string, count int) (string, error) {
-	res := ""
+func (m *MockStore) KVS(cursor, regex string, count int) ([]string, error) {
+	res := make([]string, 0)
 	keys := make([]string, 0)
 	for key, _ := range m.data {
 		keys = append(keys, key)
@@ -122,14 +123,15 @@ func (m *MockStore) KVS(cursor, regex string, count int) (string, error) {
 	for _, key := range keys {
 		match, _ := regexp.MatchString(regex, key)
 		if match {
-			res += key + "\n" + m.data[key] + "\n"
+			res = append(res, key)
+			res = append(res, m.data[key])
 		}
 	}
 	return res, nil
 }
 
-func (m *MockStore) Size() (string, error) {
-	return "", nil
+func (m *MockStore) Size() (int, error) {
+	return 0, nil
 }
 
 func (m *MockStore) ZAdd([]string) error {
@@ -140,19 +142,19 @@ func (m *MockStore) ZRem([]string) error {
 	return nil
 }
 
-func (m *MockStore) ZRangeByLexKVS(string, string, string, string, string, bool) (string, error) {
-	return "", nil
+func (m *MockStore) ZRangeByLexKVS(string, string, string, string, string, bool) ([]string, error) {
+	return nil, nil
 }
-func (m *MockStore) ZRangeByLexKeys(string, string, string, string, string, bool) (string, error) {
-	return "", nil
-}
-
-func (m *MockStore) ZRangeByScoreKeys(string, string, string, string, string, bool) (string, error) {
-	return "", nil
+func (m *MockStore) ZRangeByLexKeys(string, string, string, string, string, bool) ([]string, error) {
+	return nil, nil
 }
 
-func (m *MockStore) ZRangeByScoreKVS(string, string, string, string, string, bool) (string, error) {
-	return "", nil
+func (m *MockStore) ZRangeByScoreKeys(string, string, string, string, string, bool) ([]string, error) {
+	return nil, nil
+}
+
+func (m *MockStore) ZRangeByScoreKVS(string, string, string, string, string, bool) ([]string, error) {
+	return nil, nil
 }
 func (m *MockStore) ZScore([]string) (string, error) {
 	return "", nil
@@ -162,19 +164,19 @@ func (m *MockStore) ZCard(string) (int, error) {
 	return 0, nil
 }
 
-func (m *MockStore) ZRevRangeByLexKVS(string, string, string, string, string, bool) (string, error) {
-	return "", nil
+func (m *MockStore) ZRevRangeByLexKVS(string, string, string, string, string, bool) ([]string, error) {
+	return nil, nil
 }
-func (m *MockStore) ZRevRangeByLexKeys(string, string, string, string, string, bool) (string, error) {
-	return "", nil
-}
-
-func (m *MockStore) ZRevRangeByScoreKeys(string, string, string, string, string, bool) (string, error) {
-	return "", nil
+func (m *MockStore) ZRevRangeByLexKeys(string, string, string, string, string, bool) ([]string, error) {
+	return nil, nil
 }
 
-func (m *MockStore) ZRevRangeByScoreKVS(string, string, string, string, string, bool) (string, error) {
-	return "", nil
+func (m *MockStore) ZRevRangeByScoreKeys(string, string, string, string, string, bool) ([]string, error) {
+	return nil, nil
+}
+
+func (m *MockStore) ZRevRangeByScoreKVS(string, string, string, string, string, bool) ([]string, error) {
+	return nil, nil
 }
 
 func (m *MockStore) FlushAll() error {
@@ -193,12 +195,12 @@ func (rs *MockStore) LIndex(args []string) (string, error) {
 	return "", nil
 }
 
-func (rs *MockStore) LLen(key string) (string, error) {
-	return "", nil
+func (rs *MockStore) LLen(key string) (int, error) {
+	return 0, nil
 }
 
-func (rs *MockStore) LRange(key string, start, stop int) (string, error) {
-	return "", nil
+func (rs *MockStore) LRange(key string, start, stop int) ([]string, error) {
+	return nil, nil
 }
 
 func (rs *MockStore) LSet(key string, index int, element string) error {
@@ -209,12 +211,12 @@ func (rs *MockStore) LRem(key string, index int) error {
 	return nil
 }
 
-func (rs *MockStore) LPop(key string, count int) (string, error) {
-	return "", nil
+func (rs *MockStore) LPop(key string, count int) ([]string, error) {
+	return nil, nil
 }
 
-func (rs *MockStore) RPop(key string, count int) (string, error) {
-	return "", nil
+func (rs *MockStore) RPop(key string, count int) ([]string, error) {
+	return nil, nil
 }
 
 func (rs *MockStore) SAdd(key string, members []string) error {
@@ -225,8 +227,8 @@ func (rs *MockStore) SRem(key string, members []string) error {
 	return nil
 }
 
-func (rs *MockStore) SMembers(key string) (string, error) {
-	return "", nil
+func (rs *MockStore) SMembers(key string) ([]string, error) {
+	return nil, nil
 }
 
 func (rs *MockStore) SIsMember(key string, member string) (bool, error) {
@@ -237,16 +239,16 @@ func (rs *MockStore) SCard(key string) (int, error) {
 	return 0, nil
 }
 
-func (rs *MockStore) SUnion(keys []string) (string, error) {
-	return "", nil
+func (rs *MockStore) SUnion(keys []string) ([]string, error) {
+	return nil, nil
 }
 
-func (rs *MockStore) SInter(keys []string) (string, error) {
-	return "", nil
+func (rs *MockStore) SInter(keys []string) ([]string, error) {
+	return nil, nil
 }
 
-func (rs *MockStore) SDiff(keys []string) (string, error) {
-	return "", nil
+func (rs *MockStore) SDiff(keys []string) ([]string, error) {
+	return nil, nil
 }
 
 func (rs *MockStore) HSet(key string, args []string) error {
@@ -257,8 +259,8 @@ func (rs *MockStore) HGet(key string, field string) (string, error) {
 	return "", nil
 }
 
-func (rs *MockStore) HGetAll(key string) (string, error) {
-	return "", nil
+func (rs *MockStore) HGetAll(key string) ([]string, error) {
+	return nil, nil
 }
 func (rs *MockStore) HLen(key string) (int, error) {
 	return 0, nil
@@ -272,12 +274,12 @@ func (rs *MockStore) HExists(key string, field string) (bool, error) {
 	return false, nil
 }
 
-func (rs *MockStore) HKeys(key string) (string, error) {
-	return "", nil
+func (rs *MockStore) HKeys(key string) ([]string, error) {
+	return nil, nil
 }
 
-func (rs *MockStore) HVals(key string) (string, error) {
-	return "", nil
+func (rs *MockStore) HVals(key string) ([]string, error) {
+	return nil, nil
 }
 
 func (rs *MockStore) CleanUpExpiredKeys() {
@@ -291,8 +293,8 @@ func (rs *MockStore) Ttl(key string) int {
 	return 0
 }
 
-func (rs *MockStore) LongestPrefix(key string) (string, error) {
-	return "", nil
+func (rs *MockStore) LongestPrefix(key string) ([]string, error) {
+	return nil, nil
 }
 
 func (rs *MockStore) Snapshot() ([]byte, error) {

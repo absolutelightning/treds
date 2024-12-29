@@ -20,7 +20,7 @@ import (
 	kvstore "treds/store/proto"
 )
 
-const NilResp = "(nil)\n"
+const NilResp = "(nil)"
 const Epsilon = 1.19209e-07
 
 type Type int
@@ -112,13 +112,11 @@ func (rs *TredsStore) Get(k string) (string, error) {
 	if storeType != KeyValueStore {
 		return NilResp, nil
 	}
-	var res strings.Builder
 	v, ok := rs.tree.Get([]byte(k))
 	if !ok {
 		return NilResp, nil
 	}
-	res.WriteString(fmt.Sprintf("%v\n", v))
-	return res.String(), nil
+	return v.(string), nil
 }
 
 func (rs *TredsStore) MSet(kvs []string) error {
@@ -151,7 +149,7 @@ func (rs *TredsStore) MSet(kvs []string) error {
 	return nil
 }
 
-func (rs *TredsStore) MGet(args []string) (string, error) {
+func (rs *TredsStore) MGet(args []string) ([]string, error) {
 	results := make([]string, len(args))
 	var g errgroup.Group
 	var mu sync.Mutex
@@ -171,13 +169,13 @@ func (rs *TredsStore) MGet(args []string) (string, error) {
 	}
 
 	if err := g.Wait(); err != nil {
-		return "", err
+		return nil, err
 	}
-	var response strings.Builder
+	response := make([]string, 0)
 	for _, res := range results {
-		response.WriteString(res)
+		response = append(response, res)
 	}
-	return response.String(), nil
+	return response, nil
 }
 
 func (rs *TredsStore) Set(k string, v string) error {
@@ -209,21 +207,21 @@ func (rs *TredsStore) Delete(k string) error {
 	return nil
 }
 
-func (rs *TredsStore) PrefixScan(cursor, prefix, count string) (string, error) {
+func (rs *TredsStore) PrefixScan(cursor, prefix, count string) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	iterator := rs.tree.Root().Iterator()
 	iterator.SeekPrefix([]byte(prefix))
 
 	index := 0
 
-	var result strings.Builder
+	result := make([]string, 0)
 
 	seenHash := false
 	if cursor == "0" {
@@ -242,17 +240,18 @@ func (rs *TredsStore) PrefixScan(cursor, prefix, count string) (string, error) {
 		}
 		hashKey, herr := hash(string(key))
 		if herr != nil {
-			return "", herr
+			return nil, herr
 		}
 		if !seenHash && hashKey == uint32(startHash) {
 			seenHash = true
 			continue
 		}
 		if seenHash && countInt > 0 {
-			result.WriteString(fmt.Sprintf("%v\n%v\n", string(key), value.(string)))
+			result = append(result, string(key))
+			result = append(result, value.(string))
 			nextCursor, herr = hash(string(key))
 			if herr != nil {
-				return "", herr
+				return nil, herr
 			}
 			countInt--
 		}
@@ -264,8 +263,8 @@ func (rs *TredsStore) PrefixScan(cursor, prefix, count string) (string, error) {
 	if countInt != 0 {
 		nextCursor = uint32(0)
 	}
-	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
-	return result.String(), nil
+	result = append(result, strconv.Itoa(int(nextCursor)))
+	return result, nil
 }
 
 func hash(s string) (uint32, error) {
@@ -277,21 +276,21 @@ func hash(s string) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) (string, error) {
+func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	iterator := rs.tree.Root().Iterator()
 	iterator.SeekPrefix([]byte(prefix))
 
 	index := 0
 
-	var result strings.Builder
+	result := make([]string, 0)
 
 	seenHash := false
 	if cursor == "0" {
@@ -310,17 +309,17 @@ func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) (string, erro
 		}
 		hashKey, herr := hash(string(key))
 		if herr != nil {
-			return "", herr
+			return nil, herr
 		}
 		if !seenHash && hashKey == uint32(startHash) {
 			seenHash = true
 			continue
 		}
 		if seenHash && countInt > 0 {
-			result.WriteString(fmt.Sprintf("%v\n", string(key)))
+			result = append(result, string(key))
 			nextCursor, herr = hash(string(key))
 			if herr != nil {
-				return "", herr
+				return nil, herr
 			}
 			countInt--
 		}
@@ -332,8 +331,8 @@ func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) (string, erro
 	if countInt != 0 {
 		nextCursor = uint32(0)
 	}
-	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
-	return result.String(), nil
+	result = append(result, strconv.Itoa(int(nextCursor)))
+	return result, nil
 }
 
 func (rs *TredsStore) DeletePrefix(prefix string) (int, error) {
@@ -342,21 +341,22 @@ func (rs *TredsStore) DeletePrefix(prefix string) (int, error) {
 	return numDel, nil
 }
 
-func (rs *TredsStore) Keys(cursor, regex string, count int) (string, error) {
+func (rs *TredsStore) Keys(cursor, regex string, count int) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	iterator := rs.tree.Root().Iterator()
 	rx := regexp.MustCompile(regex)
 	iterator.PatternMatch(rx)
 
-	var result strings.Builder
 	seenHash := false
 	if cursor == "0" {
 		seenHash = true
 	}
 	nextCursor := uint32(0)
+
+	result := make([]string, 0)
 
 	for {
 		key, _, found := iterator.Next()
@@ -368,17 +368,17 @@ func (rs *TredsStore) Keys(cursor, regex string, count int) (string, error) {
 		}
 		hashKey, herr := hash(string(key))
 		if herr != nil {
-			return "", herr
+			return nil, herr
 		}
 		if !seenHash && hashKey == uint32(startHash) {
 			seenHash = true
 			continue
 		}
 		if seenHash && count > 0 {
-			result.WriteString(fmt.Sprintf("%v\n", string(key)))
+			result = append(result, string(key))
 			nextCursor, herr = hash(string(key))
 			if herr != nil {
-				return "", herr
+				return nil, herr
 			}
 			count--
 		}
@@ -389,20 +389,20 @@ func (rs *TredsStore) Keys(cursor, regex string, count int) (string, error) {
 	if count != 0 {
 		nextCursor = uint32(0)
 	}
-	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
-	return result.String(), nil
+	result = append(result, strconv.Itoa(int(nextCursor)))
+	return result, nil
 }
 
-func (rs *TredsStore) KVS(cursor, regex string, count int) (string, error) {
+func (rs *TredsStore) KVS(cursor, regex string, count int) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	iterator := rs.tree.Root().Iterator()
 	rx := regexp.MustCompile(regex)
 	iterator.PatternMatch(rx)
 
-	var result strings.Builder
+	result := make([]string, 0)
 	seenHash := false
 	if cursor == "0" {
 		seenHash = true
@@ -419,17 +419,18 @@ func (rs *TredsStore) KVS(cursor, regex string, count int) (string, error) {
 		}
 		hashKey, herr := hash(string(key))
 		if herr != nil {
-			return "", herr
+			return nil, herr
 		}
 		if !seenHash && hashKey == uint32(startHash) {
 			seenHash = true
 			continue
 		}
 		if seenHash && count > 0 {
-			result.WriteString(fmt.Sprintf("%v\n%v\n", string(key), value.(string)))
+			result = append(result, string(key))
+			result = append(result, value.(string))
 			nextCursor, herr = hash(string(key))
 			if herr != nil {
-				return "", herr
+				return nil, herr
 			}
 			count--
 		}
@@ -440,13 +441,13 @@ func (rs *TredsStore) KVS(cursor, regex string, count int) (string, error) {
 	if count != 0 {
 		nextCursor = uint32(0)
 	}
-	result.WriteString(strconv.Itoa(int(nextCursor)) + "\n")
-	return result.String(), nil
+	result = append(result, strconv.Itoa(int(nextCursor)))
+	return result, nil
 }
 
-func (rs *TredsStore) Size() (string, error) {
+func (rs *TredsStore) Size() (int, error) {
 	size := rs.tree.Len() + len(rs.sortedMaps) + len(rs.lists) + len(rs.sets) + len(rs.hashes)
-	return strconv.Itoa(size), nil
+	return size, nil
 }
 
 func (rs *TredsStore) ZAdd(args []string) error {
@@ -585,27 +586,27 @@ func (rs *TredsStore) ZRem(args []string) error {
 	return nil
 }
 
-func (rs *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	iterator := radixTree.Root().Iterator()
 	startIndex, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	index := 0
 	sortedMapKey := rs.sortedMapsScore[key]
-	var result strings.Builder
+	result := make([]string, 0)
 	for {
 		storedKey, value, found := iterator.Next()
 		if !found {
@@ -620,18 +621,13 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withSc
 				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // Convert float to string with full precision
 
 				// Append score, key, and value to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
-				result.WriteString(value.(string))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(storedKey))
+				result = append(result, value.(string))
 			} else {
 				// Append only the key and value to the result
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
-				result.WriteString(value.(string))
-				result.WriteString("\n")
+				result = append(result, string(storedKey))
+				result = append(result, value.(string))
 			}
 			countInt--
 		}
@@ -640,29 +636,29 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withSc
 		}
 		index += 1
 	}
-	return result.String(), nil
+	return result, nil
 }
 
-func (rs *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	iterator := radixTree.Root().Iterator()
 	startIndex, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	index := 0
-	var result strings.Builder
+	result := make([]string, 0)
 	sortedMapKey := rs.sortedMapsScore[key]
 	for {
 		storedKey, _, found := iterator.Next()
@@ -678,14 +674,11 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withS
 				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // Convert float to string with full precision
 
 				// Append score and key to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(storedKey))
 			} else {
 				// Append only the key to the result
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
+				result = append(result, string(storedKey))
 			}
 			countInt--
 		}
@@ -694,39 +687,39 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withS
 		}
 		index += 1
 	}
-	return result.String(), nil
+	return result, nil
 }
 
-func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	sortedMap := rs.sortedMaps[key]
 	if sortedMap == nil {
-		return "", nil
+		return nil, nil
 	}
 	minFloat, err := strconv.ParseFloat(min, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	maxFloat, err := strconv.ParseFloat(max, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	offsetInt, err := strconv.Atoi(offset)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var result strings.Builder
+	result := make([]string, 0)
 	index := 0
 	_, radixTree := sortedMap.Ceiling(minFloat)
 	if radixTree == nil {
-		return "", nil
+		return nil, nil
 	}
 	minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
 	sortedMapKey := rs.sortedMapsScore[key]
@@ -744,57 +737,52 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string with full precision
 
 				// Append score, key, and value to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(minKV.Key()))
-				result.WriteString("\n")
-				result.WriteString(minKV.Value().(string))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(minKV.Key()))
+				result = append(result, minKV.Value().(string))
 			} else {
 				// Append only key and value to the result
-				result.WriteString(string(minKV.Key()))
-				result.WriteString("\n")
-				result.WriteString(minKV.Value().(string))
-				result.WriteString("\n")
+				result = append(result, string(minKV.Key()))
+				result = append(result, minKV.Value().(string))
 			}
 			countInt--
 		}
 		index++
 		minKV = minKV.GetNextLeaf()
 	}
-	return result.String(), nil
+	return result, nil
 }
 
-func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	sortedMap := rs.sortedMaps[key]
 	if sortedMap == nil {
-		return "", nil
+		return nil, nil
 	}
 	minFloat, err := strconv.ParseFloat(min, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	maxFloat, err := strconv.ParseFloat(max, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	offsetInt, err := strconv.Atoi(offset)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var result strings.Builder
+	result := make([]string, 0)
 	index := 0
 	_, radixTree := sortedMap.Ceiling(minFloat)
 	if radixTree == nil {
-		return "", nil
+		return nil, nil
 	}
 	minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
 	sortedMapKey := rs.sortedMapsScore[key]
@@ -812,21 +800,18 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string
 
 				// Append score and key to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(minKV.Key()))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(minKV.Key()))
 			} else {
 				// Append only key to the result
-				result.WriteString(string(minKV.Key()))
-				result.WriteString("\n")
+				result = append(result, string(minKV.Key()))
 			}
 			countInt--
 		}
 		index++
 		minKV = minKV.GetNextLeaf()
 	}
-	return result.String(), nil
+	return result, nil
 }
 
 func (rs *TredsStore) ZScore(args []string) (string, error) {
@@ -856,26 +841,26 @@ func (rs *TredsStore) ZCard(key string) (int, error) {
 	return store.Len(), nil
 }
 
-func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	iterator := radixTree.Root().ReverseIterator()
 	startIndex, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	index := 0
-	var result strings.Builder
+	result := make([]string, 0)
 	sortedMapKey := rs.sortedMapsScore[key]
 	for {
 		storedKey, value, found := iterator.Previous()
@@ -886,17 +871,12 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, wit
 			if withScore {
 				keyScore, _ := sortedMapKey[string(storedKey)]
 				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64)
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
-				result.WriteString(value.(string))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(storedKey))
+				result = append(result, value.(string))
 			} else {
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
-				result.WriteString(value.(string))
-				result.WriteString("\n")
+				result = append(result, string(storedKey))
+				result = append(result, value.(string))
 			}
 			countInt--
 		}
@@ -905,29 +885,29 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, wit
 		}
 		index += 1
 	}
-	return result.String(), nil
+	return result, nil
 }
 
-func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	radixTree, ok := rs.sortedMapsKeys[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	iterator := radixTree.Root().ReverseIterator()
 	startIndex, err := strconv.Atoi(cursor)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	index := 0
-	var result strings.Builder
+	result := make([]string, 0)
 	sortedMapKey := rs.sortedMapsScore[key]
 	for {
 		storedKey, _, found := iterator.Previous()
@@ -940,14 +920,11 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, wi
 				keyScore, _ := sortedMapKey[string(storedKey)]
 				scoreStr := strconv.FormatFloat(keyScore, 'f', -1, 64) // -1 preserves full precision
 				// Append keyScore and storedKey to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(storedKey))
 			} else {
 				// Append only the storedKey to the result
-				result.WriteString(string(storedKey))
-				result.WriteString("\n")
+				result = append(result, string(storedKey))
 			}
 			countInt--
 		}
@@ -956,39 +933,39 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, wi
 		}
 		index += 1
 	}
-	return result.String(), nil
+	return result, nil
 }
 
-func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	sortedMap := rs.sortedMaps[key]
 	if sortedMap == nil {
-		return "", nil
+		return nil, nil
 	}
 	minFloat, err := strconv.ParseFloat(min, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	maxFloat, err := strconv.ParseFloat(max, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	offsetInt, err := strconv.Atoi(offset)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var result strings.Builder
+	result := make([]string, 0)
 	index := 0
 	_, radixTree := sortedMap.Floor(maxFloat)
 	if radixTree == nil {
-		return "", nil
+		return nil, nil
 	}
 	maxKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
 	sortedMapKey := rs.sortedMapsScore[key]
@@ -1005,57 +982,52 @@ func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, w
 				// Convert the floating-point score to a string
 				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string
 				// Append score, key, and value to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(maxKV.Key()))
-				result.WriteString("\n")
-				result.WriteString(maxKV.Value().(string))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(maxKV.Key()))
+				result = append(result, maxKV.Value().(string))
 			} else {
 				// Append only key and value to the result
-				result.WriteString(string(maxKV.Key()))
-				result.WriteString("\n")
-				result.WriteString(maxKV.Value().(string))
-				result.WriteString("\n")
+				result = append(result, string(maxKV.Key()))
+				result = append(result, maxKV.Value().(string))
 			}
 			countInt--
 		}
 		index++
 		maxKV = maxKV.GetPrevLeaf()
 	}
-	return result.String(), nil
+	return result, nil
 }
 
-func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, withScore bool) (string, error) {
+func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, withScore bool) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
-		return "", fmt.Errorf("not sorted map store")
+		return nil, fmt.Errorf("not sorted map store")
 	}
 	sortedMap := rs.sortedMaps[key]
 	if sortedMap == nil {
-		return "", nil
+		return nil, nil
 	}
 	minFloat, err := strconv.ParseFloat(min, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	maxFloat, err := strconv.ParseFloat(max, 64)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	offsetInt, err := strconv.Atoi(offset)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var result strings.Builder
+	result := make([]string, 0)
 	index := 0
 	_, radixTree := sortedMap.Floor(maxFloat)
 	if radixTree == nil {
-		return "", nil
+		return nil, nil
 	}
 	maxKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
 	sortedMapKey := rs.sortedMapsScore[key]
@@ -1073,21 +1045,18 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 				scoreStr := strconv.FormatFloat(score, 'f', -1, 64) // Convert float to string
 
 				// Append score and key to the result
-				result.WriteString(scoreStr)
-				result.WriteString("\n")
-				result.WriteString(string(maxKV.Key()))
-				result.WriteString("\n")
+				result = append(result, scoreStr)
+				result = append(result, string(maxKV.Key()))
 			} else {
 				// Append only key to the result
-				result.WriteString(string(maxKV.Key()))
-				result.WriteString("\n")
+				result = append(result, string(maxKV.Key()))
 			}
 			countInt--
 		}
 		index++
 		maxKV = maxKV.GetPrevLeaf()
 	}
-	return result.String(), nil
+	return result, nil
 }
 
 func (rs *TredsStore) FlushAll() error {
@@ -1173,32 +1142,29 @@ func (rs *TredsStore) LIndex(args []string) (string, error) {
 	if !found {
 		return "", nil
 	}
-	var result strings.Builder
-	result.WriteString(value.(string))
-	result.WriteString("\n")
-	return result.String(), nil
+	return value.(string), nil
 }
 
-func (rs *TredsStore) LLen(key string) (string, error) {
+func (rs *TredsStore) LLen(key string) (int, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
-		return "", fmt.Errorf("not list store")
+		return 0, fmt.Errorf("not list store")
 	}
 	storedList, ok := rs.lists[key]
 	if !ok {
-		return "0", nil
+		return 0, nil
 	}
-	return strconv.Itoa(storedList.Size()) + "\n", nil
+	return storedList.Size(), nil
 }
 
-func (rs *TredsStore) LRange(key string, start, stop int) (string, error) {
+func (rs *TredsStore) LRange(key string, start, stop int) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
-		return "", fmt.Errorf("not list store")
+		return nil, fmt.Errorf("not list store")
 	}
 	storedList, ok := rs.lists[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	if start < 0 {
 		start = storedList.Size() + start
@@ -1207,15 +1173,14 @@ func (rs *TredsStore) LRange(key string, start, stop int) (string, error) {
 		stop = storedList.Size() + stop
 	}
 	if start > stop {
-		return "", nil
+		return nil, nil
 	}
 	vals := storedList.Values()
-	var result strings.Builder
+	result := make([]string, 0)
 	for i := start; i <= stop; i++ {
-		result.WriteString(vals[i].(string))
-		result.WriteString("\n")
+		result = append(result, vals[i].(string))
 	}
-	return result.String(), nil
+	return result, nil
 }
 
 func (rs *TredsStore) LSet(key string, index int, element string) error {
@@ -1250,39 +1215,38 @@ func (rs *TredsStore) LRem(key string, index int) error {
 	return nil
 }
 
-func (rs *TredsStore) LPop(key string, count int) (string, error) {
+func (rs *TredsStore) LPop(key string, count int) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
-		return "", fmt.Errorf("not list store")
+		return nil, fmt.Errorf("not list store")
 	}
-	var res strings.Builder
+	res := make([]string, 0)
 	storedList, ok := rs.lists[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	for count > 0 {
 		elem, found := storedList.Get(0)
 		if found {
 			storedList.Remove(0)
-			res.WriteString(elem.(string))
-			res.WriteString("\n")
+			res = append(res, elem.(string))
 		} else {
 			break
 		}
 		count--
 	}
-	return res.String(), nil
+	return res, nil
 }
 
-func (rs *TredsStore) RPop(key string, count int) (string, error) {
+func (rs *TredsStore) RPop(key string, count int) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
-		return "", fmt.Errorf("not list store")
+		return nil, fmt.Errorf("not list store")
 	}
-	var res strings.Builder
+	res := make([]string, 0)
 	storedList, ok := rs.lists[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	lastIndex := storedList.Size() - 1
 	for count > 0 {
@@ -1290,14 +1254,13 @@ func (rs *TredsStore) RPop(key string, count int) (string, error) {
 		if found {
 			storedList.Remove(lastIndex)
 			lastIndex = storedList.Size() - 1
-			res.WriteString(elem.(string))
-			res.WriteString("\n")
+			res = append(res, elem.(string))
 		} else {
 			break
 		}
 		count--
 	}
-	return res.String(), nil
+	return res, nil
 }
 
 func (rs *TredsStore) SAdd(key string, members []string) error {
@@ -1343,22 +1306,21 @@ func (rs *TredsStore) SRem(key string, members []string) error {
 	return nil
 }
 
-func (rs *TredsStore) SMembers(key string) (string, error) {
+func (rs *TredsStore) SMembers(key string) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != SetStore {
-		return "", fmt.Errorf("not set store")
+		return nil, fmt.Errorf("not set store")
 	}
 	storedSet, ok := rs.sets[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
-	var res strings.Builder
+	res := make([]string, 0)
 	values := storedSet.Values()
 	for _, member := range values {
-		res.WriteString(member.(string))
-		res.WriteString("\n")
+		res = append(res, member.(string))
 	}
-	return res.String(), nil
+	return res, nil
 }
 
 func (rs *TredsStore) SIsMember(key string, member string) (bool, error) {
@@ -1385,11 +1347,11 @@ func (rs *TredsStore) SCard(key string) (int, error) {
 	return storedSet.Size(), nil
 }
 
-func (rs *TredsStore) SUnion(keys []string) (string, error) {
+func (rs *TredsStore) SUnion(keys []string) ([]string, error) {
 	for _, key := range keys {
 		kd := rs.getKeyDetails(key)
 		if kd != -1 && kd != SetStore {
-			return "", fmt.Errorf("not set store")
+			return nil, fmt.Errorf("not set store")
 		}
 	}
 	unionSet := hashset.New()
@@ -1401,19 +1363,18 @@ func (rs *TredsStore) SUnion(keys []string) (string, error) {
 		unionSet = unionSet.Union(storedSet)
 	}
 	values := unionSet.Values()
-	var res strings.Builder
+	res := make([]string, 0)
 	for _, key := range values {
-		res.WriteString(key.(string))
-		res.WriteString("\n")
+		res = append(res, key.(string))
 	}
-	return res.String(), nil
+	return res, nil
 }
 
-func (rs *TredsStore) SInter(keys []string) (string, error) {
+func (rs *TredsStore) SInter(keys []string) ([]string, error) {
 	for _, key := range keys {
 		kd := rs.getKeyDetails(key)
 		if kd != -1 && kd != SetStore {
-			return "", fmt.Errorf("not set store")
+			return nil, fmt.Errorf("not set store")
 		}
 	}
 	intersectionSet := hashset.New()
@@ -1433,24 +1394,23 @@ func (rs *TredsStore) SInter(keys []string) (string, error) {
 		intersectionSet = intersectionSet.Intersection(storedSet)
 	}
 	values := intersectionSet.Values()
-	var res strings.Builder
+	res := make([]string, 0)
 	for _, key := range values {
-		res.WriteString(key.(string))
-		res.WriteString("\n")
+		res = append(res, key.(string))
 	}
-	return res.String(), nil
+	return res, nil
 }
 
-func (rs *TredsStore) SDiff(keys []string) (string, error) {
+func (rs *TredsStore) SDiff(keys []string) ([]string, error) {
 	for _, key := range keys {
 		kd := rs.getKeyDetails(key)
 		if kd != -1 && kd != SetStore {
-			return "", fmt.Errorf("not set store")
+			return nil, fmt.Errorf("not set store")
 		}
 	}
 	diffSet, ok := rs.sets[keys[0]]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	for _, key := range keys[1:] {
 		storedSet, found := rs.sets[key]
@@ -1460,12 +1420,11 @@ func (rs *TredsStore) SDiff(keys []string) (string, error) {
 		diffSet = diffSet.Difference(storedSet)
 	}
 	values := diffSet.Values()
-	var res strings.Builder
+	res := make([]string, 0)
 	for _, key := range values {
-		res.WriteString(key.(string))
-		res.WriteString("\n")
+		res = append(res, key.(string))
 	}
-	return res.String(), nil
+	return res, nil
 }
 
 func (rs *TredsStore) HSet(key string, args []string) error {
@@ -1505,36 +1464,31 @@ func (rs *TredsStore) HGet(key string, field string) (string, error) {
 	}
 	storedMap, ok := rs.hashes[key]
 	if !ok {
-		return "", nil
+		return NilResp, nil
 	}
 	val, found := storedMap.Get(field)
 	if !found {
-		return "", nil
+		return NilResp, nil
 	}
-	var res strings.Builder
-	res.WriteString(val.(string))
-	res.WriteString("\n")
-	return res.String(), nil
+	return val.(string), nil
 }
 
-func (rs *TredsStore) HGetAll(key string) (string, error) {
+func (rs *TredsStore) HGetAll(key string) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
-		return "", fmt.Errorf("not hash store")
+		return nil, fmt.Errorf("not hash store")
 	}
 	storedMap, ok := rs.hashes[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
-	var res strings.Builder
+	res := make([]string, 0)
 	for _, field := range storedMap.Keys() {
-		res.WriteString(field.(string))
-		res.WriteString("\n")
+		res = append(res, field.(string))
 		value, _ := storedMap.Get(field)
-		res.WriteString(value.(string))
-		res.WriteString("\n")
+		res = append(res, value.(string))
 	}
-	return res.String(), nil
+	return res, nil
 }
 func (rs *TredsStore) HLen(key string) (int, error) {
 	kd := rs.getKeyDetails(key)
@@ -1576,40 +1530,38 @@ func (rs *TredsStore) HExists(key string, field string) (bool, error) {
 	return found, nil
 }
 
-func (rs *TredsStore) HKeys(key string) (string, error) {
+func (rs *TredsStore) HKeys(key string) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
-		return "", fmt.Errorf("not hash store")
+		return nil, fmt.Errorf("not hash store")
 	}
 	storedMap, ok := rs.hashes[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	fields := storedMap.Keys()
-	var res strings.Builder
+	res := make([]string, 0)
 	for _, field := range fields {
-		res.WriteString(field.(string))
-		res.WriteString("\n")
+		res = append(res, field.(string))
 	}
-	return res.String(), nil
+	return res, nil
 }
 
-func (rs *TredsStore) HVals(key string) (string, error) {
+func (rs *TredsStore) HVals(key string) ([]string, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
-		return "", fmt.Errorf("not hash store")
+		return nil, fmt.Errorf("not hash store")
 	}
 	storedMap, ok := rs.hashes[key]
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	fields := storedMap.Values()
-	var res strings.Builder
+	res := make([]string, 0)
 	for _, field := range fields {
-		res.WriteString(field.(string))
-		res.WriteString("\n")
+		res = append(res, field.(string))
 	}
-	return res.String(), nil
+	return res, nil
 }
 
 func (rs *TredsStore) Expire(key string, expiration time.Time) error {
@@ -1627,17 +1579,15 @@ func (rs *TredsStore) Ttl(key string) int {
 	return -2
 }
 
-func (rs *TredsStore) LongestPrefix(prefix string) (string, error) {
-	var res strings.Builder
+func (rs *TredsStore) LongestPrefix(prefix string) ([]string, error) {
+	res := make([]string, 0)
 	key, val, found := rs.tree.Root().LongestPrefix([]byte(prefix))
 	if found {
-		res.WriteString(string(key))
-		res.WriteString("\n")
-		res.WriteString(val.(string))
-		res.WriteString("\n")
-		return res.String(), nil
+		res = append(res, string(key))
+		res = append(res, val.(string))
+		return res, nil
 	}
-	return "", nil
+	return nil, nil
 }
 
 func convertToString(value interface{}) (string, error) {

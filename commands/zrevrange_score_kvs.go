@@ -4,6 +4,7 @@ import (
 	"math"
 	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -37,8 +38,8 @@ func executeZRevRangeScoreKVS() ExecutionHook {
 		}
 		v, err := store.ZRevRangeByScoreKVS(args[0], args[1], args[2], startIndex, count, withScore)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return v
+		return resp.EncodeStringArray(v)
 	}
 }

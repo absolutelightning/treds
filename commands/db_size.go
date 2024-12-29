@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"treds/resp"
 	"treds/store"
 )
 
@@ -24,8 +25,8 @@ func executeDBSize() ExecutionHook {
 	return func(args []string, store store.Store) string {
 		res, err := store.Size()
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return res
+		return resp.EncodeInteger(res)
 	}
 }

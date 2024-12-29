@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -31,8 +32,8 @@ func executeHValsCommand() ExecutionHook {
 		key := args[0]
 		res, err := store.HVals(key)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return res
+		return resp.EncodeStringArray(res)
 	}
 }

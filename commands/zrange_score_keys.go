@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -50,8 +51,8 @@ func executeZRangeScoreKeys() ExecutionHook {
 		}
 		v, err := store.ZRangeByScoreKeys(args[0], args[1], args[2], startIndex, count, withScore)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return v
+		return resp.EncodeStringArray(v)
 	}
 }

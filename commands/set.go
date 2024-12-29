@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -37,8 +38,8 @@ func executeSet() ExecutionHook {
 		value := strings.Join(args[1:], " ")
 		err := store.Set(args[0], value)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return "OK\n"
+		return resp.EncodeSimpleString("OK")
 	}
 }

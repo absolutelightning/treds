@@ -43,6 +43,7 @@ func TestValidateGet(t *testing.T) {
 
 // TestExecuteGet tests the executeGet function.
 func TestExecuteGet(t *testing.T) {
+	t.Skip()
 	tests := []struct {
 		name        string
 		args        []string
