@@ -217,5 +217,4 @@ On Server 3 run
 ## Future Work
 * Currently only KV Store gets persisted in Snapshot, add support for other store.
 * Authentication.
-* Add RESP support.
 * More Commands ...
