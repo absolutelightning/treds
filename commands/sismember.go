@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -32,12 +33,12 @@ func executeSIsMemberCommand() ExecutionHook {
 		key := args[0]
 		res, err := store.SIsMember(key, strings.Join(args[1:], " "))
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
 		if res {
-			return "1"
+			return resp.EncodeInteger(1)
 		} else {
-			return "0"
+			return resp.EncodeInteger(0)
 		}
 	}
 }

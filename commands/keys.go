@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -50,8 +51,8 @@ func executeKeys() ExecutionHook {
 		}
 		v, err := store.Keys(args[0], regex, count)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return fmt.Sprintf("%v", v)
+		return resp.EncodeStringArray(v)
 	}
 }

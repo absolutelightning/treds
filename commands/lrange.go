@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -32,16 +33,16 @@ func executeLRangeCommand() ExecutionHook {
 		key := args[0]
 		start, err := strconv.Atoi(args[1])
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
 		stop, err := strconv.Atoi(args[2])
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
 		res, err := store.LRange(key, start, stop)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return res
+		return resp.EncodeStringArray(res)
 	}
 }

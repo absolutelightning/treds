@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"treds/resp"
 	"treds/store"
 )
 
@@ -16,6 +17,6 @@ func RegisterPINGCommand(r CommandRegistry) {
 
 func executePINGCommand() ExecutionHook {
 	return func(args []string, store store.Store) string {
-		return "PONG\n"
+		return resp.EncodeSimpleString("PONG")
 	}
 }

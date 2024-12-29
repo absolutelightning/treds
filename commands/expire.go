@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -40,8 +41,8 @@ func executeExpireCommand() ExecutionHook {
 		expiryTime := now.Add(time.Duration(seconds) * time.Second)
 		err := store.Expire(key, expiryTime)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return "OK\n"
+		return resp.EncodeSimpleString("OK")
 	}
 }

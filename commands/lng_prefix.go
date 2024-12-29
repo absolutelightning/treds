@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"treds/resp"
 	"treds/store"
 )
 
@@ -19,8 +20,8 @@ func executeLongestPrefixCommand() ExecutionHook {
 		prefix := args[0]
 		res, err := store.LongestPrefix(prefix)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return res
+		return resp.EncodeStringArray(res)
 	}
 }

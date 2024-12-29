@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -30,8 +31,8 @@ func executeSDiffCommand() ExecutionHook {
 	return func(args []string, store store.Store) string {
 		res, err := store.SDiff(args)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return res
+		return resp.EncodeStringArray(res)
 	}
 }

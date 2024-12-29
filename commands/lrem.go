@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -33,12 +34,12 @@ func executeLRemCommand() ExecutionHook {
 		key := args[0]
 		index, err := strconv.Atoi(args[1])
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
 		err = store.LRem(key, index)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return "OK\n"
+		return resp.EncodeSimpleString("OK")
 	}
 }

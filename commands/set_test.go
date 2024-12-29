@@ -54,14 +54,14 @@ func TestExecuteSet(t *testing.T) {
 			args:        []string{"key1", "value1"},
 			store:       &MockStore{data: make(map[string]string)},
 			expectErr:   false,
-			expectedMsg: "OK\n",
+			expectedMsg: "+OK\r\n",
 		},
 		{
 			name:        "overwrite existing key",
 			args:        []string{"key1", "newvalue"},
 			store:       &MockStore{data: map[string]string{"key1": "value1"}},
 			expectErr:   false,
-			expectedMsg: "OK\n",
+			expectedMsg: "+OK\r\n",
 		},
 	}
 

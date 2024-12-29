@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -21,7 +22,6 @@ func validateMGet() ValidationHook {
 		if len(args) == 0 {
 			return fmt.Errorf("expected atlest 1 argument, got %d", len(args))
 		}
-
 		return nil
 	}
 }
@@ -30,8 +30,8 @@ func executeMGet() ExecutionHook {
 	return func(args []string, store store.Store) string {
 		res, err := store.MGet(args)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return res
+		return resp.EncodeStringArray(res)
 	}
 }

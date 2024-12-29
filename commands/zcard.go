@@ -2,8 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -30,8 +30,8 @@ func executeZCardCommand() ExecutionHook {
 	return func(args []string, store store.Store) string {
 		size, err := store.ZCard(args[0])
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return strconv.Itoa(size)
+		return resp.EncodeInteger(size)
 	}
 }
