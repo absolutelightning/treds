@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -497,8 +496,7 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 			respondErr(c, err)
 			return gnet.None
 		default:
-			res := "OK"
-			_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
+			_, errConn := c.Write([]byte(rsp.(string)))
 			if errConn != nil {
 				fmt.Println("Error occurred writing to connection", errConn)
 			}
@@ -558,44 +556,29 @@ func (ts *Server) convertRaftToTredsAddress(raftAddr string) (string, error) {
 
 // Read all data from the server
 func readAllData(conn net.Conn) (string, error) {
-	reader := bufio.NewReader(conn)
+	defer conn.Close()
 
-	length, err := readUntilNewline(reader)
-	if err != nil {
-		return "", err
-	}
-	lengthInt, err := strconv.Atoi(length[:len(length)-1])
-	if err != nil {
-		return "", err
+	// Create a buffer to read the data
+	var data []byte
+	buffer := make([]byte, 1024) // Temporary buffer
+
+	for {
+		// Read data into the buffer
+		n, err := conn.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				// End of data
+				break
+			}
+			return "", err
+		}
+
+		// Append the read data to the result
+		data = append(data, buffer[:n]...)
 	}
 
-	resp, err := readFixedBytes(reader, lengthInt)
-	if err != nil {
-		return "", err
-	}
-	return string(resp), nil
-}
-
-// Function to read from the connection until a newline character
-func readUntilNewline(reader *bufio.Reader) (string, error) {
-	// Read until '\n'
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-	return line, nil
-}
-
-func readFixedBytes(reader *bufio.Reader, n int) ([]byte, error) {
-	// Create a buffer of size n to hold the data
-	buffer := make([]byte, n)
-
-	// Read exactly n bytes into the buffer
-	_, err := io.ReadFull(reader, buffer)
-	if err != nil {
-		return nil, err
-	}
-	return buffer, nil
+	// Convert the byte slice to a string and return it
+	return string(data), nil
 }
 
 func decodeHexAddress(hexAddr string) (string, error) {
