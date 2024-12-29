@@ -231,7 +231,6 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 
 	// Server Commands
 	command, args, err := parseCommand(inp)
-	fmt.Println("on traffic", command)
 	if err != nil {
 		respondErr(c, err)
 		return gnet.None
