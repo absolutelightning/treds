@@ -195,8 +195,8 @@ func (rs *MockStore) LIndex(args []string) (string, error) {
 	return "", nil
 }
 
-func (rs *MockStore) LLen(key string) (string, error) {
-	return "", nil
+func (rs *MockStore) LLen(key string) (int, error) {
+	return 0, nil
 }
 
 func (rs *MockStore) LRange(key string, start, stop int) ([]string, error) {

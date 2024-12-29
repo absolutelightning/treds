@@ -34,7 +34,7 @@ type Store interface {
 	LRem(string, int) error
 	LSet(string, int, string) error
 	LRange(string, int, int) ([]string, error)
-	LLen(string) (string, error)
+	LLen(string) (int, error)
 	LIndex([]string) (string, error)
 	SAdd(string, []string) error
 	SRem(string, []string) error

@@ -34,6 +34,6 @@ func executeLLenCommand() ExecutionHook {
 		if err != nil {
 			return resp.EncodeError(err.Error())
 		}
-		return resp.EncodeBulkString(res)
+		return resp.EncodeInteger(res)
 	}
 }

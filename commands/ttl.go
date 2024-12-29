@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"strconv"
 
 	"treds/resp"
 	"treds/store"
@@ -31,6 +30,6 @@ func executeTtlCommand() ExecutionHook {
 	return func(args []string, store store.Store) string {
 		key := args[0]
 		ttl := store.Ttl(key)
-		return resp.EncodeBulkString(strconv.Itoa(ttl))
+		return resp.EncodeInteger(ttl)
 	}
 }

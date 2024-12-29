@@ -1145,16 +1145,16 @@ func (rs *TredsStore) LIndex(args []string) (string, error) {
 	return value.(string), nil
 }
 
-func (rs *TredsStore) LLen(key string) (string, error) {
+func (rs *TredsStore) LLen(key string) (int, error) {
 	kd := rs.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
-		return "", fmt.Errorf("not list store")
+		return 0, fmt.Errorf("not list store")
 	}
 	storedList, ok := rs.lists[key]
 	if !ok {
-		return "0", nil
+		return 0, nil
 	}
-	return strconv.Itoa(storedList.Size()), nil
+	return storedList.Size(), nil
 }
 
 func (rs *TredsStore) LRange(key string, start, stop int) ([]string, error) {
@@ -1464,11 +1464,11 @@ func (rs *TredsStore) HGet(key string, field string) (string, error) {
 	}
 	storedMap, ok := rs.hashes[key]
 	if !ok {
-		return "", nil
+		return NilResp, nil
 	}
 	val, found := storedMap.Get(field)
 	if !found {
-		return "", nil
+		return NilResp, nil
 	}
 	return val.(string), nil
 }

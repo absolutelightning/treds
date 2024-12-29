@@ -68,7 +68,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		// try reading from file
 		if _, err := os.Stat(serverIdFileName); err == nil {
 			// File exists, read the UUID
-			fmt.Println("File found. Reading UUID from file...")
+			fmt.Println("File found. Reading UUID from file... If boostrap error is seen, try removing 'server-id' file")
 			data, readErr := os.ReadFile(serverIdFileName)
 			if readErr != nil {
 				fmt.Println("Error reading UUID from file:", err)
