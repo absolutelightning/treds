@@ -555,97 +555,44 @@ func (ts *Server) convertRaftToTredsAddress(raftAddr string) (string, error) {
 	return net.JoinHostPort(decodedAddr, stringPort), nil
 }
 
-// Read all RESP data from the server and parse it into a string
-func readAllData(conn net.Conn) ([]interface{}, error) {
+// readAllRESPData reads all RESP data from the connection as a string
+func readAllRESPData(conn net.Conn) (string, error) {
 	defer conn.Close()
+
+	var result string
 	reader := bufio.NewReader(conn)
 
-	var result []interface{}
-
 	for {
-		// Peek the first byte to determine the RESP type
-		prefix, err := reader.Peek(1)
+		// Read data from the connection
+		line, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
 				// End of data
 				break
 			}
-			return nil, err
+			return "", err
 		}
 
-		switch prefix[0] {
-		case '+': // Simple String
-			line, err := reader.ReadString('\n')
-			if err != nil {
-				return nil, err
-			}
-			result = append(result, strings.TrimSuffix(line[1:], "\r\n"))
-		case '-': // Error
-			line, err := reader.ReadString('\n')
-			if err != nil {
-				return nil, err
-			}
-			result = append(result, fmt.Errorf(strings.TrimSuffix(line[1:], "\r\n")))
-		case ':': // Integer
-			line, err := reader.ReadString('\n')
-			if err != nil {
-				return nil, err
-			}
-			number, err := strconv.Atoi(strings.TrimSuffix(line[1:], "\r\n"))
-			if err != nil {
-				return nil, err
-			}
-			result = append(result, number)
-		case '$': // Bulk String
-			line, err := reader.ReadString('\n')
-			if err != nil {
-				return nil, err
-			}
-			length, err := strconv.Atoi(strings.TrimSuffix(line[1:], "\r\n"))
-			if err != nil || length < 0 {
-				result = append(result, nil) // Null bulk string
-				continue
-			}
-			// Read the bulk string value
-			value := make([]byte, length)
-			_, err = io.ReadFull(reader, value)
-			if err != nil {
-				return nil, err
-			}
-			// Consume trailing \r\n
-			_, err = reader.Discard(2)
-			if err != nil {
-				return nil, err
-			}
-			result = append(result, string(value))
-		case '*': // Array
-			line, err := reader.ReadString('\n')
-			if err != nil {
-				return nil, err
-			}
-			length, err := strconv.Atoi(strings.TrimSuffix(line[1:], "\r\n"))
-			if err != nil || length < 0 {
-				result = append(result, nil) // Null array
-				continue
-			}
-			// Parse the array elements recursively
-			array := make([]interface{}, length)
-			for i := 0; i < length; i++ {
-				element, err := readAllData(conn)
-				if err != nil {
-					return nil, err
-				}
-				array[i] = element
-			}
-			result = append(result, array)
-		default:
-			return nil, fmt.Errorf("unknown RESP prefix: %c", prefix[0])
+		// Append the line to the result
+		result += line
+
+		// Check for the end of RESP data
+		// If you expect specific termination (like \r\n or protocol-level signal), add logic here
+		if isEndOfRESP(result) {
+			break
 		}
 	}
 
 	return result, nil
 }
 
+// isEndOfRESP determines if the accumulated data is complete
+// Customize this function based on the RESP structure or data you expect
+func isEndOfRESP(data string) bool {
+	// Example: Customize this condition based on your protocol needs
+	// For now, assume the RESP message ends if the last line ends with \r\n
+	return strings.HasSuffix(data, "\r\n")
+}
 func decodeHexAddress(hexAddr string) (string, error) {
 	if strings.HasPrefix(hexAddr, "?") {
 		hexAddr = hexAddr[1:] // Strip the `?` prefix
@@ -688,7 +635,7 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 		fmt.Println("Error occurred writing to connection", tredsAddr)
 		return false, "", nil
 	}
-	line, rerr := readAllData(conn)
+	line, rerr := readAllRESPData(conn)
 	if rerr != nil {
 		fmt.Println("Error occurred reading from connection", tredsAddr)
 		return false, "", nil
