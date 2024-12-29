@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -577,17 +578,16 @@ func (ts *Server) convertRaftToTredsAddress(raftAddr string) (string, error) {
 	return net.JoinHostPort(decodedAddr, stringPort), nil
 }
 
-// Read all data from the server
-func readAllData(conn net.Conn) (string, error) {
+// readAllRESPData reads all RESP data from the connection as a string
+func readAllRESPData(conn net.Conn) (string, error) {
 	defer conn.Close()
 
-	// Create a buffer to read the data
-	var data []byte
-	buffer := make([]byte, 1024) // Temporary buffer
+	var result string
+	reader := bufio.NewReader(conn)
 
 	for {
-		// Read data into the buffer
-		n, err := conn.Read(buffer)
+		// Read data from the connection
+		line, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
 				// End of data
@@ -596,14 +596,26 @@ func readAllData(conn net.Conn) (string, error) {
 			return "", err
 		}
 
-		// Append the read data to the result
-		data = append(data, buffer[:n]...)
+		// Append the line to the result
+		result += line
+
+		// Check for the end of RESP data
+		// If you expect specific termination (like \r\n or protocol-level signal), add logic here
+		if isEndOfRESP(result) {
+			break
+		}
 	}
 
-	// Convert the byte slice to a string and return it
-	return string(data), nil
+	return result, nil
 }
 
+// isEndOfRESP determines if the accumulated data is complete
+// Customize this function based on the RESP structure or data you expect
+func isEndOfRESP(data string) bool {
+	// Example: Customize this condition based on your protocol needs
+	// For now, assume the RESP message ends if the last line ends with \r\n
+	return strings.HasSuffix(data, "\r\n")
+}
 func decodeHexAddress(hexAddr string) (string, error) {
 	if strings.HasPrefix(hexAddr, "?") {
 		hexAddr = hexAddr[1:] // Strip the `?` prefix
@@ -646,7 +658,7 @@ func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
 		fmt.Println("Error occurred writing to connection", tredsAddr)
 		return false, "", nil
 	}
-	line, rerr := readAllData(conn)
+	line, rerr := readAllRESPData(conn)
 	if rerr != nil {
 		fmt.Println("Error occurred reading from connection", tredsAddr)
 		return false, "", nil
