@@ -631,7 +631,7 @@ func readAllData(conn net.Conn) ([]interface{}, error) {
 			// Parse the array elements recursively
 			array := make([]interface{}, length)
 			for i := 0; i < length; i++ {
-				element, err := readAllRESPData(conn)
+				element, err := readAllData(conn)
 				if err != nil {
 					return nil, err
 				}
