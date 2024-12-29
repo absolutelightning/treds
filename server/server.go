@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"treds/resp"
@@ -42,8 +43,9 @@ type Server struct {
 	Addr string
 	Port int
 
-	tredsCommandRegistry commands.CommandRegistry
-	clientTransaction    map[string][]string
+	tredsCommandRegistry  commands.CommandRegistry
+	clientTransaction     map[string][]string
+	clientTransactionLock *sync.Mutex
 
 	*gnet.BuiltinEventEngine
 	fsm              *TredsFsm
@@ -193,14 +195,15 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 	}
 
 	return &Server{
-		Port:                 port,
-		tredsCommandRegistry: commandRegistry,
-		fsm:                  fsm,
-		raft:                 r,
-		id:                   config.LocalID,
-		raftApplyTimeout:     applyTimeout,
-		clientTransaction:    make(map[string][]string),
-		connP:                connPool.NewConnPool(time.Second * 5),
+		Port:                  port,
+		tredsCommandRegistry:  commandRegistry,
+		fsm:                   fsm,
+		raft:                  r,
+		id:                    config.LocalID,
+		raftApplyTimeout:      applyTimeout,
+		clientTransaction:     make(map[string][]string),
+		clientTransactionLock: &sync.Mutex{},
+		connP:                 connPool.NewConnPool(time.Second * 5),
 	}, nil
 }
 
@@ -361,6 +364,9 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			return gnet.None
 		}
 
+		ts.clientTransactionLock.Lock()
+		defer ts.clientTransactionLock.Unlock()
+
 		ts.clientTransaction[c.RemoteAddr().String()] = make([]string, 0)
 
 		res := "OK"
@@ -388,6 +394,9 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			}
 			return gnet.None
 		}
+
+		ts.clientTransactionLock.Lock()
+		defer ts.clientTransactionLock.Unlock()
 
 		replies := make([]string, 0, len(ts.clientTransaction[c.RemoteAddr().String()]))
 		if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
@@ -453,6 +462,8 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			return gnet.None
 		}
 
+		ts.clientTransactionLock.Lock()
+		defer ts.clientTransactionLock.Unlock()
 		delete(ts.clientTransaction, c.RemoteAddr().String())
 
 		res := "OK"
@@ -468,6 +479,8 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	// Check for transaction first, if transaction just enqueue the command
 
 	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
+		ts.clientTransactionLock.Lock()
+		defer ts.clientTransactionLock.Unlock()
 		ts.clientTransaction[c.RemoteAddr().String()] = append(ts.clientTransaction[c.RemoteAddr().String()], inp)
 		res := "OK"
 		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
