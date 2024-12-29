@@ -182,6 +182,10 @@ make build
 GOOS=linux GOARCH=arm64 make build
 ```
 
+```bash
+./treds
+```
+
 ## CLI
 Treds encodes and decodes the messages in RESP so redis-cli can be used to interact with Treds server.
 
