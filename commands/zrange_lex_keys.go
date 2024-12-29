@@ -4,6 +4,7 @@ import (
 	"math"
 	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -37,8 +38,8 @@ func executeZRangeLexKeys() ExecutionHook {
 		}
 		v, err := store.ZRangeByLexKeys(args[0], args[1], minKey, maxKey, count, withScore)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return v
+		return resp.EncodeStringArray(v)
 	}
 }

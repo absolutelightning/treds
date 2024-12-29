@@ -2,8 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -32,8 +32,12 @@ func executeHExistsCommand() ExecutionHook {
 		key := args[0]
 		found, err := store.HExists(key, args[1])
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return strconv.FormatBool(found)
+		if found {
+			return resp.EncodeInteger(1)
+		} else {
+			return resp.EncodeInteger(0)
+		}
 	}
 }

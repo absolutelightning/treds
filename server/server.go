@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"treds/resp"
 	"treds/server/connPool"
 
 	wal "github.com/hashicorp/raft-wal"
@@ -66,7 +67,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		// try reading from file
 		if _, err := os.Stat(serverIdFileName); err == nil {
 			// File exists, read the UUID
-			fmt.Println("File found. Reading UUID from file...")
+			fmt.Println("File found. Reading UUID from file... If boostrap error is seen, try removing 'server-id' file")
 			data, readErr := os.ReadFile(serverIdFileName)
 			if readErr != nil {
 				fmt.Println("Error reading UUID from file:", err)
@@ -243,7 +244,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	if inp == "" {
 		err := fmt.Errorf("empty command")
 		respErr := fmt.Sprintf("Error Executing command - %v\n", err.Error())
-		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(respErr), respErr)))
+		_, errConn := c.Write([]byte(resp.EncodeError(respErr)))
 		if errConn != nil {
 			fmt.Println("Error occurred writing to connection", errConn)
 		}
@@ -269,7 +270,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		// If request is forwarded we just send back the answer from the leader to the client
 		// and stop processing
 		if forwarded {
-			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			_, errConn := c.Write([]byte(rspFwd))
 			if errConn != nil {
 				fmt.Println("Error occurred writing to connection", errConn)
 			}
@@ -282,7 +283,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			return gnet.None
 		}
 		res := "OK"
-		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
 		if errConn != nil {
 			respondErr(c, errConn)
 		}
@@ -306,7 +307,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		// If request is forwarded we just send back the answer from the leader to the client
 		// and stop processing
 		if forwarded {
-			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			_, errConn := c.Write([]byte(rspFwd))
 			if errConn != nil {
 				fmt.Println("Error occurred writing to connection", errConn)
 			}
@@ -352,7 +353,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			return gnet.None
 		}
 		res := "OK"
-		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
 		if errConn != nil {
 			respondErr(c, errConn)
 		}
@@ -370,7 +371,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		// If request is forwarded we just send back the answer from the leader to the client
 		// and stop processing
 		if forwarded {
-			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			_, errConn := c.Write([]byte(rspFwd))
 			if errConn != nil {
 				fmt.Println("Error occurred writing to connection", errConn)
 			}
@@ -380,7 +381,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		ts.clientTransaction[c.RemoteAddr().String()] = make([]string, 0)
 
 		res := "OK"
-		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
 		if errConn != nil {
 			respondErr(c, errConn)
 		}
@@ -398,7 +399,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		// If request is forwarded we just send back the answer from the leader to the client
 		// and stop processing
 		if forwarded {
-			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			_, errConn := c.Write([]byte(rspFwd))
 			if errConn != nil {
 				fmt.Println("Error occurred writing to connection", errConn)
 			}
@@ -413,7 +414,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		}
 
 		res := "OK"
-		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
 		if errConn != nil {
 			respondErr(c, errConn)
 		}
@@ -431,7 +432,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		// If request is forwarded we just send back the answer from the leader to the client
 		// and stop processing
 		if forwarded {
-			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			_, errConn := c.Write([]byte(rspFwd))
 			if errConn != nil {
 				fmt.Println("Error occurred writing to connection", errConn)
 			}
@@ -441,7 +442,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		delete(ts.clientTransaction, c.RemoteAddr().String())
 
 		res := "OK"
-		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
 		if errConn != nil {
 			respondErr(c, errConn)
 		}
@@ -455,7 +456,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
 		ts.clientTransaction[c.RemoteAddr().String()] = append(ts.clientTransaction[c.RemoteAddr().String()], inp)
 		res := "OK"
-		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
 		if errConn != nil {
 			respondErr(c, errConn)
 		}
@@ -467,8 +468,12 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 }
 
 func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
-	commandStringParts := parseCommand(inp)
-	commandReg, err := ts.tredsCommandRegistry.Retrieve(strings.ToUpper(commandStringParts[0]))
+	command, args, err := parseCommand(inp)
+	if err != nil {
+		respondErr(c, err)
+		return gnet.None
+	}
+	commandReg, err := ts.tredsCommandRegistry.Retrieve(strings.ToUpper(command))
 	if err != nil {
 		respondErr(c, err)
 		return gnet.None
@@ -487,7 +492,7 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 		// If request is forwarded we just send back the answer from the leader to the client
 		// and stop processing
 		if forwarded {
-			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(rspFwd), rspFwd)))
+			_, errConn := c.Write([]byte(rspFwd))
 			if errConn != nil {
 				fmt.Println("Error occurred writing to connection", errConn)
 			}
@@ -495,7 +500,7 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 		}
 
 		// Validation need to be done before raft Apply so an error is returned before persisting
-		if err = commandReg.Validate(commandStringParts[1:]); err != nil {
+		if err = commandReg.Validate(args); err != nil {
 			respondErr(c, err)
 			return gnet.None
 		}
@@ -514,19 +519,18 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 			respondErr(c, err)
 			return gnet.None
 		default:
-			res := "OK"
-			_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+			_, errConn := c.Write([]byte(rsp.(string)))
 			if errConn != nil {
 				fmt.Println("Error occurred writing to connection", errConn)
 			}
 		}
 	} else {
-		if err = commandReg.Validate(commandStringParts[1:]); err != nil {
+		if err = commandReg.Validate(args); err != nil {
 			respondErr(c, err)
 			return gnet.None
 		}
-		res := commandReg.Execute(commandStringParts[1:], ts.fsm.tredsStore)
-		_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(res), res)))
+		res := commandReg.Execute(args, ts.fsm.tredsStore)
+		_, errConn := c.Write([]byte(res))
 		if errConn != nil {
 			fmt.Println("Error occurred writing to connection", errConn)
 		}
@@ -534,15 +538,16 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 	return gnet.None
 }
 
-func parseCommand(inp string) []string {
-	commandString := strings.TrimSpace(inp)
-	commandStringParts := strings.Split(commandString, " ")
-	return commandStringParts
+func parseCommand(inp string) (string, []string, error) {
+	command, args, err := resp.Decode(inp)
+	if err != nil {
+		return "", nil, err
+	}
+	return command, args, nil
 }
 
 func respondErr(c gnet.Conn, err error) {
-	respErr := fmt.Sprintf("Error Executing command - %v\n", err.Error())
-	_, errConn := c.Write([]byte(fmt.Sprintf("%d\n%s", len(respErr), respErr)))
+	_, errConn := c.Write([]byte(resp.EncodeError(err.Error())))
 	if errConn != nil {
 		fmt.Println("Error occurred writing to connection", errConn)
 	}
@@ -574,44 +579,29 @@ func (ts *Server) convertRaftToTredsAddress(raftAddr string) (string, error) {
 
 // Read all data from the server
 func readAllData(conn net.Conn) (string, error) {
-	reader := bufio.NewReader(conn)
+	defer conn.Close()
 
-	length, err := readUntilNewline(reader)
-	if err != nil {
-		return "", err
-	}
-	lengthInt, err := strconv.Atoi(length[:len(length)-1])
-	if err != nil {
-		return "", err
+	// Create a buffer to read the data
+	var data []byte
+	buffer := make([]byte, 1024) // Temporary buffer
+
+	for {
+		// Read data into the buffer
+		n, err := conn.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				// End of data
+				break
+			}
+			return "", err
+		}
+
+		// Append the read data to the result
+		data = append(data, buffer[:n]...)
 	}
 
-	resp, err := readFixedBytes(reader, lengthInt)
-	if err != nil {
-		return "", err
-	}
-	return string(resp), nil
-}
-
-// Function to read from the connection until a newline character
-func readUntilNewline(reader *bufio.Reader) (string, error) {
-	// Read until '\n'
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-	return line, nil
-}
-
-func readFixedBytes(reader *bufio.Reader, n int) ([]byte, error) {
-	// Create a buffer of size n to hold the data
-	buffer := make([]byte, n)
-
-	// Read exactly n bytes into the buffer
-	_, err := io.ReadFull(reader, buffer)
-	if err != nil {
-		return nil, err
-	}
-	return buffer, nil
+	// Convert the byte slice to a string and return it
+	return string(data), nil
 }
 
 func decodeHexAddress(hexAddr string) (string, error) {

@@ -25,14 +25,17 @@ type TredsFsm struct {
 
 func (t *TredsFsm) Apply(log *raft.Log) interface{} {
 	inp := string(log.Data)
-	commandStringParts := parseCommand(inp)
-	commandReg, err := t.cmdRegistry.Retrieve(strings.ToUpper(commandStringParts[0]))
+	command, args, err := parseCommand(inp)
+	if err != nil {
+		return err
+	}
+	commandReg, err := t.cmdRegistry.Retrieve(strings.ToUpper(command))
 	if err != nil {
 		return err
 	}
 	currentStore := t.tredsStore
 	if currentStore != nil {
-		return commandReg.Execute(commandStringParts[1:], currentStore)
+		return commandReg.Execute(args, currentStore)
 	}
 	return NilStore
 }

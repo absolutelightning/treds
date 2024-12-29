@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -33,12 +34,12 @@ func executeLPopCommand() ExecutionHook {
 		key := args[0]
 		count, err := strconv.Atoi(args[1])
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
 		res, err := store.LPop(key, count)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return res
+		return resp.EncodeStringArray(res)
 	}
 }

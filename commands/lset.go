@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -33,12 +34,12 @@ func executeLSetCommand() ExecutionHook {
 		key := args[0]
 		index, err := strconv.Atoi(args[1])
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
 		err = store.LSet(key, index, strings.Join(args[2:], " "))
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return "OK\n"
+		return resp.EncodeSimpleString("OK")
 	}
 }

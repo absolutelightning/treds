@@ -2,8 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"strconv"
 
+	"treds/resp"
 	"treds/store"
 )
 
@@ -31,8 +31,8 @@ func executeSCardCommand() ExecutionHook {
 		key := args[0]
 		size, err := store.SCard(key)
 		if err != nil {
-			return err.Error()
+			return resp.EncodeError(err.Error())
 		}
-		return strconv.Itoa(size)
+		return resp.EncodeInteger(size)
 	}
 }
