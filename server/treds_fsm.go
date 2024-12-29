@@ -85,6 +85,8 @@ func (t *TredsFsm) Restore(old io.ReadCloser) error {
 		return err
 	}
 	ts := store.NewTredsStore()
+	t.storeLock.Lock()
+	defer t.storeLock.Unlock()
 	err = ts.Restore(data)
 	t.tredsStore = ts
 	if err != nil {
