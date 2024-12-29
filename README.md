@@ -167,14 +167,6 @@ Using docker
 docker run -p 7997:7997 absolutelightning/treds
 ```
 
-For CLI run the following command in the `client` folder in the repo
-
-```bash
-cd ./client
-export TREDS_PORT=7997
-go run main.go -port 7997
-```
-
 `Default Port of Treds is 7997`
 `If port is set in env variable as well as flag, flag takes the precedence.`
 
@@ -190,14 +182,11 @@ make build
 GOOS=linux GOARCH=arm64 make build
 ```
 
-To build the binary for the treds cli, run following command in repo root -
-Binary named `treds-cli` will be generated in repo root.
+## CLI
+Treds encodes and decodes the messages in RESP so redis-cli can be used to interact with Treds server.
 
 ```bash
-make build-cli             
-```
-```bash
-GOOS=linux GOARCH=arm64 make build-cli
+redis-cli -p 7997
 ```
 
 ## Run Production
