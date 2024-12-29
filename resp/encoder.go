@@ -40,6 +40,21 @@ func EncodeStringArray(arr []string) string {
 	return buffer.String()
 }
 
+// EncodeStringArray encodes an array of strings into RESP array format
+func EncodeStringArrayRESP(arr []string) string {
+	var buffer bytes.Buffer
+
+	// Write the array header (*<number_of_elements>\r\n)
+	buffer.WriteString(fmt.Sprintf("*%d\r\n", len(arr)))
+
+	// Encode each string as a bulk string and append to the buffer
+	for _, s := range arr {
+		buffer.WriteString(s)
+	}
+
+	return buffer.String()
+}
+
 // EncodeArray encodes a RESP array, handling nested arrays and nulls
 func EncodeArray(elements []interface{}) string {
 	if elements == nil {

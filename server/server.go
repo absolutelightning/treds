@@ -68,7 +68,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		// try reading from file
 		if _, err := os.Stat(serverIdFileName); err == nil {
 			// File exists, read the UUID
-			fmt.Println("File found. Reading UUID from file... If boostrap error is seen, try removing 'server-id' file")
+			fmt.Println("File found. Reading UUID from file... If boostrap error is seen, try removing 'data' directory")
 			data, readErr := os.ReadFile(serverIdFileName)
 			if readErr != nil {
 				fmt.Println("Error reading UUID from file:", err)
@@ -230,8 +230,14 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	}
 
 	// Server Commands
+	command, args, err := parseCommand(inp)
+	fmt.Println("on traffic", command)
+	if err != nil {
+		respondErr(c, err)
+		return gnet.None
+	}
 
-	if strings.ToUpper(inp) == Snapshot {
+	if strings.ToUpper(command) == Snapshot {
 
 		if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
 			respondErr(c, fmt.Errorf("please run this command outside transaction"))
@@ -268,7 +274,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		return gnet.None
 	}
 
-	if strings.ToUpper(strings.Split(inp, " ")[0]) == Restore {
+	if strings.ToUpper(command) == Restore {
 
 		if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
 			respondErr(c, fmt.Errorf("please run this command outside transaction"))
@@ -292,7 +298,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			return gnet.None
 		}
 
-		snapshotPath := strings.Split(inp, " ")[1]
+		snapshotPath := args[0]
 
 		metaFile := filepath.Join(snapshotPath, "meta.json")
 
@@ -338,7 +344,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		return gnet.None
 	}
 
-	if strings.ToUpper(inp) == Multi {
+	if strings.ToUpper(command) == Multi {
 		// Only writes need to be forwarded to leader
 		forwarded, rspFwd, err := ts.forwardRequest(data)
 		if err != nil {
@@ -366,7 +372,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		return gnet.None
 	}
 
-	if strings.ToUpper(inp) == Exec {
+	if strings.ToUpper(command) == Exec {
 		// Only writes need to be forwarded to leader
 		forwarded, rspFwd, err := ts.forwardRequest(data)
 		if err != nil {
@@ -384,22 +390,53 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 			return gnet.None
 		}
 
+		replies := make([]string, 0, len(ts.clientTransaction[c.RemoteAddr().String()]))
 		if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
-			for _, command := range ts.clientTransaction[c.RemoteAddr().String()] {
-				ts.executeCommand(command, c)
+			for _, transactionCommand := range ts.clientTransaction[c.RemoteAddr().String()] {
+				storedCommand, storedArgs, errSubCommand := parseCommand(transactionCommand)
+				if errSubCommand != nil {
+					replies = append(replies, errSubCommand.Error())
+					continue
+				}
+
+				commandReg, errCommand := ts.tredsCommandRegistry.Retrieve(strings.ToUpper(storedCommand))
+				if errCommand != nil {
+					replies = append(replies, errCommand.Error())
+					continue
+				}
+				// Validation need to be done before raft Apply so an error is returned before persisting
+				if errCommand = commandReg.Validate(storedArgs); errCommand != nil {
+					replies = append(replies, errCommand.Error())
+					continue
+				}
+
+				future := ts.raft.Apply([]byte(transactionCommand), ts.raftApplyTimeout)
+
+				if err := future.Error(); err != nil {
+					respondErr(c, err)
+					return gnet.None
+				}
+				rsp := future.Response()
+
+				switch rsp.(type) {
+				case error:
+					errResp := rsp.(error)
+					replies = append(replies, errResp.Error())
+				default:
+					replies = append(replies, rsp.(string))
+				}
 			}
 			delete(ts.clientTransaction, c.RemoteAddr().String())
 		}
 
-		res := "OK"
-		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
+		_, errConn := c.Write([]byte(resp.EncodeStringArrayRESP(replies)))
 		if errConn != nil {
 			respondErr(c, errConn)
 		}
 		return gnet.None
 	}
 
-	if strings.ToUpper(inp) == Discard {
+	if strings.ToUpper(command) == Discard {
 		// Only writes need to be forwarded to leader
 		forwarded, rspFwd, err := ts.forwardRequest(data)
 		if err != nil {
