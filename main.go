@@ -92,7 +92,7 @@ func main() {
 	log.Fatal(gnet.Run(
 		tredsServer,
 		"tcp://0.0.0.0:"+strconv.Itoa(tredsServer.Port),
-		gnet.WithMulticore(false),
+		gnet.WithMulticore(true),
 		gnet.WithReusePort(false),
 		gnet.WithTCPKeepAlive(300*time.Second),
 	))
