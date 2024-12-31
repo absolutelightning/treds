@@ -113,6 +113,70 @@ func (m *MockStore) Keys(cursor, regex string, count int) ([]string, error) {
 	return res, nil
 }
 
+func (m *MockStore) KeysL(cursor, regex string, count int) ([]string, error) {
+	res := make([]string, 0)
+	keys := make([]string, 0)
+	for key, _ := range m.data {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		match, _ := regexp.MatchString(regex, key)
+		if match {
+			res = append(res, key)
+		}
+	}
+	return res, nil
+}
+
+func (m *MockStore) KeysH(cursor, regex string, count int) ([]string, error) {
+	res := make([]string, 0)
+	keys := make([]string, 0)
+	for key, _ := range m.data {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		match, _ := regexp.MatchString(regex, key)
+		if match {
+			res = append(res, key)
+		}
+	}
+	return res, nil
+}
+
+func (m *MockStore) KeysS(cursor, regex string, count int) ([]string, error) {
+	res := make([]string, 0)
+	keys := make([]string, 0)
+	for key, _ := range m.data {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		match, _ := regexp.MatchString(regex, key)
+		if match {
+			res = append(res, key)
+		}
+	}
+	return res, nil
+}
+
+func (m *MockStore) KeysZ(cursor, regex string, count int) ([]string, error) {
+	res := make([]string, 0)
+	keys := make([]string, 0)
+	for key, _ := range m.data {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		match, _ := regexp.MatchString(regex, key)
+		if match {
+			res = append(res, key)
+		}
+	}
+	return res, nil
+}
+
 func (m *MockStore) KVS(cursor, regex string, count int) ([]string, error) {
 	res := make([]string, 0)
 	keys := make([]string, 0)
