@@ -265,7 +265,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		ts.clientTransactionLock.Lock()
 		defer ts.clientTransactionLock.Unlock()
 		ts.clientTransaction[c.RemoteAddr().String()] = append(ts.clientTransaction[c.RemoteAddr().String()], inp)
-		res := "OK"
+		res := "QUEUED"
 		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
 		if errConn != nil {
 			respondErr(c, errConn)
