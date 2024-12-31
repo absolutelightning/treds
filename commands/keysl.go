@@ -14,7 +14,7 @@ const KeysLCommand = "KEYSL"
 
 func RegisterKeysLCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
-		Name:     KeysHCommand,
+		Name:     KeysLCommand,
 		Validate: validateKeysL(),
 		Execute:  executeKeysL(),
 	})
