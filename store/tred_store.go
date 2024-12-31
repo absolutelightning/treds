@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -377,6 +378,234 @@ func (rs *TredsStore) Keys(cursor, regex string, count int) ([]string, error) {
 		if seenHash && count > 0 {
 			result = append(result, string(key))
 			nextCursor, herr = hash(string(key))
+			if herr != nil {
+				return nil, herr
+			}
+			count--
+		}
+		if count == 0 {
+			break
+		}
+	}
+	if count != 0 {
+		nextCursor = uint32(0)
+	}
+	result = append(result, strconv.Itoa(int(nextCursor)))
+	return result, nil
+}
+
+func (rs *TredsStore) KeysH(cursor, regex string, count int) ([]string, error) {
+	startHash, err := strconv.Atoi(cursor)
+	if err != nil {
+		return nil, err
+	}
+	rx := regexp.MustCompile(regex)
+
+	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
+	nextCursor := uint32(0)
+
+	result := make([]string, 0)
+
+	keys := make([]string, 0)
+	for key, _ := range rs.hashes {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+
+		if !rx.MatchString(key) {
+			continue
+		}
+
+		if rs.hasExpired(key) {
+			continue
+		}
+		hashKey, herr := hash(key)
+		if herr != nil {
+			return nil, herr
+		}
+		if !seenHash && hashKey == uint32(startHash) {
+			seenHash = true
+			continue
+		}
+		if seenHash && count > 0 {
+			result = append(result, key)
+			nextCursor, herr = hash(key)
+			if herr != nil {
+				return nil, herr
+			}
+			count--
+		}
+		if count == 0 {
+			break
+		}
+	}
+	if count != 0 {
+		nextCursor = uint32(0)
+	}
+	result = append(result, strconv.Itoa(int(nextCursor)))
+	return result, nil
+}
+
+func (rs *TredsStore) KeysL(cursor, regex string, count int) ([]string, error) {
+	startHash, err := strconv.Atoi(cursor)
+	if err != nil {
+		return nil, err
+	}
+	rx := regexp.MustCompile(regex)
+
+	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
+	nextCursor := uint32(0)
+
+	result := make([]string, 0)
+
+	keys := make([]string, 0)
+	for key, _ := range rs.lists {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+
+		if !rx.MatchString(key) {
+			continue
+		}
+
+		if rs.hasExpired(key) {
+			continue
+		}
+		hashKey, herr := hash(key)
+		if herr != nil {
+			return nil, herr
+		}
+		if !seenHash && hashKey == uint32(startHash) {
+			seenHash = true
+			continue
+		}
+		if seenHash && count > 0 {
+			result = append(result, key)
+			nextCursor, herr = hash(key)
+			if herr != nil {
+				return nil, herr
+			}
+			count--
+		}
+		if count == 0 {
+			break
+		}
+	}
+	if count != 0 {
+		nextCursor = uint32(0)
+	}
+	result = append(result, strconv.Itoa(int(nextCursor)))
+	return result, nil
+}
+
+func (rs *TredsStore) KeysS(cursor, regex string, count int) ([]string, error) {
+	startHash, err := strconv.Atoi(cursor)
+	if err != nil {
+		return nil, err
+	}
+	rx := regexp.MustCompile(regex)
+
+	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
+	nextCursor := uint32(0)
+
+	result := make([]string, 0)
+
+	keys := make([]string, 0)
+	for key, _ := range rs.sets {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+
+		if !rx.MatchString(key) {
+			continue
+		}
+
+		if rs.hasExpired(key) {
+			continue
+		}
+		hashKey, herr := hash(key)
+		if herr != nil {
+			return nil, herr
+		}
+		if !seenHash && hashKey == uint32(startHash) {
+			seenHash = true
+			continue
+		}
+		if seenHash && count > 0 {
+			result = append(result, key)
+			nextCursor, herr = hash(key)
+			if herr != nil {
+				return nil, herr
+			}
+			count--
+		}
+		if count == 0 {
+			break
+		}
+	}
+	if count != 0 {
+		nextCursor = uint32(0)
+	}
+	result = append(result, strconv.Itoa(int(nextCursor)))
+	return result, nil
+}
+
+func (rs *TredsStore) KeysZ(cursor, regex string, count int) ([]string, error) {
+	startHash, err := strconv.Atoi(cursor)
+	if err != nil {
+		return nil, err
+	}
+	rx := regexp.MustCompile(regex)
+
+	seenHash := false
+	if cursor == "0" {
+		seenHash = true
+	}
+	nextCursor := uint32(0)
+
+	result := make([]string, 0)
+
+	keys := make([]string, 0)
+	for key, _ := range rs.sortedMapsScore {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+
+		if !rx.MatchString(key) {
+			continue
+		}
+
+		if rs.hasExpired(key) {
+			continue
+		}
+		hashKey, herr := hash(key)
+		if herr != nil {
+			return nil, herr
+		}
+		if !seenHash && hashKey == uint32(startHash) {
+			seenHash = true
+			continue
+		}
+		if seenHash && count > 0 {
+			result = append(result, key)
+			nextCursor, herr = hash(key)
 			if herr != nil {
 				return nil, herr
 			}
@@ -1638,7 +1867,6 @@ func (rs *TredsStore) Restore(data []byte) error {
 	rs.tree = radix_tree.New()
 	fmt.Println("Deserialized KeyValueStore:")
 	for _, pair := range deserializedStore.Pairs {
-		fmt.Printf("Key: %s, Value: %s\n", pair.Key, pair.Value)
 		rs.tree, _, _ = rs.tree.Insert([]byte(pair.Key), pair.Value)
 	}
 	return nil
