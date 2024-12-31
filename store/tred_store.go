@@ -1638,7 +1638,6 @@ func (rs *TredsStore) Restore(data []byte) error {
 	rs.tree = radix_tree.New()
 	fmt.Println("Deserialized KeyValueStore:")
 	for _, pair := range deserializedStore.Pairs {
-		fmt.Printf("Key: %s, Value: %s\n", pair.Key, pair.Value)
 		rs.tree, _, _ = rs.tree.Insert([]byte(pair.Key), pair.Value)
 	}
 	return nil
