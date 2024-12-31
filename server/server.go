@@ -218,42 +218,6 @@ func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
 	return gnet.None
 }
 
-func (ts *Server) processSnapshot(c gnet.Conn, data []byte) gnet.Action {
-	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
-		respondErr(c, fmt.Errorf("please run this command outside transaction"))
-		return gnet.None
-	}
-
-	// Only writes need to be forwarded to leader
-	forwarded, rspFwd, err := ts.forwardRequest(data)
-	if err != nil {
-		respondErr(c, err)
-		return gnet.None
-	}
-
-	// If request is forwarded we just send back the answer from the leader to the client
-	// and stop processing
-	if forwarded {
-		_, errConn := c.Write([]byte(rspFwd))
-		if errConn != nil {
-			fmt.Println("Error occurred writing to connection", errConn)
-		}
-		return gnet.None
-	}
-
-	future := ts.raft.Snapshot()
-	if future.Error() != nil {
-		respondErr(c, future.Error())
-		return gnet.None
-	}
-	res := "OK"
-	_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
-	if errConn != nil {
-		respondErr(c, errConn)
-	}
-	return gnet.None
-}
-
 func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 
 	data, _ := c.Next(-1)
@@ -433,6 +397,42 @@ func (ts *Server) processMulti(c gnet.Conn, data []byte) gnet.Action {
 
 	ts.clientTransaction[c.RemoteAddr().String()] = make([]string, 0)
 
+	res := "OK"
+	_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
+	if errConn != nil {
+		respondErr(c, errConn)
+	}
+	return gnet.None
+}
+
+func (ts *Server) processSnapshot(c gnet.Conn, data []byte) gnet.Action {
+	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
+		respondErr(c, fmt.Errorf("please run this command outside transaction"))
+		return gnet.None
+	}
+
+	// Only writes need to be forwarded to leader
+	forwarded, rspFwd, err := ts.forwardRequest(data)
+	if err != nil {
+		respondErr(c, err)
+		return gnet.None
+	}
+
+	// If request is forwarded we just send back the answer from the leader to the client
+	// and stop processing
+	if forwarded {
+		_, errConn := c.Write([]byte(rspFwd))
+		if errConn != nil {
+			fmt.Println("Error occurred writing to connection", errConn)
+		}
+		return gnet.None
+	}
+
+	future := ts.raft.Snapshot()
+	if future.Error() != nil {
+		respondErr(c, future.Error())
+		return gnet.None
+	}
 	res := "OK"
 	_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
 	if errConn != nil {
