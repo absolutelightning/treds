@@ -106,6 +106,10 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `SCANKEYS cursor prefix count` - Returns the count number of keys matching prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor
 * `SCANKVS cursor prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor
 * `KEYS cursor regex count` - Returns count number of keys matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
+* `KEYSL cursor regex count` - Returns count number of keys in List Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
+* `KEYSH cursor regex count` - Returns count number of keys in Hash Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
+* `KEYSS cursor regex count` - Returns count number of keys in Set Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
+* `KEYSZ cursor regex count` - Returns count number of keys in Sorted Maps Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
 * `KVS cursor regex count` - Returns count number of keys/values in which keys match a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
 * `ZADD key score member_key member_value [score member_key member_value ....]` - Add member_key with member value with score to a sorted map in key
 * `ZREM key member [member ...]` - Removes a member from sorted map in key
