@@ -376,6 +376,15 @@ func (ts *Server) processExec(c gnet.Conn, data []byte) gnet.Action {
 }
 
 func (ts *Server) processMulti(c gnet.Conn, data []byte) gnet.Action {
+	// Check for transaction first, if transaction just enqueue the command
+	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
+		_, errConn := c.Write([]byte(resp.EncodeError("MULTI calls cannot be nested")))
+		if errConn != nil {
+			respondErr(c, errConn)
+		}
+		return gnet.None
+	}
+
 	// Only writes need to be forwarded to leader
 	forwarded, rspFwd, err := ts.forwardRequest(data)
 	if err != nil {
