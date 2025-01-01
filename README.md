@@ -162,6 +162,17 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `PSUBSCRIBE channel [channel ...]` - Subscription receives all messages published to channels whose names are prefixes of the given channels.
 * `PPUBLISH channel message` - This command publishes the message to all channels that have names with the given channel as their prefix.
 
+### Note on channels
+* Usecase of channels designed with Prefix
+
+While `PUBLISH` and `SUBSCRIBE` are similar to Redis, `PSUBSCRIBE` and `PPUBLISH` are designed to work with channels having a common prefix.
+
+If a client subscribes to a channel named `NEWS-IND-KA-BLR` using `PSUBSCRIBE`, then the client will receive messages published 
+to channels `NEWS-IND-KA-BLR`, `NEWS-IND-KA`, `NEWS-IND`, `NEWS` using `PPUBLISH`.
+
+In simple words - `PPUBLISH` publishes a message to all channels that have names with the given channel as their prefix and 
+`PSUBSCRIBE` receives all messages published to channels whose names are prefixes of the given channels.
+
 ## Run Local 
 
 To run server run the following command on repository root
