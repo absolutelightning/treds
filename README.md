@@ -156,6 +156,11 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `MULTI` - Starts a transaction
 * `EXEC` - Execute all commands in the transaction and close the transaction
 * `DISCARD` - Discard all commands in the transaction and close the transaction
+* `PUBLISH channel message` - Publish a message to a channel
+* `SUBSCRIBE channel [channel ...]` - Subscribe to channels
+* `UNSUBSCRIBE channel [channel ...]` - Unsubscribe to channels
+* `PSUBSCRIBE channel [channel ...]` - Subscription receives all messages published to channels whose names are prefixes of the given channels.
+* `PPUBLISH channel message` - This command publishes the message to all channels that have names with the given channel as their prefix.
 
 ## Run Local 
 
