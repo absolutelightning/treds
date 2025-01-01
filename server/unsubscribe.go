@@ -68,7 +68,7 @@ func executeUnsubscribeCommand() ExecutionHook {
 
 		response := make([]interface{}, 0)
 		for indx, channel := range args {
-			response = append(response, strings.ToLower(PUnsubscribeCommandName))
+			response = append(response, strings.ToLower(UnsubscribeCommandName))
 			response = append(response, channel)
 			response = append(response, indx+1)
 		}

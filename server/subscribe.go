@@ -67,8 +67,6 @@ func executeSubscribeCommandName() ExecutionHook {
 			newData := prevData.(map[int]struct{})
 			newData[c.Fd()] = struct{}{}
 			subscriptionData, _, _ = subscriptionData.Insert([]byte(channel), newData)
-			fmt.Println(newData)
-			fmt.Println(channel)
 		}
 
 		ts.SetChannelSubscriptionData(subscriptionData)
