@@ -49,23 +49,21 @@ func executePublishCommand() ExecutionHook {
 		}
 
 		message := strings.Join(args[1:], " ")
-		fmt.Println("message", message)
 
 		subscriptionData := ts.GetChannelSubscriptionData()
 
 		channel := args[0]
 		value, found := subscriptionData.Get([]byte(channel))
 
+		countChannelsNotified := 0
 		if !found {
-			res := "OK"
-			_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
+			_, errConn := c.Write([]byte(resp.EncodeInteger(countChannelsNotified)))
 			if errConn != nil {
 				ts.RespondErr(c, errConn)
 			}
 			return gnet.None
 		}
 
-		countChannelsNotified := 0
 		connections := value.(map[int]struct{})
 		for id := range connections {
 			arrayMessage := []string{Message, channel, channel, message}
