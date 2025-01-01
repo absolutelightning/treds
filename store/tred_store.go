@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"regexp"
@@ -32,21 +33,52 @@ const (
 	ListStore
 	SetStore
 	HashStore
+	DocumentStore
 )
 
+// CompoundKey represents a key with an array of fields
+type CompoundKey struct {
+	Fields []string // Array of fields for the key
+}
+type Index struct {
+	indexer  *treemap.Map
+	Fields   *CompoundKey
+	isUnique bool
+}
+
+type Document struct {
+	Id     string
+	Fields map[string]interface{}
+}
+
+type Collection struct {
+	Documents map[string]*Document
+	Indices   []*Index
+	Schema    map[string]interface{}
+}
+
 type TredsStore struct {
+	// Key Value Store
 	tree *radix_tree.Tree
 
+	// Sorted Maps Store
 	sortedMaps      map[string]*treemap.Map
 	sortedMapsScore map[string]map[string]float64
 	sortedMapsKeys  map[string]*radix_tree.Tree
 
+	// List Store
 	lists map[string]*doublylinkedlist.List
 
+	// Set Store
 	sets map[string]*hashset.Set
 
+	// Hash Store
 	hashes map[string]*hashmap.Map
 
+	// Document Store
+	collections map[string]*Collection
+
+	// Expiry
 	expiry map[string]time.Time
 }
 
@@ -60,6 +92,7 @@ func NewTredsStore() *TredsStore {
 		sets:            make(map[string]*hashset.Set),
 		hashes:          make(map[string]*hashmap.Map),
 		expiry:          make(map[string]time.Time),
+		collections:     make(map[string]*Collection),
 	}
 }
 
@@ -1870,4 +1903,82 @@ func (rs *TredsStore) Restore(data []byte) error {
 		rs.tree, _, _ = rs.tree.Insert([]byte(pair.Key), pair.Value)
 	}
 	return nil
+}
+
+func (rs *TredsStore) DCreateCollection(args []string) error {
+	collectionName := args[0]
+	_, found := rs.collections[collectionName]
+	if found {
+		return fmt.Errorf("collection already exists")
+	}
+	collection := &Collection{
+		Documents: make(map[string]*Document),
+		Indices:   make([]*Index, 0),
+		Schema:    make(map[string]interface{}),
+	}
+	if args[1] != "" {
+		jsonStr := args[1]
+		err := json.Unmarshal([]byte(jsonStr), &collection.Schema)
+		if err != nil {
+			return err
+		}
+	}
+	if args[2] != "" {
+		jsonStr := args[2]
+		var indexes []map[string]interface{}
+		err := json.Unmarshal([]byte(jsonStr), &indexes)
+		if err != nil {
+			return err
+		}
+		for _, index := range indexes {
+			fields := index["fields"].([]interface{})
+			fieldsString := make([]string, 0)
+			for _, field := range fields {
+				fieldsString = append(fieldsString, field.(string))
+			}
+			isUnique := false
+			if index["unique"] != nil {
+				isUnique = index["unique"].(bool)
+			}
+			collection.Indices = append(collection.Indices, &Index{
+				Fields: &CompoundKey{
+					Fields: fieldsString,
+				},
+				isUnique: isUnique,
+				indexer:  treemap.NewWith(CustomComparator),
+			})
+		}
+	}
+	rs.collections[collectionName] = collection
+	return nil
+}
+
+func CustomComparator(a, b interface{}) int {
+	keyA := a.(CompoundKey)
+	keyB := b.(CompoundKey)
+
+	minLength := len(keyA.Fields)
+	if len(keyB.Fields) < minLength {
+		minLength = len(keyB.Fields)
+	}
+
+	// Compare each field sequentially
+	for i := 0; i < minLength; i++ {
+		switch {
+		case keyA.Fields[i] < keyB.Fields[i]:
+			return -1
+		case keyA.Fields[i] > keyB.Fields[i]:
+			return 1
+		}
+	}
+
+	// If all compared fields are equal, longer key is considered greater
+	switch {
+	case len(keyA.Fields) < len(keyB.Fields):
+		return -1
+	case len(keyA.Fields) > len(keyB.Fields):
+		return 1
+	}
+	// Keys are equal
+	return 0
 }

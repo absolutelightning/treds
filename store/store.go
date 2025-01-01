@@ -62,4 +62,5 @@ type Store interface {
 	LongestPrefix(string) ([]string, error)
 	Snapshot() ([]byte, error)
 	Restore([]byte) error
+	DCreateCollection([]string) error
 }
