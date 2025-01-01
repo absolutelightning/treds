@@ -9,3 +9,17 @@ func parseCommand(inp string) (string, []string, error) {
 	}
 	return command, args, nil
 }
+
+func unique(inps []string) []string {
+	// make inps unique
+	// use map to make it unique
+	uniqueMap := make(map[string]struct{})
+	for _, inp := range inps {
+		uniqueMap[inp] = struct{}{}
+	}
+	uniqueInps := make([]string, 0)
+	for inp := range uniqueMap {
+		uniqueInps = append(uniqueInps, inp)
+	}
+	return uniqueInps
+}

@@ -6,4 +6,10 @@ func RegisterCommands(r ServerCommandRegistry) {
 	RegisterMultiCommand(r)
 	RegisterExecCommand(r)
 	RegisterDiscardCommand(r)
+	RegisterPublishCommand(r)
+	RegisterPPublishCommand(r)
+	RegisterSubscribeCommand(r)
+	RegisterPSubscribeCommand(r)
+	RegisterPUnsubscribeCommand(r)
+	RegisterUnsubscribeCommand(r)
 }
