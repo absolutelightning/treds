@@ -64,10 +64,10 @@ func executePublishCommand() ExecutionHook {
 			return gnet.None
 		}
 
-		connections := value.(map[int]struct{})
+		connections := value.(map[string]struct{})
 		for id := range connections {
 			arrayMessage := []string{Message, channel, channel, message}
-			conn := ts.GetConnectionFromFD(id)
+			conn := ts.GetConnectionFromAddress(id)
 			_, errConn := conn.Write([]byte(resp.EncodeStringArray(arrayMessage)))
 			if errConn != nil {
 				fmt.Println("Error occurred writing to connection", errConn)

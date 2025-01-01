@@ -57,10 +57,10 @@ func executeUnsubscribeCommand() ExecutionHook {
 		for _, channel := range args {
 			prevData, ok := subscriptionData.Get([]byte(channel))
 			if !ok {
-				prevData = make(map[int]struct{})
+				prevData = make(map[string]struct{})
 			}
-			newData := prevData.(map[int]struct{})
-			delete(newData, c.Fd())
+			newData := prevData.(map[string]struct{})
+			delete(newData, c.RemoteAddr().String())
 			subscriptionData, _, _ = subscriptionData.Insert([]byte(channel), newData)
 		}
 

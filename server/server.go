@@ -43,9 +43,9 @@ type Server struct {
 
 	channelSubscriptionData *radix.Tree
 	channelSubscriptionLock *sync.Mutex
-	connectionSubscription  map[int]map[string]struct{}
+	connectionSubscription  map[string]map[string]struct{}
 
-	connectionMap map[int]gnet.Conn
+	connectionMap map[string]gnet.Conn
 
 	*gnet.BuiltinEventEngine
 	fsm              *TredsFsm
@@ -210,8 +210,8 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		connP:                      connPool.NewConnPool(time.Second * 5),
 		channelSubscriptionData:    radix.New(),
 		channelSubscriptionLock:    &sync.Mutex{},
-		connectionSubscription:     make(map[int]map[string]struct{}),
-		connectionMap:              make(map[int]gnet.Conn),
+		connectionSubscription:     make(map[string]map[string]struct{}),
+		connectionMap:              make(map[string]gnet.Conn),
 	}, nil
 }
 
@@ -219,17 +219,17 @@ func (ts *Server) GetChannelSubscriptionData() *radix.Tree {
 	return ts.channelSubscriptionData
 }
 
-func (ts *Server) GetConnectionSubscription() map[int]map[string]struct{} {
+func (ts *Server) GetConnectionSubscription() map[string]map[string]struct{} {
 	return ts.connectionSubscription
 }
 
 func (ts *Server) OnOpen(c gnet.Conn) ([]byte, gnet.Action) {
-	ts.connectionMap[c.Fd()] = c
+	ts.connectionMap[c.RemoteAddr().String()] = c
 	return nil, gnet.None
 }
 
-func (ts *Server) GetConnectionFromFD(fd int) gnet.Conn {
-	return ts.connectionMap[fd]
+func (ts *Server) GetConnectionFromAddress(ra string) gnet.Conn {
+	return ts.connectionMap[ra]
 }
 
 func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
@@ -437,15 +437,15 @@ func (ts *Server) CleanUpChannelSubscriptions(c gnet.Conn) {
 	ts.channelSubscriptionLock.Lock()
 	defer ts.channelSubscriptionLock.Unlock()
 	// use connectionSubscription map to delete all subscriptions for this connection
-	if _, ok := ts.connectionSubscription[c.Fd()]; ok {
-		for channel := range ts.connectionSubscription[c.Fd()] {
+	if _, ok := ts.connectionSubscription[c.RemoteAddr().String()]; ok {
+		for channel := range ts.connectionSubscription[c.RemoteAddr().String()] {
 			connections, found := ts.channelSubscriptionData.Get([]byte(channel))
 			if found {
-				delete(connections.(map[int]struct{}), c.Fd())
+				delete(connections.(map[string]struct{}), c.RemoteAddr().String())
+				ts.channelSubscriptionData, _, _ = ts.channelSubscriptionData.Insert([]byte(channel), connections)
 			}
-			ts.channelSubscriptionData, _, _ = ts.channelSubscriptionData.Insert([]byte(channel), connections)
 		}
-		delete(ts.connectionSubscription, c.Fd())
+		delete(ts.connectionSubscription, c.RemoteAddr().String())
 	}
 }
 

@@ -64,10 +64,10 @@ func executePPublishCommand() ExecutionHook {
 			if !found {
 				break
 			}
-			connections := value.(map[int]struct{})
+			connections := value.(map[string]struct{})
 			for id := range connections {
 				arrayMessage := []string{PMessage, channelPrefix, string(key), message}
-				conn := ts.GetConnectionFromFD(id)
+				conn := ts.GetConnectionFromAddress(id)
 				_, errConn := conn.Write([]byte(resp.EncodeStringArray(arrayMessage)))
 				if errConn != nil {
 					fmt.Println("Error occurred writing to connection", errConn)
