@@ -16,6 +16,7 @@ import (
 
 	wal "github.com/hashicorp/raft-wal"
 	"treds/commands"
+	"treds/datastructures/radix"
 	"treds/resp"
 	"treds/server/connPool"
 	"treds/store"
@@ -39,6 +40,12 @@ type Server struct {
 	tredsServerCommandRegistry ServerCommandRegistry
 	clientTransaction          map[string][]string
 	clientTransactionLock      *sync.Mutex
+
+	channelSubscriptionData *radix.Tree
+	channelSubscriptionLock *sync.Mutex
+	connectionSubscription  map[int]map[string]struct{}
+
+	connectionMap map[int]gnet.Conn
 
 	*gnet.BuiltinEventEngine
 	fsm              *TredsFsm
@@ -201,7 +208,28 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		clientTransaction:          make(map[string][]string),
 		clientTransactionLock:      &sync.Mutex{},
 		connP:                      connPool.NewConnPool(time.Second * 5),
+		channelSubscriptionData:    radix.New(),
+		channelSubscriptionLock:    &sync.Mutex{},
+		connectionSubscription:     make(map[int]map[string]struct{}),
+		connectionMap:              make(map[int]gnet.Conn),
 	}, nil
+}
+
+func (ts *Server) GetChannelSubscriptionData() *radix.Tree {
+	return ts.channelSubscriptionData
+}
+
+func (ts *Server) GetConnectionSubscription() map[int]map[string]struct{} {
+	return ts.connectionSubscription
+}
+
+func (ts *Server) OnOpen(c gnet.Conn) ([]byte, gnet.Action) {
+	ts.connectionMap[c.Fd()] = c
+	return nil, gnet.None
+}
+
+func (ts *Server) GetConnectionFromFD(fd int) gnet.Conn {
+	return ts.connectionMap[fd]
 }
 
 func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
@@ -254,6 +282,18 @@ func (ts *Server) LockClientTransaction() {
 
 func (ts *Server) UnlockClientTransaction() {
 	ts.clientTransactionLock.Unlock()
+}
+
+func (ts *Server) LockChannelSubs() {
+	ts.channelSubscriptionLock.Lock()
+}
+
+func (ts *Server) UnlockChannelSubs() {
+	ts.channelSubscriptionLock.Unlock()
+}
+
+func (ts *Server) SetChannelSubscriptionData(data *radix.Tree) {
+	ts.channelSubscriptionData = data
 }
 
 func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
@@ -377,12 +417,36 @@ func (ts *Server) RespondErr(c gnet.Conn, err error) {
 	}
 }
 
-func (ts *Server) OnClose(_ gnet.Conn, _ error) gnet.Action {
+func (ts *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
 	err := ts.connP.Close()
 	if err != nil {
 		fmt.Println("Error occurred closing connection", err.Error())
 	}
+	ts.CleanUpClientTransaction(c)
+	ts.CleanUpChannelSubscriptions(c)
 	return gnet.None
+}
+
+func (ts *Server) CleanUpClientTransaction(c gnet.Conn) {
+	ts.clientTransactionLock.Lock()
+	defer ts.clientTransactionLock.Unlock()
+	delete(ts.clientTransaction, c.RemoteAddr().String())
+}
+
+func (ts *Server) CleanUpChannelSubscriptions(c gnet.Conn) {
+	ts.channelSubscriptionLock.Lock()
+	defer ts.channelSubscriptionLock.Unlock()
+	// use connectionSubscription map to delete all subscriptions for this connection
+	if _, ok := ts.connectionSubscription[c.Fd()]; ok {
+		for channel := range ts.connectionSubscription[c.Fd()] {
+			connections, found := ts.channelSubscriptionData.Get([]byte(channel))
+			if found {
+				delete(connections.(map[int]struct{}), c.Fd())
+			}
+			ts.channelSubscriptionData, _, _ = ts.channelSubscriptionData.Insert([]byte(channel), connections)
+		}
+		delete(ts.connectionSubscription, c.Fd())
+	}
 }
 
 func (ts *Server) convertRaftToTredsAddress(raftAddr string) (string, error) {
