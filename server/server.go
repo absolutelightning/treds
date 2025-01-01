@@ -25,12 +25,6 @@ import (
 	"github.com/panjf2000/gnet/v2"
 )
 
-const Snapshot = "SNAPSHOT"
-const Restore = "RESTORE"
-const Multi = "MULTI"
-const Exec = "EXEC"
-const Discard = "DISCARD"
-
 type BootStrapServer struct {
 	ID   string
 	Host string
