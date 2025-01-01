@@ -12,7 +12,7 @@ type ServerCommandRegistry interface {
 	Retrieve(string) (*ServerCommandRegistration, error)
 }
 
-type serverCommandRegistry struct {
+type CommandRegistry struct {
 	commands map[string]*ServerCommandRegistration
 }
 
@@ -24,12 +24,12 @@ type ServerCommandRegistration struct {
 }
 
 func NewRegistry() ServerCommandRegistry {
-	return &serverCommandRegistry{
+	return &CommandRegistry{
 		commands: make(map[string]*ServerCommandRegistration),
 	}
 }
 
-func (c *serverCommandRegistry) Add(reg *ServerCommandRegistration) error {
+func (c *CommandRegistry) Add(reg *ServerCommandRegistration) error {
 	if _, ok := c.commands[reg.Name]; ok {
 		return fmt.Errorf("command with name %s already present", reg.Name)
 	}
@@ -38,7 +38,7 @@ func (c *serverCommandRegistry) Add(reg *ServerCommandRegistration) error {
 	return nil
 }
 
-func (c *serverCommandRegistry) Retrieve(name string) (*ServerCommandRegistration, error) {
+func (c *CommandRegistry) Retrieve(name string) (*ServerCommandRegistration, error) {
 	if _, ok := c.commands[strings.ToUpper(name)]; !ok {
 		return nil, fmt.Errorf("command with name %s not found in registry", name)
 	}

@@ -56,9 +56,9 @@ type Server struct {
 
 func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyTimeout time.Duration, servers []BootStrapServer) (*Server, error) {
 
-	commandRegistry := commands.NewRegistry()
+	storeCommandRegistry := commands.NewRegistry()
 	serverCommandRegistry := NewRegistry()
-	commands.RegisterCommands(commandRegistry)
+	commands.RegisterCommands(storeCommandRegistry)
 	RegisterCommands(serverCommandRegistry)
 	tredsStore := store.NewTredsStore()
 
@@ -174,7 +174,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		return nil, err
 	}
 
-	fsm := NewTredsFsm(commandRegistry, tredsStore)
+	fsm := NewTredsFsm(storeCommandRegistry, tredsStore)
 	r, err := raft.NewRaft(config, fsm, w, w, snapshotStore, transport)
 	if err != nil {
 		return nil, err
@@ -198,7 +198,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 
 	return &Server{
 		Port:                       port,
-		tredsCommandRegistry:       commandRegistry,
+		tredsCommandRegistry:       storeCommandRegistry,
 		tredsServerCommandRegistry: serverCommandRegistry,
 		fsm:                        fsm,
 		raft:                       r,
