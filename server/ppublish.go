@@ -54,6 +54,8 @@ func executePPublishCommand() ExecutionHook {
 		channelPrefix := args[0]
 		message := strings.Join(args[1:], " ")
 
+		countChannelsNotified := 0
+
 		// all channels matching all args prefix
 		iterator := subscriptionData.Root().Iterator()
 		iterator.SeekPrefix([]byte(channelPrefix))
@@ -70,11 +72,11 @@ func executePPublishCommand() ExecutionHook {
 				if errConn != nil {
 					fmt.Println("Error occurred writing to connection", errConn)
 				}
+				countChannelsNotified++
 			}
 		}
 
-		res := "OK"
-		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
+		_, errConn := c.Write([]byte(resp.EncodeInteger(countChannelsNotified)))
 		if errConn != nil {
 			ts.RespondErr(c, errConn)
 		}
