@@ -12,4 +12,5 @@ func RegisterCommands(r ServerCommandRegistry) {
 	RegisterPSubscribeCommand(r)
 	RegisterPUnsubscribeCommand(r)
 	RegisterUnsubscribeCommand(r)
+	RegisterPubSubChannels(r)
 }

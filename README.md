@@ -9,9 +9,11 @@ A scan operation returns keys in their sorted sequence.
 * Unlike [Redis KEYS](https://redis.io/docs/latest/commands/keys/), Treds `KEYS` has cursor and matches any valid regex expression also it returns count number of data if data is there
 * Unlike [Redis SCAN](https://redis.io/docs/latest/commands/scan/), Treds `SCAN` **always** returns count number of data if data is there. Treds `SCAN` works on prefix only.
 * Unlike [Redis ZRANGEBYLEX](https://redis.io/docs/latest/commands/zrangebylex/), Treds `ZRANGELEX` **always** returns data irrespective of score, basically data across different scores are returned
+* Unlike [Redis PSUBSCRIBE](https://redis.io/docs/latest/commands/psubscribe), Treds `PSUBSCRIBE` is designed to work with channels having a common prefix
 * It has Sorted Maps instead of Sorted Sets. So we can create a Sorted Key/Value pair with associated with a score
 * New command - `DELPREFIX` - Deletes all keys having a common prefix and returns number of keys deleted
 * New command - `LNGPREFIX` - Returns the key value pair in which key is the longest prefix of given string
+* New command - `PPUBLISH` - Publish a message to all channels that have names with the given channel as their prefix
 * Currently, it only has Key/Value store, Sorted Maps store, List store, Set store and Hash store and only supports strings/number as values
 
 ## Internals
@@ -161,6 +163,7 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `UNSUBSCRIBE channel [channel ...]` - Unsubscribe to channels
 * `PSUBSCRIBE channel [channel ...]` - Subscription receives all messages published to channels whose names are prefixes of the given channels.
 * `PPUBLISH channel message` - This command publishes the message to all channels that have names with the given channel as their prefix.
+* `PUBSUBCHANNELS prefix` - Returns all active channels having one or more subscribers, a common prefix with the given prefix. Prefix is optional.
 
 ### Note on PUB/SUB 
 #### Use case of PUB/SUB designed with Prefix
