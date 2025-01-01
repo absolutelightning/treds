@@ -3,7 +3,6 @@ package server
 import (
 	"bufio"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -15,23 +14,16 @@ import (
 	"sync"
 	"time"
 
-	"treds/resp"
-	"treds/server/connPool"
-
 	wal "github.com/hashicorp/raft-wal"
 	"treds/commands"
+	"treds/resp"
+	"treds/server/connPool"
 	"treds/store"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/raft"
 	"github.com/panjf2000/gnet/v2"
 )
-
-const Snapshot = "SNAPSHOT"
-const Restore = "RESTORE"
-const Multi = "MULTI"
-const Exec = "EXEC"
-const Discard = "DISCARD"
 
 type BootStrapServer struct {
 	ID   string
@@ -43,9 +35,10 @@ type Server struct {
 	Addr string
 	Port int
 
-	tredsCommandRegistry  commands.CommandRegistry
-	clientTransaction     map[string][]string
-	clientTransactionLock *sync.Mutex
+	tredsCommandRegistry       commands.CommandRegistry
+	tredsServerCommandRegistry ServerCommandRegistry
+	clientTransaction          map[string][]string
+	clientTransactionLock      *sync.Mutex
 
 	*gnet.BuiltinEventEngine
 	fsm              *TredsFsm
@@ -57,8 +50,10 @@ type Server struct {
 
 func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyTimeout time.Duration, servers []BootStrapServer) (*Server, error) {
 
-	commandRegistry := commands.NewRegistry()
-	commands.RegisterCommands(commandRegistry)
+	storeCommandRegistry := commands.NewRegistry()
+	serverCommandRegistry := NewRegistry()
+	commands.RegisterCommands(storeCommandRegistry)
+	RegisterCommands(serverCommandRegistry)
 	tredsStore := store.NewTredsStore()
 
 	//TODO: Default config is good enough for now, but probably need to be tweaked
@@ -173,7 +168,7 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		return nil, err
 	}
 
-	fsm := NewTredsFsm(commandRegistry, tredsStore)
+	fsm := NewTredsFsm(storeCommandRegistry, tredsStore)
 	r, err := raft.NewRaft(config, fsm, w, w, snapshotStore, transport)
 	if err != nil {
 		return nil, err
@@ -196,15 +191,16 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 	}
 
 	return &Server{
-		Port:                  port,
-		tredsCommandRegistry:  commandRegistry,
-		fsm:                   fsm,
-		raft:                  r,
-		id:                    config.LocalID,
-		raftApplyTimeout:      applyTimeout,
-		clientTransaction:     make(map[string][]string),
-		clientTransactionLock: &sync.Mutex{},
-		connP:                 connPool.NewConnPool(time.Second * 5),
+		Port:                       port,
+		tredsCommandRegistry:       storeCommandRegistry,
+		tredsServerCommandRegistry: serverCommandRegistry,
+		fsm:                        fsm,
+		raft:                       r,
+		id:                         config.LocalID,
+		raftApplyTimeout:           applyTimeout,
+		clientTransaction:          make(map[string][]string),
+		clientTransactionLock:      &sync.Mutex{},
+		connP:                      connPool.NewConnPool(time.Second * 5),
 	}, nil
 }
 
@@ -217,6 +213,47 @@ func (ts *Server) OnBoot(_ gnet.Engine) gnet.Action {
 		}
 	}()
 	return gnet.None
+}
+
+func (ts *Server) isServerCommand(command string) bool {
+	_, err := ts.tredsServerCommandRegistry.Retrieve(strings.ToUpper(command))
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func (ts *Server) executeServerCommand(command, inp string, c gnet.Conn) gnet.Action {
+	serverCommandRegistration, err := ts.tredsServerCommandRegistry.Retrieve(command)
+	if err != nil {
+		ts.RespondErr(c, err)
+		return gnet.None
+	}
+	return serverCommandRegistration.Execute(inp, ts, c)
+}
+
+func (ts *Server) GetCommandRegistry() commands.CommandRegistry {
+	return ts.tredsCommandRegistry
+}
+
+func (ts *Server) GetClientTransaction() map[string][]string {
+	return ts.clientTransaction
+}
+
+func (ts *Server) GetRaft() *raft.Raft {
+	return ts.raft
+}
+
+func (ts *Server) GetRaftApplyTimeout() time.Duration {
+	return ts.raftApplyTimeout
+}
+
+func (ts *Server) LockClientTransaction() {
+	ts.clientTransactionLock.Lock()
+}
+
+func (ts *Server) UnlockClientTransaction() {
+	ts.clientTransactionLock.Unlock()
 }
 
 func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
@@ -234,30 +271,14 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	}
 
 	// Server Commands
-	command, args, err := parseCommand(inp)
+	command, _, err := parseCommand(inp)
 	if err != nil {
-		respondErr(c, err)
+		ts.RespondErr(c, err)
 		return gnet.None
 	}
 
-	if strings.ToUpper(command) == Snapshot {
-		return ts.processSnapshot(c, data)
-	}
-
-	if strings.ToUpper(command) == Restore {
-		return ts.processRestore(c, data, args)
-	}
-
-	if strings.ToUpper(command) == Multi {
-		return ts.processMulti(c, data)
-	}
-
-	if strings.ToUpper(command) == Exec {
-		return ts.processExec(c, data)
-	}
-
-	if strings.ToUpper(command) == Discard {
-		return ts.processDiscard(c, data)
+	if ts.isServerCommand(command) {
+		return ts.executeServerCommand(command, inp, c)
 	}
 
 	// Check for transaction first, if transaction just enqueue the command
@@ -268,7 +289,7 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 		res := "QUEUED"
 		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
 		if errConn != nil {
-			respondErr(c, errConn)
+			ts.RespondErr(c, errConn)
 		}
 		return gnet.None
 	}
@@ -278,267 +299,25 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 	return ts.executeCommand(inp, c)
 }
 
-func (ts *Server) processDiscard(c gnet.Conn, data []byte) gnet.Action {
-	// Only writes need to be forwarded to leader
-	forwarded, rspFwd, err := ts.forwardRequest(data)
-	if err != nil {
-		respondErr(c, err)
-		return gnet.None
-	}
-
-	// If request is forwarded we just send back the answer from the leader to the client
-	// and stop processing
-	if forwarded {
-		_, errConn := c.Write([]byte(rspFwd))
-		if errConn != nil {
-			fmt.Println("Error occurred writing to connection", errConn)
-		}
-		return gnet.None
-	}
-
-	ts.clientTransactionLock.Lock()
-	defer ts.clientTransactionLock.Unlock()
-	delete(ts.clientTransaction, c.RemoteAddr().String())
-
-	res := "OK"
-	_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
-	if errConn != nil {
-		respondErr(c, errConn)
-	}
-	return gnet.None
-}
-
-func (ts *Server) processExec(c gnet.Conn, data []byte) gnet.Action {
-	// Only writes need to be forwarded to leader
-	forwarded, rspFwd, err := ts.forwardRequest(data)
-	if err != nil {
-		respondErr(c, err)
-		return gnet.None
-	}
-
-	// If request is forwarded we just send back the answer from the leader to the client
-	// and stop processing
-	if forwarded {
-		_, errConn := c.Write([]byte(rspFwd))
-		if errConn != nil {
-			fmt.Println("Error occurred writing to connection", errConn)
-		}
-		return gnet.None
-	}
-
-	ts.clientTransactionLock.Lock()
-	defer ts.clientTransactionLock.Unlock()
-
-	replies := make([]string, 0, len(ts.clientTransaction[c.RemoteAddr().String()]))
-	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
-		for _, transactionCommand := range ts.clientTransaction[c.RemoteAddr().String()] {
-			storedCommand, storedArgs, errSubCommand := parseCommand(transactionCommand)
-			if errSubCommand != nil {
-				replies = append(replies, errSubCommand.Error())
-				continue
-			}
-
-			commandReg, errCommand := ts.tredsCommandRegistry.Retrieve(strings.ToUpper(storedCommand))
-			if errCommand != nil {
-				replies = append(replies, errCommand.Error())
-				continue
-			}
-			// Validation need to be done before raft Apply so an error is returned before persisting
-			if errCommand = commandReg.Validate(storedArgs); errCommand != nil {
-				replies = append(replies, errCommand.Error())
-				continue
-			}
-
-			future := ts.raft.Apply([]byte(transactionCommand), ts.raftApplyTimeout)
-
-			if err := future.Error(); err != nil {
-				respondErr(c, err)
-				return gnet.None
-			}
-			rsp := future.Response()
-
-			switch rsp.(type) {
-			case error:
-				errResp := rsp.(error)
-				replies = append(replies, errResp.Error())
-			default:
-				replies = append(replies, rsp.(string))
-			}
-		}
-		delete(ts.clientTransaction, c.RemoteAddr().String())
-	}
-
-	_, errConn := c.Write([]byte(resp.EncodeStringArrayRESP(replies)))
-	if errConn != nil {
-		respondErr(c, errConn)
-	}
-	return gnet.None
-}
-
-func (ts *Server) processMulti(c gnet.Conn, data []byte) gnet.Action {
-	// Check for transaction first, if transaction just enqueue the command
-	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
-		_, errConn := c.Write([]byte(resp.EncodeError("MULTI calls cannot be nested")))
-		if errConn != nil {
-			respondErr(c, errConn)
-		}
-		return gnet.None
-	}
-
-	// Only writes need to be forwarded to leader
-	forwarded, rspFwd, err := ts.forwardRequest(data)
-	if err != nil {
-		respondErr(c, err)
-		return gnet.None
-	}
-
-	// If request is forwarded we just send back the answer from the leader to the client
-	// and stop processing
-	if forwarded {
-		_, errConn := c.Write([]byte(rspFwd))
-		if errConn != nil {
-			fmt.Println("Error occurred writing to connection", errConn)
-		}
-		return gnet.None
-	}
-
-	ts.clientTransactionLock.Lock()
-	defer ts.clientTransactionLock.Unlock()
-
-	ts.clientTransaction[c.RemoteAddr().String()] = make([]string, 0)
-
-	res := "OK"
-	_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
-	if errConn != nil {
-		respondErr(c, errConn)
-	}
-	return gnet.None
-}
-
-func (ts *Server) processSnapshot(c gnet.Conn, data []byte) gnet.Action {
-	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
-		respondErr(c, fmt.Errorf("please run this command outside transaction"))
-		return gnet.None
-	}
-
-	// Only writes need to be forwarded to leader
-	forwarded, rspFwd, err := ts.forwardRequest(data)
-	if err != nil {
-		respondErr(c, err)
-		return gnet.None
-	}
-
-	// If request is forwarded we just send back the answer from the leader to the client
-	// and stop processing
-	if forwarded {
-		_, errConn := c.Write([]byte(rspFwd))
-		if errConn != nil {
-			fmt.Println("Error occurred writing to connection", errConn)
-		}
-		return gnet.None
-	}
-
-	future := ts.raft.Snapshot()
-	if future.Error() != nil {
-		respondErr(c, future.Error())
-		return gnet.None
-	}
-	res := "OK"
-	_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
-	if errConn != nil {
-		respondErr(c, errConn)
-	}
-	return gnet.None
-}
-
-func (ts *Server) processRestore(c gnet.Conn, data []byte, args []string) gnet.Action {
-	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
-		respondErr(c, fmt.Errorf("please run this command outside transaction"))
-		return gnet.None
-	}
-
-	// Only writes need to be forwarded to leader
-	forwarded, rspFwd, err := ts.forwardRequest(data)
-	if err != nil {
-		respondErr(c, err)
-		return gnet.None
-	}
-
-	// If request is forwarded we just send back the answer from the leader to the client
-	// and stop processing
-	if forwarded {
-		_, errConn := c.Write([]byte(rspFwd))
-		if errConn != nil {
-			fmt.Println("Error occurred writing to connection", errConn)
-		}
-		return gnet.None
-	}
-
-	snapshotPath := args[0]
-
-	metaFile := filepath.Join(snapshotPath, "meta.json")
-
-	// Read the file contents
-	metaData, err := os.ReadFile(metaFile)
-	if err != nil {
-		fmt.Println("Error reading file:", err)
-		respondErr(c, err)
-		return gnet.None
-	}
-
-	// Unmarshal the JSON into the SnapshotMeta struct
-	var metaSnapshot *raft.SnapshotMeta
-	err = json.Unmarshal(metaData, &metaSnapshot)
-	if err != nil {
-		fmt.Println("Error unmarshaling JSON:", err)
-		respondErr(c, err)
-		return gnet.None
-	}
-
-	file, err := os.Open(filepath.Join(snapshotPath, "state.bin"))
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-		respondErr(c, err)
-		return gnet.None
-	}
-	// Ensure the file is closed when done
-	defer file.Close()
-
-	// Since *os.File implements io.Reader, you can directly use it as an io.Reader
-	var reader io.Reader = file
-
-	err = ts.raft.Restore(metaSnapshot, reader, 2*time.Minute)
-	if err != nil {
-		respondErr(c, err)
-		return gnet.None
-	}
-	res := "OK"
-	_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
-	if errConn != nil {
-		respondErr(c, errConn)
-	}
-	return gnet.None
-}
-
 func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 	command, args, err := parseCommand(inp)
 	if err != nil {
-		respondErr(c, err)
+		ts.RespondErr(c, err)
 		return gnet.None
 	}
 	commandReg, err := ts.tredsCommandRegistry.Retrieve(strings.ToUpper(command))
 	if err != nil {
-		respondErr(c, err)
+		ts.RespondErr(c, err)
 		return gnet.None
 	}
 	if commandReg.IsWrite {
 
 		// Only writes need to be forwarded to leader
-		forwarded, rspFwd, forwardErr := ts.forwardRequest([]byte(inp))
+		forwarded, rspFwd, forwardErr := ts.ForwardRequest([]byte(inp))
 
 		if forwardErr != nil {
 			fmt.Println("forward error:", forwardErr.Error())
-			respondErr(c, forwardErr)
+			ts.RespondErr(c, forwardErr)
 			return gnet.None
 		}
 
@@ -554,14 +333,14 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 
 		// Validation need to be done before raft Apply so an error is returned before persisting
 		if err = commandReg.Validate(args); err != nil {
-			respondErr(c, err)
+			ts.RespondErr(c, err)
 			return gnet.None
 		}
 
 		future := ts.raft.Apply([]byte(inp), ts.raftApplyTimeout)
 
 		if err := future.Error(); err != nil {
-			respondErr(c, err)
+			ts.RespondErr(c, err)
 			return gnet.None
 		}
 		rsp := future.Response()
@@ -569,7 +348,7 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 		switch rsp.(type) {
 		case error:
 			err := rsp.(error)
-			respondErr(c, err)
+			ts.RespondErr(c, err)
 			return gnet.None
 		default:
 			_, errConn := c.Write([]byte(rsp.(string)))
@@ -579,7 +358,7 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 		}
 	} else {
 		if err = commandReg.Validate(args); err != nil {
-			respondErr(c, err)
+			ts.RespondErr(c, err)
 			return gnet.None
 		}
 		res := commandReg.Execute(args, ts.fsm.tredsStore)
@@ -591,15 +370,7 @@ func (ts *Server) executeCommand(inp string, c gnet.Conn) gnet.Action {
 	return gnet.None
 }
 
-func parseCommand(inp string) (string, []string, error) {
-	command, args, err := resp.Decode(inp)
-	if err != nil {
-		return "", nil, err
-	}
-	return command, args, nil
-}
-
-func respondErr(c gnet.Conn, err error) {
+func (ts *Server) RespondErr(c gnet.Conn, err error) {
 	_, errConn := c.Write([]byte(resp.EncodeError(err.Error())))
 	if errConn != nil {
 		fmt.Println("Error occurred writing to connection", errConn)
@@ -679,7 +450,7 @@ func decodeHexAddress(hexAddr string) (string, error) {
 	return string(bytes), nil
 }
 
-func (ts *Server) forwardRequest(data []byte) (bool, string, error) {
+func (ts *Server) ForwardRequest(data []byte) (bool, string, error) {
 	// create a new channel based pool with an initial capacity of 5 and maximum
 	// capacity of 30. The factory will create 5 initial connections and put it
 	// into the pool.
