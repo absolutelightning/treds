@@ -368,3 +368,11 @@ func (rs *MockStore) Snapshot() ([]byte, error) {
 func (rs *MockStore) Restore(data []byte) error {
 	return nil
 }
+
+func (rs MockStore) DCreateCollection(args []string) error {
+	return nil
+}
+
+func (rs MockStore) DInsert(args []string) error {
+	return nil
+}

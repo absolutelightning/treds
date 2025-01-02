@@ -59,4 +59,5 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterKeysSCommand(r)
 	RegisterKeysZCommand(r)
 	RegisterDCreateCollection(r)
+	RegisterDInsertCommand(r)
 }

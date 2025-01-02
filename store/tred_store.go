@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -17,6 +18,8 @@ import (
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/emirpasic/gods/utils"
 	"github.com/golang/protobuf/proto"
+	"github.com/google/uuid"
+	"github.com/tidwall/gjson"
 	"golang.org/x/sync/errgroup"
 	radix_tree "treds/datastructures/radix"
 	kvstore "treds/store/proto"
@@ -24,6 +27,7 @@ import (
 
 const NilResp = "(nil)"
 const Epsilon = 1.19209e-07
+const Unique = "unique"
 
 type Type int
 
@@ -36,10 +40,22 @@ const (
 	DocumentStore
 )
 
+// TypeMapping maps schema type strings to their Go reflect.Type equivalents
+var TypeMapping = map[string]reflect.Type{
+	"string": reflect.TypeOf(""),
+	"float":  reflect.TypeOf(0.0),
+	"bool":   reflect.TypeOf(true),
+}
+
 // CompoundKey represents a key with an array of fields
 type CompoundKey struct {
 	Fields []string // Array of fields for the key
 }
+
+type IndexValues struct {
+	FieldValues []interface{}
+}
+
 type Index struct {
 	indexer  *treemap.Map
 	Fields   *CompoundKey
@@ -47,8 +63,9 @@ type Index struct {
 }
 
 type Document struct {
-	Id     string
-	Fields map[string]interface{}
+	Id         string
+	StringData string
+	Fields     map[string]interface{}
 }
 
 type Collection struct {
@@ -1937,8 +1954,8 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 				fieldsString = append(fieldsString, field.(string))
 			}
 			isUnique := false
-			if index["unique"] != nil {
-				isUnique = index["unique"].(bool)
+			if index["type"] != nil && index["type"].(string) == Unique {
+				isUnique = true
 			}
 			collection.Indices = append(collection.Indices, &Index{
 				Fields: &CompoundKey{
@@ -1953,32 +1970,93 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 	return nil
 }
 
-func CustomComparator(a, b interface{}) int {
-	keyA := a.(CompoundKey)
-	keyB := b.(CompoundKey)
-
-	minLength := len(keyA.Fields)
-	if len(keyB.Fields) < minLength {
-		minLength = len(keyB.Fields)
+func (rs *TredsStore) DInsert(args []string) error {
+	collectionName := args[0]
+	collection, foundCollection := rs.collections[collectionName]
+	if !foundCollection {
+		return fmt.Errorf("collection not found")
+	}
+	document := &Document{
+		Id:         uuid.New().String(),
+		StringData: "",
+		Fields:     make(map[string]interface{}),
 	}
 
-	// Compare each field sequentially
-	for i := 0; i < minLength; i++ {
-		switch {
-		case keyA.Fields[i] < keyB.Fields[i]:
-			return -1
-		case keyA.Fields[i] > keyB.Fields[i]:
-			return 1
+	jsonStr := args[1]
+	document.StringData = jsonStr
+	err := json.Unmarshal([]byte(jsonStr), &document.Fields)
+	if err != nil {
+		return err
+	}
+	// Validate the document against the schema
+	err = ValidateDocument(collection, document)
+	if err != nil {
+		return err
+	}
+	// Insert the document into the collection
+	collection.Documents[document.Id] = document
+	// Insert the document into the indices
+	for idx, index := range collection.Indices {
+		treeMapKey := IndexValues{
+			FieldValues: make([]interface{}, 0),
 		}
-	}
+		for _, field := range index.Fields.Fields {
+			result := gjson.Get(document.StringData, field)
+			treeMapKey.FieldValues = append(treeMapKey.FieldValues, getValue(result))
+		}
+		radixTree, found := index.indexer.Get(treeMapKey)
+		if !found {
+			radixTree = radix_tree.New()
+		}
+		storedRadixTree := radixTree.(*radix_tree.Tree)
+		storedRadixTree, _, _ = storedRadixTree.Insert([]byte(document.Id), treeMapKey)
+		index.indexer.Put(treeMapKey, storedRadixTree)
 
-	// If all compared fields are equal, longer key is considered greater
-	switch {
-	case len(keyA.Fields) < len(keyB.Fields):
-		return -1
-	case len(keyA.Fields) > len(keyB.Fields):
-		return 1
+		// Linking the TreeMaps
+		_, radixTreeFloor := index.indexer.Floor(treeMapKey)
+		if radixTreeFloor != nil {
+			floorRadixTree := radixTreeFloor.(*radix_tree.Tree)
+			var lowerKey IndexValues
+			maxLeaf, foundMinLeaf := floorRadixTree.Root().MinimumLeaf()
+			if foundMinLeaf && maxLeaf.GetPrevLeaf() != nil {
+				lowerKey = (maxLeaf.GetPrevLeaf()).Value().(IndexValues)
+				radixTreeLower, foundLower := index.indexer.Get(lowerKey)
+				if foundLower {
+					tree := radixTreeLower.(*radix_tree.Tree)
+					maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
+					minLeaf, foundMinLeaf := storedRadixTree.Root().MinimumLeaf()
+					if foundMaxLeaf {
+						maxLeaf.SetNextLeaf(minLeaf)
+					}
+					if foundMinLeaf {
+						minLeaf.SetPrevLeaf(maxLeaf)
+					}
+				}
+			}
+		}
+		_, radixTreeCeiling := index.indexer.Ceiling(treeMapKey)
+		if radixTreeCeiling != nil {
+			ceilingRadixTree := radixTreeCeiling.(*radix_tree.Tree)
+			var upperKey IndexValues
+			minLeaf, foundMaxLeaf := ceilingRadixTree.Root().MaximumLeaf()
+			if foundMaxLeaf && minLeaf.GetNextLeaf() != nil {
+				upperKey = (minLeaf.GetNextLeaf()).Value().(IndexValues)
+				radixTreeUpper, foundUpper := index.indexer.Get(upperKey)
+				if foundUpper {
+					tree := radixTreeUpper.(*radix_tree.Tree)
+					minLeaf, foundMinLeaf := tree.Root().MinimumLeaf()
+					maxLeaf, foundMaxLeaf := storedRadixTree.Root().MaximumLeaf()
+					if foundMaxLeaf {
+						maxLeaf.SetNextLeaf(minLeaf)
+					}
+					if foundMinLeaf {
+						minLeaf.SetPrevLeaf(maxLeaf)
+					}
+				}
+			}
+		}
+		// storing the index
+		collection.Indices[idx] = index
 	}
-	// Keys are equal
-	return 0
+	return nil
 }
