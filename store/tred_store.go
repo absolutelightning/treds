@@ -70,7 +70,7 @@ type Document struct {
 
 type Collection struct {
 	Documents map[string]*Document
-	Indices   []*Index
+	Indices   map[string]*Index
 	Schema    map[string]interface{}
 }
 
@@ -1930,7 +1930,7 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 	}
 	collection := &Collection{
 		Documents: make(map[string]*Document),
-		Indices:   make([]*Index, 0),
+		Indices:   make(map[string]*Index),
 		Schema:    make(map[string]interface{}),
 	}
 	if args[1] != "" {
@@ -1948,16 +1948,19 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 			return err
 		}
 		for _, index := range indexes {
+			indexName := ""
 			fields := index["fields"].([]interface{})
 			fieldsString := make([]string, 0)
 			for _, field := range fields {
 				fieldsString = append(fieldsString, field.(string))
+				indexName += field.(string) + "_"
 			}
+			indexName = strings.TrimSuffix(indexName, "_")
 			isUnique := false
 			if index["type"] != nil && index["type"].(string) == Unique {
 				isUnique = true
 			}
-			collection.Indices = append(collection.Indices, &Index{
+			collection.Indices[indexName] = &Index{
 				Fields: &CompoundKey{
 					Fields: fieldsString,
 				},
