@@ -1970,11 +1970,11 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 	return nil
 }
 
-func (rs *TredsStore) DInsert(args []string) error {
+func (rs *TredsStore) DInsert(args []string) (string, error) {
 	collectionName := args[0]
 	collection, foundCollection := rs.collections[collectionName]
 	if !foundCollection {
-		return fmt.Errorf("collection not found")
+		return "", fmt.Errorf("collection not found")
 	}
 	document := &Document{
 		Id:         uuid.New().String(),
@@ -1986,12 +1986,12 @@ func (rs *TredsStore) DInsert(args []string) error {
 	document.StringData = jsonStr
 	err := json.Unmarshal([]byte(jsonStr), &document.Fields)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// Validate the document against the schema
 	err = ValidateDocument(collection, document)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// Insert the document into the collection
 	collection.Documents[document.Id] = document
@@ -2058,5 +2058,9 @@ func (rs *TredsStore) DInsert(args []string) error {
 		// storing the index
 		collection.Indices[idx] = index
 	}
-	return nil
+	return document.Id, nil
+}
+
+func (rs *TredsStore) DQuery(query []string) ([]string, error) {
+	return nil, nil
 }

@@ -30,10 +30,10 @@ func validateDInsertCommand() ValidationHook {
 
 func executeDInsertCommand() ExecutionHook {
 	return func(args []string, store store.Store) string {
-		err := store.DInsert(args)
+		res, err := store.DInsert(args)
 		if err != nil {
 			return resp.EncodeError(err.Error())
 		}
-		return resp.EncodeSimpleString("OK")
+		return resp.EncodeBulkString(res)
 	}
 }
