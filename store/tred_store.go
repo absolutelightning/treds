@@ -1966,7 +1966,7 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 				},
 				isUnique: isUnique,
 				indexer:  treemap.NewWith(CustomComparator),
-			})
+			}
 		}
 	}
 	rs.collections[collectionName] = collection
