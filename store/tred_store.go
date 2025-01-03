@@ -1,8 +1,10 @@
 package store
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -16,6 +18,8 @@ import (
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/emirpasic/gods/utils"
 	"github.com/golang/protobuf/proto"
+	"github.com/google/uuid"
+	"github.com/tidwall/gjson"
 	"golang.org/x/sync/errgroup"
 	radix_tree "treds/datastructures/radix"
 	kvstore "treds/store/proto"
@@ -23,6 +27,7 @@ import (
 
 const NilResp = "(nil)"
 const Epsilon = 1.19209e-07
+const Unique = "unique"
 
 type Type int
 
@@ -32,21 +37,65 @@ const (
 	ListStore
 	SetStore
 	HashStore
+	DocumentStore
 )
 
+// TypeMapping maps schema type strings to their Go reflect.Type equivalents
+var TypeMapping = map[string]reflect.Type{
+	"string": reflect.TypeOf(""),
+	"float":  reflect.TypeOf(0.0),
+	"bool":   reflect.TypeOf(true),
+}
+
+// CompoundKey represents a key with an array of fields
+type CompoundKey struct {
+	Fields []string // Array of fields for the key
+}
+
+type IndexValues struct {
+	FieldValues []interface{}
+}
+
+type Index struct {
+	indexer  *treemap.Map
+	Fields   *CompoundKey
+	isUnique bool
+}
+
+type Document struct {
+	Id         string
+	StringData string
+	Fields     map[string]interface{}
+}
+
+type Collection struct {
+	Documents map[string]*Document
+	Indices   map[string]*Index
+	Schema    map[string]interface{}
+}
+
 type TredsStore struct {
+	// Key Value Store
 	tree *radix_tree.Tree
 
+	// Sorted Maps Store
 	sortedMaps      map[string]*treemap.Map
 	sortedMapsScore map[string]map[string]float64
 	sortedMapsKeys  map[string]*radix_tree.Tree
 
+	// List Store
 	lists map[string]*doublylinkedlist.List
 
+	// Set Store
 	sets map[string]*hashset.Set
 
+	// Hash Store
 	hashes map[string]*hashmap.Map
 
+	// Document Store
+	collections map[string]*Collection
+
+	// Expiry
 	expiry map[string]time.Time
 }
 
@@ -60,6 +109,7 @@ func NewTredsStore() *TredsStore {
 		sets:            make(map[string]*hashset.Set),
 		hashes:          make(map[string]*hashmap.Map),
 		expiry:          make(map[string]time.Time),
+		collections:     make(map[string]*Collection),
 	}
 }
 
@@ -1870,4 +1920,196 @@ func (rs *TredsStore) Restore(data []byte) error {
 		rs.tree, _, _ = rs.tree.Insert([]byte(pair.Key), pair.Value)
 	}
 	return nil
+}
+
+func (rs *TredsStore) DCreateCollection(args []string) error {
+	collectionName := args[0]
+	_, found := rs.collections[collectionName]
+	if found {
+		return fmt.Errorf("collection already exists")
+	}
+	collection := &Collection{
+		Documents: make(map[string]*Document),
+		Indices:   make(map[string]*Index),
+		Schema:    make(map[string]interface{}),
+	}
+	if args[1] != "" {
+		jsonStr := args[1]
+		err := json.Unmarshal([]byte(jsonStr), &collection.Schema)
+		if err != nil {
+			return err
+		}
+	}
+	if args[2] != "" {
+		jsonStr := args[2]
+		var indexes []map[string]interface{}
+		err := json.Unmarshal([]byte(jsonStr), &indexes)
+		if err != nil {
+			return err
+		}
+		for _, index := range indexes {
+			indexName := ""
+			fields := index["fields"].([]interface{})
+			fieldsString := make([]string, 0)
+			for _, field := range fields {
+				fieldsString = append(fieldsString, field.(string))
+				indexName += field.(string) + "_"
+			}
+			indexName = strings.TrimSuffix(indexName, "_")
+			isUnique := false
+			if index["type"] != nil && index["type"].(string) == Unique {
+				isUnique = true
+			}
+			collection.Indices[indexName] = &Index{
+				Fields: &CompoundKey{
+					Fields: fieldsString,
+				},
+				isUnique: isUnique,
+				indexer:  treemap.NewWith(CustomComparator),
+			}
+		}
+	}
+	rs.collections[collectionName] = collection
+	return nil
+}
+
+func (rs *TredsStore) DInsert(args []string) (string, error) {
+	collectionName := args[0]
+	collection, foundCollection := rs.collections[collectionName]
+	if !foundCollection {
+		return "", fmt.Errorf("collection not found")
+	}
+	document := &Document{
+		Id:         uuid.New().String(),
+		StringData: "",
+		Fields:     make(map[string]interface{}),
+	}
+
+	jsonStr := args[1]
+	document.StringData = jsonStr
+	err := json.Unmarshal([]byte(jsonStr), &document.Fields)
+	if err != nil {
+		return "", err
+	}
+	// Validate the document against the schema
+	err = ValidateDocument(collection, document)
+	if err != nil {
+		return "", err
+	}
+	// Insert the document into the collection
+	collection.Documents[document.Id] = document
+	// Insert the document into the indices
+	for idx, index := range collection.Indices {
+		treeMapKey := IndexValues{
+			FieldValues: make([]interface{}, 0),
+		}
+		for _, field := range index.Fields.Fields {
+			result := gjson.Get(document.StringData, field)
+			treeMapKey.FieldValues = append(treeMapKey.FieldValues, getValue(result))
+		}
+		radixTree, found := index.indexer.Get(treeMapKey)
+		if !found {
+			radixTree = radix_tree.New()
+		}
+		storedRadixTree := radixTree.(*radix_tree.Tree)
+		storedRadixTree, _, _ = storedRadixTree.Insert([]byte(document.Id), treeMapKey)
+		index.indexer.Put(treeMapKey, storedRadixTree)
+
+		// Linking the TreeMaps
+		_, radixTreeFloor := index.indexer.Floor(treeMapKey)
+		if radixTreeFloor != nil {
+			floorRadixTree := radixTreeFloor.(*radix_tree.Tree)
+			var lowerKey IndexValues
+			maxLeaf, foundMinLeaf := floorRadixTree.Root().MinimumLeaf()
+			if foundMinLeaf && maxLeaf.GetPrevLeaf() != nil {
+				lowerKey = (maxLeaf.GetPrevLeaf()).Value().(IndexValues)
+				radixTreeLower, foundLower := index.indexer.Get(lowerKey)
+				if foundLower {
+					tree := radixTreeLower.(*radix_tree.Tree)
+					maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
+					minLeaf, foundMinLeaf := storedRadixTree.Root().MinimumLeaf()
+					if foundMaxLeaf {
+						maxLeaf.SetNextLeaf(minLeaf)
+					}
+					if foundMinLeaf {
+						minLeaf.SetPrevLeaf(maxLeaf)
+					}
+				}
+			}
+		}
+		_, radixTreeCeiling := index.indexer.Ceiling(treeMapKey)
+		if radixTreeCeiling != nil {
+			ceilingRadixTree := radixTreeCeiling.(*radix_tree.Tree)
+			var upperKey IndexValues
+			minLeaf, foundMaxLeaf := ceilingRadixTree.Root().MaximumLeaf()
+			if foundMaxLeaf && minLeaf.GetNextLeaf() != nil {
+				upperKey = (minLeaf.GetNextLeaf()).Value().(IndexValues)
+				radixTreeUpper, foundUpper := index.indexer.Get(upperKey)
+				if foundUpper {
+					tree := radixTreeUpper.(*radix_tree.Tree)
+					minLeaf, foundMinLeaf := tree.Root().MinimumLeaf()
+					maxLeaf, foundMaxLeaf := storedRadixTree.Root().MaximumLeaf()
+					if foundMaxLeaf {
+						maxLeaf.SetNextLeaf(minLeaf)
+					}
+					if foundMinLeaf {
+						minLeaf.SetPrevLeaf(maxLeaf)
+					}
+				}
+			}
+		}
+		// storing the index
+		collection.Indices[idx] = index
+	}
+	return document.Id, nil
+}
+
+type QueryPlan struct {
+	Filters []QueryFilter
+	Sort    []Sort
+	Limit   int
+	Offset  int
+}
+
+type QueryFilter struct {
+	Field      string        // Field name (e.g., "age", "salary")
+	Operator   string        // Comparison operator (e.g., "$gt", "$lt", "$eq")
+	Value      interface{}   // Value for the operator
+	SubFilters []QueryFilter // Nested filters for logical operators
+	Logical    string        // Logical operator: "$and", "$or", "$not"
+}
+
+type Sort struct {
+	Field string // Field to sort by
+	Order string // "asc" for ascending, "desc" for descending
+}
+
+func (rs *TredsStore) DExecutionPlan(query []string) (string, error) {
+	collectionName := query[0]
+	collection, foundCollection := rs.collections[collectionName]
+	if !foundCollection {
+		return "", fmt.Errorf("collection not found")
+	}
+	queryPlan := &QueryPlan{
+		Filters: make([]QueryFilter, 0),
+		Sort:    make([]Sort, 0),
+		Limit:   0,
+		Offset:  0,
+	}
+	jsonStr := query[1]
+	err := json.Unmarshal([]byte(jsonStr), queryPlan)
+	if err != nil {
+		return "", err
+	}
+	// Execute the query plan
+	result := ExecuteQueryPlan(collection, queryPlan)
+	resultStr, err := json.Marshal(result)
+	if err != nil {
+		return "", err
+	}
+	return string(resultStr), nil
+}
+
+func (rs *TredsStore) DQuery(query []string) ([]string, error) {
+	return nil, nil
 }
