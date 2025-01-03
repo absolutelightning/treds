@@ -3,8 +3,10 @@ package store
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
+	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/tidwall/gjson"
 )
 
@@ -104,4 +106,115 @@ func CustomComparator(a, b interface{}) int {
 
 	// Keys are equal
 	return 0
+}
+
+// LowerBoundIndex finds the smallest index where the key is greater than or equal to the target.
+// It assumes `target` is of type `IndexValues`.
+func LowerBoundIndex(tm *treemap.Map, target *IndexValues) int {
+	keys := tm.Keys() // Returns sorted keys based on the custom comparator
+	return sort.Search(len(keys), func(i int) bool {
+		key := keys[i].(IndexValues) // Type assertion to IndexValues
+		return CustomComparator(key, target) >= 0
+	})
+}
+
+// UpperBoundIndex finds the smallest index where the key is strictly greater than the target.
+// It assumes `target` is of type `IndexValues`.
+func UpperBoundIndex(tm *treemap.Map, target *IndexValues) int {
+	keys := tm.Keys() // Returns sorted keys based on the custom comparator
+	return sort.Search(len(keys), func(i int) bool {
+		key := keys[i].(IndexValues) // Type assertion to IndexValues
+		return CustomComparator(key, target) > 0
+	})
+}
+
+func estimateRangeFraction(filter QueryFilter, treeMap *treemap.Map) float64 {
+	totalKeys := len(treeMap.Keys())
+	if totalKeys == 0 {
+		return 0.0 // Avoid division by zero
+	}
+
+	var lower, upper *IndexValues
+	switch filter.Operator {
+	case "$gt", "$gte":
+		lower = &IndexValues{FieldValues: []interface{}{filter.Value}}
+	case "$lt", "$lte":
+		upper = &IndexValues{FieldValues: []interface{}{filter.Value}}
+	}
+
+	startIndex := 0
+	if lower != nil {
+		startIndex = LowerBoundIndex(treeMap, lower)
+	}
+
+	endIndex := totalKeys
+	if upper != nil {
+		endIndex = UpperBoundIndex(treeMap, upper)
+	}
+
+	keysInRange := endIndex - startIndex
+	if keysInRange < 0 {
+		keysInRange = 0
+	}
+
+	return float64(keysInRange) / float64(totalKeys)
+}
+
+func estimateEnhancedIndexCost(query QueryPlan, index Index) int {
+	cost := 0
+	treeMap := index.indexer
+	totalKeys := len(treeMap.Keys()) // Total number of keys in the index
+
+	if totalKeys == 0 {
+		return cost // If the index is empty, cost is 0
+	}
+
+	// Calculate the cost of index scans
+	scannedKeys := totalKeys
+	for _, filter := range query.Filters {
+		if canUseIndex(filter, index) {
+			rangeFraction := estimateRangeFraction(filter, treeMap)
+			filteredKeys := int(rangeFraction * float64(scannedKeys))
+			scannedKeys = min(scannedKeys, filteredKeys) // Adjust based on filter
+		} else {
+			scannedKeys = totalKeys // If filter cannot use the index, assume full scan
+		}
+	}
+
+	cost += scannedKeys // Add the cost of scanning the keys
+
+	// Estimate document fetch cost
+	docFetchCost := estimateDocsFetched(query, index)
+	cost += docFetchCost
+
+	return cost
+}
+
+func estimateDocsFetched(query QueryPlan, index Index) int {
+	keys := index.indexer.Keys() // Retrieve all keys from the index
+	totalDocs := len(keys)
+	if totalDocs == 0 {
+		return 0 // No documents to fetch
+	}
+
+	// Calculate the intersection of all filters
+	docsFetched := totalDocs
+	for _, filter := range query.Filters {
+		rangeFraction := estimateRangeFraction(filter, index.indexer)
+		docsFetched = int(rangeFraction * float64(docsFetched))
+		if docsFetched == 0 {
+			break // Short-circuit if no documents are matched
+		}
+	}
+
+	return docsFetched
+}
+
+func canUseIndex(filter QueryFilter, index Index) bool {
+	for _, field := range index.Fields.Fields {
+		if filter.Field == field {
+			return true
+		}
+	}
+	return false
 }

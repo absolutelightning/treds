@@ -2064,6 +2064,26 @@ func (rs *TredsStore) DInsert(args []string) (string, error) {
 	return document.Id, nil
 }
 
+type QueryPlan struct {
+	Filters []QueryFilter
+	Sort    []Sort
+	Limit   int
+	Offset  int
+}
+
+type QueryFilter struct {
+	Field      string        // Field name (e.g., "age", "salary")
+	Operator   string        // Comparison operator (e.g., "$gt", "$lt", "$eq")
+	Value      interface{}   // Value for the operator
+	SubFilters []QueryFilter // Nested filters for logical operators
+	Logical    string        // Logical operator: "$and", "$or", "$not"
+}
+
+type Sort struct {
+	Field string // Field to sort by
+	Order string // "asc" for ascending, "desc" for descending
+}
+
 func (rs *TredsStore) DQuery(query []string) ([]string, error) {
 	return nil, nil
 }
