@@ -160,7 +160,21 @@ func estimateRangeFraction(filter QueryFilter, treeMap *treemap.Map) float64 {
 	return float64(keysInRange) / float64(totalKeys)
 }
 
-func estimateEnhancedIndexCost(query QueryPlan, index Index) int {
+func ExecuteQueryPlan(collection *Collection, query *QueryPlan) map[string]interface{} {
+	// Retrieve the index to use
+
+	executionPlanData := make(map[string]interface{})
+
+	for indexName, index := range collection.Indices {
+		// Estimate the cost of using the index
+		cost := estimateEnhancedIndexCost(query, index)
+		executionPlanData[indexName] = cost
+	}
+
+	return executionPlanData
+}
+
+func estimateEnhancedIndexCost(query *QueryPlan, index *Index) int {
 	cost := 0
 	treeMap := index.indexer
 	totalKeys := len(treeMap.Keys()) // Total number of keys in the index
@@ -190,7 +204,7 @@ func estimateEnhancedIndexCost(query QueryPlan, index Index) int {
 	return cost
 }
 
-func estimateDocsFetched(query QueryPlan, index Index) int {
+func estimateDocsFetched(query *QueryPlan, index *Index) int {
 	keys := index.indexer.Keys() // Retrieve all keys from the index
 	totalDocs := len(keys)
 	if totalDocs == 0 {
@@ -210,7 +224,7 @@ func estimateDocsFetched(query QueryPlan, index Index) int {
 	return docsFetched
 }
 
-func canUseIndex(filter QueryFilter, index Index) bool {
+func canUseIndex(filter QueryFilter, index *Index) bool {
 	for _, field := range index.Fields.Fields {
 		if filter.Field == field {
 			return true

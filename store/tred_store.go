@@ -2084,6 +2084,32 @@ type Sort struct {
 	Order string // "asc" for ascending, "desc" for descending
 }
 
+func (rs *TredsStore) DExecutionPlan(query []string) (string, error) {
+	collectionName := query[0]
+	collection, foundCollection := rs.collections[collectionName]
+	if !foundCollection {
+		return "", fmt.Errorf("collection not found")
+	}
+	queryPlan := &QueryPlan{
+		Filters: make([]QueryFilter, 0),
+		Sort:    make([]Sort, 0),
+		Limit:   0,
+		Offset:  0,
+	}
+	jsonStr := query[1]
+	err := json.Unmarshal([]byte(jsonStr), queryPlan)
+	if err != nil {
+		return "", err
+	}
+	// Execute the query plan
+	result := ExecuteQueryPlan(collection, queryPlan)
+	resultStr, err := json.Marshal(result)
+	if err != nil {
+		return "", err
+	}
+	return string(resultStr), nil
+}
+
 func (rs *TredsStore) DQuery(query []string) ([]string, error) {
 	return nil, nil
 }
