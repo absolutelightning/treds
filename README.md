@@ -184,19 +184,19 @@ DCREATECOLLECTION users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": 
 * `DROPCOLLECTION collectionname` - Drop a collection
 * `DINSERT collectionname json` - Insert a document in a collection
 ```text
-dinsert users "{\"name\": \"Spiderman\", \"age\": 13, \"salary\": 500}"
-dinsert users "{\"name\": \"Heman\", \"age\": 14, \"salary\": 600}"
-dinsert users "{\"name\": \"Superman\", \"age\": 15, \"salary\": 300}"
-dinsert users "{\"name\": \"Batman\", \"age\": 18, \"salary\": 900}"
-dinsert users "{\"name\": \"Antman\", \"age\": 25, \"salary\": 800}"
+DINSERT users "{\"name\": \"Spiderman\", \"age\": 13, \"salary\": 500}"
+DINSERT users "{\"name\": \"Heman\", \"age\": 14, \"salary\": 600}"
+DINSERT users "{\"name\": \"Superman\", \"age\": 15, \"salary\": 300}"
+DINSERT users "{\"name\": \"Batman\", \"age\": 18, \"salary\": 900}"
+DINSERT users "{\"name\": \"Antman\", \"age\": 25, \"salary\": 800}"
 ```
 * `DQUERY collectionname json` - Query a collection
 ```text
-dquery users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
+DQUERY users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
 ```
 * `DEXPLAIN collectionname json` - Explain a query - Returns the query plan - index with which query is executed
 ```text
-dexplain users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
+DEXPLAIN users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
 ```
 
 ## Run Local 
