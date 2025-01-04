@@ -1974,6 +1974,16 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 	return nil
 }
 
+func (rs *TredsStore) DDropCollection(args []string) error {
+	collectionName := args[0]
+	_, found := rs.collections[collectionName]
+	if !found {
+		return fmt.Errorf("collection does not exists")
+	}
+	delete(rs.collections, collectionName)
+	return nil
+}
+
 func (rs *TredsStore) DInsert(args []string) (string, error) {
 	collectionName := args[0]
 	collection, foundCollection := rs.collections[collectionName]

@@ -62,4 +62,5 @@ func RegisterCommands(r CommandRegistry) {
 	RegisterDInsertCommand(r)
 	RegisterDQueryCommand(r)
 	RegisterDExplainCommand(r)
+	RegisterDDropCollection(r)
 }
