@@ -366,20 +366,18 @@ func fetchAndFilterDocuments(collection *Collection, query *Query, index *Index)
 		keysInRange := treeMap.Keys()[startIndex:endIndex]
 
 		// Collect matching document IDs
-		for _, key := range keysInRange {
-			startRadixTree, _ := treeMap.Get(key)
-			leaf, found := startRadixTree.(*radix.Tree).Root().MinimumLeaf()
-			if !found {
-				continue
-			}
-			for leaf != nil {
-				matchingIds[string(leaf.Key())] = struct{}{}
-				leaf = leaf.GetNextLeaf()
-				if leaf != nil {
-					nextLeafValue := leaf.Value().(IndexValues)
-					if CustomComparator(nextLeafValue, upper) > 0 {
-						break
-					}
+		startRadixTree, _ := treeMap.Get(keysInRange[0])
+		leaf, found := startRadixTree.(*radix.Tree).Root().MinimumLeaf()
+		if !found {
+			return matchingIds
+		}
+		for leaf != nil {
+			matchingIds[string(leaf.Key())] = struct{}{}
+			leaf = leaf.GetNextLeaf()
+			if leaf != nil {
+				nextLeafValue := leaf.Value().(IndexValues)
+				if CustomComparator(nextLeafValue, upper) > 0 {
+					break
 				}
 			}
 		}
@@ -424,6 +422,9 @@ func fetchAndFilterDocuments(collection *Collection, query *Query, index *Index)
 
 	// Process all filters
 	for _, filter := range query.Filters {
+		if !canUseIndex(filter, index) {
+			continue
+		}
 		if filter.Logical != "" {
 			processLogicalFilter(filter)
 		} else {

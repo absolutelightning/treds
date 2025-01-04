@@ -2017,46 +2017,31 @@ func (rs *TredsStore) DInsert(args []string) (string, error) {
 		index.indexer.Put(treeMapKey, storedRadixTree)
 
 		// Linking the TreeMaps
-		_, radixTreeFloor := index.indexer.Floor(treeMapKey)
-		if radixTreeFloor != nil {
-			floorRadixTree := radixTreeFloor.(*radix_tree.Tree)
-			var lowerKey IndexValues
-			maxLeaf, foundMinLeaf := floorRadixTree.Root().MinimumLeaf()
-			if foundMinLeaf && maxLeaf.GetPrevLeaf() != nil {
-				lowerKey = (maxLeaf.GetPrevLeaf()).Value().(IndexValues)
-				radixTreeLower, foundLower := index.indexer.Get(lowerKey)
-				if foundLower {
-					tree := radixTreeLower.(*radix_tree.Tree)
-					maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
-					minLeaf, foundMinLeaf := storedRadixTree.Root().MinimumLeaf()
-					if foundMaxLeaf {
-						maxLeaf.SetNextLeaf(minLeaf)
-					}
-					if foundMinLeaf {
-						minLeaf.SetPrevLeaf(maxLeaf)
-					}
+		_, radixTreeLower := index.indexer.Lower(treeMapKey)
+		if radixTreeLower != nil {
+			lowerRadixTree := radixTreeLower.(*radix_tree.Tree)
+			_, foundMinLeaf := lowerRadixTree.Root().MaximumLeaf()
+			if foundMinLeaf {
+				maxLeaf, foundMaxLeaf := lowerRadixTree.Root().MaximumLeaf()
+				minLeaf, foundMinLeaf := storedRadixTree.Root().MinimumLeaf()
+				if foundMaxLeaf {
+					maxLeaf.SetNextLeaf(minLeaf)
+				}
+				if foundMinLeaf {
+					minLeaf.SetPrevLeaf(maxLeaf)
 				}
 			}
 		}
-		_, radixTreeCeiling := index.indexer.Ceiling(treeMapKey)
-		if radixTreeCeiling != nil {
-			ceilingRadixTree := radixTreeCeiling.(*radix_tree.Tree)
-			var upperKey IndexValues
-			minLeaf, foundMaxLeaf := ceilingRadixTree.Root().MaximumLeaf()
-			if foundMaxLeaf && minLeaf.GetNextLeaf() != nil {
-				upperKey = (minLeaf.GetNextLeaf()).Value().(IndexValues)
-				radixTreeUpper, foundUpper := index.indexer.Get(upperKey)
-				if foundUpper {
-					tree := radixTreeUpper.(*radix_tree.Tree)
-					minLeaf, foundMinLeaf := tree.Root().MinimumLeaf()
-					maxLeaf, foundMaxLeaf := storedRadixTree.Root().MaximumLeaf()
-					if foundMaxLeaf {
-						maxLeaf.SetNextLeaf(minLeaf)
-					}
-					if foundMinLeaf {
-						minLeaf.SetPrevLeaf(maxLeaf)
-					}
-				}
+		_, radixTreeGreater := index.indexer.Greater(treeMapKey)
+		if radixTreeGreater != nil {
+			greaterRadixTree := radixTreeGreater.(*radix_tree.Tree)
+			minLeaf, foundMaxLeaf := greaterRadixTree.Root().MinimumLeaf()
+			maxLeaf, foundMinLeaf := storedRadixTree.Root().MaximumLeaf()
+			if foundMaxLeaf {
+				maxLeaf.SetNextLeaf(minLeaf)
+			}
+			if foundMinLeaf {
+				minLeaf.SetPrevLeaf(maxLeaf)
 			}
 		}
 		// storing the index
@@ -2102,6 +2087,9 @@ func (rs *TredsStore) DExecutionPlan(query []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if queryPlan.Limit == 0 {
+		queryPlan.Limit = len(collection.Documents)
+	}
 	// Execute the query plan
 	result := executeQueryPlan(collection, queryPlan)
 	resultStr, err := json.Marshal(result)
@@ -2128,6 +2116,9 @@ func (rs *TredsStore) DQuery(query []string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if queryPlan.Limit == 0 {
+		queryPlan.Limit = len(collection.Documents)
+	}
 
 	executionPlan := executeQueryPlan(collection, queryPlan)
 	bestIndexName := ""
@@ -2135,7 +2126,7 @@ func (rs *TredsStore) DQuery(query []string) ([]string, error) {
 	for indexName, indexData := range executionPlan {
 		keysScan := indexData.(map[string]interface{})[TotalKeysExamined].(int)
 		if keysScan < lowestCost {
-			keysScan = lowestCost
+			lowestCost = keysScan
 			bestIndexName = indexName
 		}
 	}
