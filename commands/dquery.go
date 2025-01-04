@@ -7,7 +7,7 @@ import (
 	"treds/store"
 )
 
-const DQuery = "DQuery"
+const DQuery = "DQUERY"
 
 func RegisterDQueryCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{

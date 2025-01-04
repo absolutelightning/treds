@@ -1933,14 +1933,14 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 		Indices:   make(map[string]*Index),
 		Schema:    make(map[string]interface{}),
 	}
-	if args[1] != "" {
+	if len(args) > 1 && args[1] != "" {
 		jsonStr := args[1]
 		err := json.Unmarshal([]byte(jsonStr), &collection.Schema)
 		if err != nil {
 			return err
 		}
 	}
-	if args[2] != "" {
+	if len(args) > 2 && args[2] != "" {
 		jsonStr := args[2]
 		var indexes []map[string]interface{}
 		err := json.Unmarshal([]byte(jsonStr), &indexes)
