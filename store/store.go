@@ -65,4 +65,5 @@ type Store interface {
 	DCreateCollection([]string) error
 	DInsert([]string) (string, error)
 	DQuery([]string) ([]string, error)
+	DExplain([]string) (string, error)
 }

@@ -7,18 +7,18 @@ import (
 	"treds/store"
 )
 
-const DInsert = "DINSERT"
+const DExplain = "DEXPLAIN"
 
-func RegisterDInsertCommand(r CommandRegistry) {
+func RegisterDExplainCommand(r CommandRegistry) {
 	r.Add(&CommandRegistration{
-		Name:     DInsert,
-		Validate: validateDInsertCommand(),
-		Execute:  executeDInsertCommand(),
+		Name:     DExplain,
+		Validate: validateDExplainCommand(),
+		Execute:  executeDExplainCommand(),
 		IsWrite:  true,
 	})
 }
 
-func validateDInsertCommand() ValidationHook {
+func validateDExplainCommand() ValidationHook {
 	return func(args []string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("expected 2 argument, got %d", len(args))
@@ -28,9 +28,9 @@ func validateDInsertCommand() ValidationHook {
 	}
 }
 
-func executeDInsertCommand() ExecutionHook {
+func executeDExplainCommand() ExecutionHook {
 	return func(args []string, store store.Store) string {
-		res, err := store.DInsert(args)
+		res, err := store.DExplain(args)
 		if err != nil {
 			return resp.EncodeError(err.Error())
 		}

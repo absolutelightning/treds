@@ -380,3 +380,7 @@ func (rs *MockStore) DInsert(args []string) (string, error) {
 func (rs *MockStore) DQuery(args []string) ([]string, error) {
 	return nil, nil
 }
+
+func (rs *MockStore) DExplain(args []string) (string, error) {
+	return "", nil
+}

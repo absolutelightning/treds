@@ -2070,7 +2070,7 @@ type Sort struct {
 	Order string // "asc" for ascending, "desc" for descending
 }
 
-func (rs *TredsStore) DExecutionPlan(query []string) (string, error) {
+func (rs *TredsStore) DExplain(query []string) (string, error) {
 	collectionName := query[0]
 	collection, foundCollection := rs.collections[collectionName]
 	if !foundCollection {
