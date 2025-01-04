@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/emirpasic/gods/lists/doublylinkedlist"
-	"github.com/emirpasic/gods/maps/hashmap"
-	"github.com/emirpasic/gods/maps/treemap"
-	"github.com/emirpasic/gods/sets/hashset"
-	"github.com/emirpasic/gods/utils"
+	"github.com/absolutelightning/gods/lists/doublylinkedlist"
+	"github.com/absolutelightning/gods/maps/hashmap"
+	"github.com/absolutelightning/gods/maps/treemap"
+	"github.com/absolutelightning/gods/sets/hashset"
+	"github.com/absolutelightning/gods/utils"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
@@ -26,8 +26,8 @@ import (
 )
 
 const NilResp = "(nil)"
-const Epsilon = 1.19209e-07
 const Unique = "unique"
+const IndexSuffix = "_index"
 
 type Type int
 
@@ -774,7 +774,7 @@ func (rs *TredsStore) ZAdd(args []string) error {
 		sortedKeyMap, _, _ = sortedKeyMap.Insert([]byte(parsedArgs[itr+1]), parsedArgs[itr+2])
 		radixTree, _, _ = radixTree.Insert([]byte(parsedArgs[itr+1]), parsedArgs[itr+2])
 		tm.Put(score, radixTree)
-		_, radixTreeFloor := tm.Floor(score - Epsilon)
+		_, radixTreeFloor := tm.Lower(score)
 		if radixTreeFloor != nil {
 			tree := radixTreeFloor.(*radix_tree.Tree)
 			maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
@@ -786,7 +786,7 @@ func (rs *TredsStore) ZAdd(args []string) error {
 				minLeaf.SetPrevLeaf(maxLeaf)
 			}
 		}
-		_, radixTreeCeiling := tm.Ceiling(score + Epsilon)
+		_, radixTreeCeiling := tm.Greater(score)
 		if radixTreeCeiling != nil {
 			tree := radixTreeCeiling.(*radix_tree.Tree)
 			minLeaf, foundMaxLeaf := tree.Root().MinimumLeaf()
@@ -832,7 +832,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 		} else {
 			storedTm.Put(scoreFloat, radixTree)
 		}
-		_, radixTreeFloor := storedTm.Floor(scoreFloat - Epsilon)
+		_, radixTreeFloor := storedTm.Lower(scoreFloat)
 		if radixTreeFloor != nil {
 			tree := radixTreeFloor.(*radix_tree.Tree)
 			maxLeaf, foundMaxLeaf := tree.Root().MaximumLeaf()
@@ -844,7 +844,7 @@ func (rs *TredsStore) ZRem(args []string) error {
 				minLeaf.SetPrevLeaf(maxLeaf)
 			}
 		}
-		_, radixTreeCeiling := storedTm.Ceiling(scoreFloat + Epsilon)
+		_, radixTreeCeiling := storedTm.Greater(scoreFloat)
 		if radixTreeCeiling != nil {
 			tree := radixTreeCeiling.(*radix_tree.Tree)
 			minLeaf, foundMinLeaf := tree.Root().MinimumLeaf()
@@ -1956,6 +1956,7 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 				indexName += field.(string) + "_"
 			}
 			indexName = strings.TrimSuffix(indexName, "_")
+			indexName += IndexSuffix
 			isUnique := false
 			if index["type"] != nil && index["type"].(string) == Unique {
 				isUnique = true
@@ -1992,7 +1993,7 @@ func (rs *TredsStore) DInsert(args []string) (string, error) {
 		return "", err
 	}
 	// Validate the document against the schema
-	err = ValidateDocument(collection, document)
+	err = validateDocument(collection, document)
 	if err != nil {
 		return "", err
 	}
@@ -2102,7 +2103,7 @@ func (rs *TredsStore) DExecutionPlan(query []string) (string, error) {
 		return "", err
 	}
 	// Execute the query plan
-	result := ExecuteQueryPlan(collection, queryPlan)
+	result := executeQueryPlan(collection, queryPlan)
 	resultStr, err := json.Marshal(result)
 	if err != nil {
 		return "", err
@@ -2111,5 +2112,52 @@ func (rs *TredsStore) DExecutionPlan(query []string) (string, error) {
 }
 
 func (rs *TredsStore) DQuery(query []string) ([]string, error) {
-	return nil, nil
+	collectionName := query[0]
+	collection, foundCollection := rs.collections[collectionName]
+	if !foundCollection {
+		return nil, fmt.Errorf("collection not found")
+	}
+	queryPlan := &QueryPlan{
+		Filters: make([]QueryFilter, 0),
+		Sort:    make([]Sort, 0),
+		Limit:   0,
+		Offset:  0,
+	}
+	jsonStr := query[1]
+	err := json.Unmarshal([]byte(jsonStr), queryPlan)
+	if err != nil {
+		return nil, err
+	}
+
+	executionPlan := executeQueryPlan(collection, queryPlan)
+	bestIndexName := ""
+	lowestCost := len(collection.Documents)
+	for indexName, indexData := range executionPlan {
+		keysScan := indexData.(map[string]interface{})[TotalKeysExamined].(int)
+		if keysScan < lowestCost {
+			keysScan = lowestCost
+			bestIndexName = indexName
+		}
+	}
+
+	if bestIndexName == "" {
+		filteredDocuments := fullScan(collection, queryPlan)
+		jsonDocuments := make([]string, 0, len(filteredDocuments))
+		for _, document := range filteredDocuments {
+			jsonDocuments = append(jsonDocuments, document.StringData)
+		}
+		return jsonDocuments, nil
+	}
+
+	bestIndex := collection.Indices[bestIndexName]
+
+	filteredResults := fetchAndFilterDocuments(collection, queryPlan, bestIndex)
+
+	finalResults = applySortingAndPagination(filteredResults, queryPlan)
+
+	jsonDocuments := make([]string, 0, len(finalResults))
+	for _, document := range finalResults {
+		jsonDocuments = append(jsonDocuments, document.StringData)
+	}
+	return jsonDocuments, nil
 }
