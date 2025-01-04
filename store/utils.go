@@ -293,15 +293,57 @@ func applySortingAndPagination(results []*Document, query *Query) []*Document {
 				field := criteria.Field
 				order := criteria.Order
 
-				valI := results[i].Fields[field]
-				valJ := results[j].Fields[field]
+				valI, okI := results[i].Fields[field]
+				valJ, okJ := results[j].Fields[field]
 
-				// Compare values
-				switch {
-				case valI.(int) < valJ.(int):
-					return order == "asc"
-				case valI.(int) > valJ.(int):
-					return order == "desc"
+				// Handle missing fields gracefully
+				if !okI && !okJ {
+					continue // Both missing, consider equal for this criteria
+				}
+				if !okI {
+					return order == "asc" // Missing value comes last
+				}
+				if !okJ {
+					return order == "desc" // Missing value comes last
+				}
+
+				// Compare values based on type
+				switch vI := valI.(type) {
+				case int:
+					vJ, ok := valJ.(int)
+					if !ok {
+						panic("Type mismatch for sorting field") // Optional: Handle gracefully
+					}
+					if vI < vJ {
+						return order == "asc"
+					}
+					if vI > vJ {
+						return order == "desc"
+					}
+				case float64:
+					vJ, ok := valJ.(float64)
+					if !ok {
+						panic("Type mismatch for sorting field") // Optional: Handle gracefully
+					}
+					if vI < vJ {
+						return order == "asc"
+					}
+					if vI > vJ {
+						return order == "desc"
+					}
+				case string:
+					vJ, ok := valJ.(string)
+					if !ok {
+						panic("Type mismatch for sorting field") // Optional: Handle gracefully
+					}
+					if vI < vJ {
+						return order == "asc"
+					}
+					if vI > vJ {
+						return order == "desc"
+					}
+				default:
+					panic("Unsupported type for sorting") // Optional: Handle gracefully
 				}
 				// If values are equal, move to the next criteria
 			}
@@ -311,6 +353,9 @@ func applySortingAndPagination(results []*Document, query *Query) []*Document {
 
 	// Apply limit and offset
 	start := query.Offset
+	if start > len(results) {
+		start = len(results)
+	}
 	end := start + query.Limit
 	if end > len(results) {
 		end = len(results)
