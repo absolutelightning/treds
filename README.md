@@ -165,9 +165,6 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `PPUBLISH channel message` - This command publishes the message to all channels that have names with the given channel as their prefix.
 * `PUBSUBCHANNELS prefix` - Returns all active channels having one or more subscribers, a common prefix with the given prefix. Prefix is optional.
  
-### Note on PUB/SUB
-#### Use case of PUB/SUB designed with Prefix
-
 While `PUBLISH` and `SUBSCRIBE` are similar to Redis, `PSUBSCRIBE` and `PPUBLISH` are designed to work with channels having a common prefix.
 
 If a client subscribes to a channel named `NEWS-IND-KA-BLR` using `PSUBSCRIBE`, then the client will receive messages published
