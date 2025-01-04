@@ -2065,7 +2065,7 @@ func (rs *TredsStore) DInsert(args []string) (string, error) {
 	return document.Id, nil
 }
 
-type QueryPlan struct {
+type Query struct {
 	Filters []QueryFilter
 	Sort    []Sort
 	Limit   int
@@ -2091,7 +2091,7 @@ func (rs *TredsStore) DExecutionPlan(query []string) (string, error) {
 	if !foundCollection {
 		return "", fmt.Errorf("collection not found")
 	}
-	queryPlan := &QueryPlan{
+	queryPlan := &Query{
 		Filters: make([]QueryFilter, 0),
 		Sort:    make([]Sort, 0),
 		Limit:   0,
@@ -2117,7 +2117,7 @@ func (rs *TredsStore) DQuery(query []string) ([]string, error) {
 	if !foundCollection {
 		return nil, fmt.Errorf("collection not found")
 	}
-	queryPlan := &QueryPlan{
+	queryPlan := &Query{
 		Filters: make([]QueryFilter, 0),
 		Sort:    make([]Sort, 0),
 		Limit:   0,

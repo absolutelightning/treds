@@ -177,7 +177,7 @@ func estimateKeysExamined(filter QueryFilter, treeMap *treemap.Map) int {
 	return keysInRange
 }
 
-func executeQueryPlan(collection *Collection, query *QueryPlan) map[string]interface{} {
+func executeQueryPlan(collection *Collection, query *Query) map[string]interface{} {
 	// Retrieve the index to use
 
 	executionPlanData := make(map[string]interface{})
@@ -191,7 +191,7 @@ func executeQueryPlan(collection *Collection, query *QueryPlan) map[string]inter
 	return executionPlanData
 }
 
-func estimateEnhancedIndexCost(query *QueryPlan, index *Index) map[string]interface{} {
+func estimateEnhancedIndexCost(query *Query, index *Index) map[string]interface{} {
 	cost := make(map[string]interface{})
 	keysExamined := 0
 	treeMap := index.indexer
@@ -226,7 +226,7 @@ func canUseIndex(filter QueryFilter, index *Index) bool {
 	return false
 }
 
-func fullScan(collection *Collection, query *QueryPlan) []*Document {
+func fullScan(collection *Collection, query *Query) []*Document {
 	filtered := make([]*Document, 0)
 
 	// Iterate over all documents
@@ -251,7 +251,7 @@ func fullScan(collection *Collection, query *QueryPlan) []*Document {
 	return applySortingAndPagination(filtered, query)
 }
 
-func applySortingAndPagination(results []*Document, query *QueryPlan) []*Document {
+func applySortingAndPagination(results []*Document, query *Query) []*Document {
 	// Apply sorting if specified
 	if query.Sort != nil {
 		sort.Slice(results, func(i, j int) bool {
@@ -285,7 +285,7 @@ func applySortingAndPagination(results []*Document, query *QueryPlan) []*Documen
 	return results[start:end]
 }
 
-func fetchAndFilterDocuments(collection *Collection, query *QueryPlan, index *Index) []*Document {
+func fetchAndFilterDocuments(collection *Collection, query *Query, index *Index) []*Document {
 	// Get the treemap from the index
 	treeMap := index.indexer
 	totalKeys := len(treeMap.Keys())
