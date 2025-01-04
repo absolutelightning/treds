@@ -20,7 +20,7 @@ func validateDocument(collection *Collection, document *Document) error {
 		// Check if the field exists in the schema
 		schemaType, found := collection.Schema[field]
 		if !found {
-			return fmt.Errorf("field %s not found in schema", field)
+			continue
 		}
 
 		// Normalize schema type to lower case for case-insensitive comparison
