@@ -139,6 +139,39 @@ func estimateKeysExamined(filter QueryFilter, treeMap *treemap.Map) int {
 		return 0 // Avoid division by zero
 	}
 
+	// If there are nested subfilters, handle them based on the logical operator
+	if len(filter.SubFilters) > 0 {
+		switch filter.Logical {
+		case "$and":
+			// Start with the total keys and refine based on intersection
+			keysExamined := totalKeys
+			for _, subFilter := range filter.SubFilters {
+				subKeysExamined := estimateKeysExamined(subFilter, treeMap)
+				keysExamined = min(keysExamined, subKeysExamined)
+			}
+			return keysExamined
+		case "$or":
+			// Sum keys examined for all subfilters (union)
+			keysExamined := 0
+			for _, subFilter := range filter.SubFilters {
+				keysExamined += estimateKeysExamined(subFilter, treeMap)
+			}
+			return keysExamined
+		case "$not":
+			// Subtract keys matching the subfilters
+			keysExamined := totalKeys
+			for _, subFilter := range filter.SubFilters {
+				subKeysExamined := estimateKeysExamined(subFilter, treeMap)
+				keysExamined -= subKeysExamined
+			}
+			if keysExamined < 0 {
+				keysExamined = 0
+			}
+			return keysExamined
+		}
+	}
+
+	// Handle basic operators ($gte, $gt, $lte, $lt)
 	var lower, upper IndexValues
 	minKey, _ := treeMap.Min()
 	lower = minKey.(IndexValues)
@@ -166,6 +199,7 @@ func estimateKeysExamined(filter QueryFilter, treeMap *treemap.Map) int {
 		}
 	}
 
+	// Find the range of keys
 	startIndex := lowerBoundIndex(treeMap, lower)
 	endIndex := upperBoundIndex(treeMap, upper)
 
