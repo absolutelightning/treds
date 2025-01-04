@@ -2153,7 +2153,7 @@ func (rs *TredsStore) DQuery(query []string) ([]string, error) {
 
 	filteredResults := fetchAndFilterDocuments(collection, queryPlan, bestIndex)
 
-	finalResults = applySortingAndPagination(filteredResults, queryPlan)
+	finalResults := applySortingAndPagination(filteredResults, queryPlan)
 
 	jsonDocuments := make([]string, 0, len(finalResults))
 	for _, document := range finalResults {
