@@ -164,17 +164,40 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `PSUBSCRIBE channel [channel ...]` - Subscription receives all messages published to channels whose names are prefixes of the given channels.
 * `PPUBLISH channel message` - This command publishes the message to all channels that have names with the given channel as their prefix.
 * `PUBSUBCHANNELS prefix` - Returns all active channels having one or more subscribers, a common prefix with the given prefix. Prefix is optional.
-
-### Note on PUB/SUB 
+ 
+### Note on PUB/SUB
 #### Use case of PUB/SUB designed with Prefix
 
 While `PUBLISH` and `SUBSCRIBE` are similar to Redis, `PSUBSCRIBE` and `PPUBLISH` are designed to work with channels having a common prefix.
 
-If a client subscribes to a channel named `NEWS-IND-KA-BLR` using `PSUBSCRIBE`, then the client will receive messages published 
+If a client subscribes to a channel named `NEWS-IND-KA-BLR` using `PSUBSCRIBE`, then the client will receive messages published
 to channels `NEWS-IND-KA-BLR`, `NEWS-IND-KA`, `NEWS-IND`, `NEWS` using `PPUBLISH`.
 
-In simple words - `PPUBLISH` publishes a message to all channels that have names with the given channel as their prefix and 
+In simple words - `PPUBLISH` publishes a message to all channels that have names with the given channel as their prefix and
 `PSUBSCRIBE` receives all messages published to channels whose names are prefixes of the given channels.
+
+* `DCREATECOLLECTION collectionname schemajson indexjson` - Create a collection with schema and index
+```text
+DCREATECOLLECTION users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"float\", \"min\": 18}, \"salary\": {\"type\": \"float\"}}" "[{\"fields\": [\"age\"], \"type\": \"normal\"}, {\"fields\": [\"salary\"], \"type\": \"normal\"}]"
+DCREATECOLLECTION users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"float\", \"min\": 18}, \"salary\": {\"type\": \"float\"}}" "[{\"fields\": [\"age\", \"salary\"], \"type\": \"normal\"}]"
+```
+* `DROPCOLLECTION collectionname` - Drop a collection
+* `DINSERT collectionname json` - Insert a document in a collection
+```text
+dinsert users "{\"name\": \"Spiderman\", \"age\": 13, \"salary\": 500}"
+dinsert users "{\"name\": \"Heman\", \"age\": 14, \"salary\": 600}"
+dinsert users "{\"name\": \"Superman\", \"age\": 15, \"salary\": 300}"
+dinsert users "{\"name\": \"Batman\", \"age\": 18, \"salary\": 900}"
+dinsert users "{\"name\": \"Antman\", \"age\": 25, \"salary\": 800}"
+```
+* `DQUERY collectionname json` - Query a collection
+```text
+dquery users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
+```
+* `DEXPLAIN collectionname json` - Explain a query - Returns the query plan - index with which query is executed
+```text
+dexplain users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
+```
 
 ## Run Local 
 

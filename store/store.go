@@ -63,6 +63,7 @@ type Store interface {
 	Snapshot() ([]byte, error)
 	Restore([]byte) error
 	DCreateCollection([]string) error
+	DDropCollection([]string) error
 	DInsert([]string) (string, error)
 	DQuery([]string) ([]string, error)
 	DExplain([]string) (string, error)

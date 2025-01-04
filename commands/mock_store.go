@@ -373,6 +373,10 @@ func (rs *MockStore) DCreateCollection(args []string) error {
 	return nil
 }
 
+func (rs *MockStore) DDropCollection(args []string) error {
+	return nil
+}
+
 func (rs *MockStore) DInsert(args []string) (string, error) {
 	return "", nil
 }
