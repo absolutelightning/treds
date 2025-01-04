@@ -1997,11 +1997,16 @@ func (rs *TredsStore) DInsert(args []string) (string, error) {
 	}
 
 	jsonStr := args[1]
-	document.StringData = jsonStr
 	err := json.Unmarshal([]byte(jsonStr), &document.Fields)
 	if err != nil {
 		return "", err
 	}
+	document.Fields["_id"] = document.Id
+	strData, err := json.Marshal(document.Fields)
+	if err != nil {
+		return "", err
+	}
+	document.StringData = string(strData)
 	// Validate the document against the schema
 	err = validateDocument(collection, document)
 	if err != nil {
