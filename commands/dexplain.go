@@ -14,7 +14,6 @@ func RegisterDExplainCommand(r CommandRegistry) {
 		Name:     DExplain,
 		Validate: validateDExplainCommand(),
 		Execute:  executeDExplainCommand(),
-		IsWrite:  true,
 	})
 }
 

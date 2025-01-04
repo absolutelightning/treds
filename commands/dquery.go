@@ -14,7 +14,6 @@ func RegisterDQueryCommand(r CommandRegistry) {
 		Name:     DQuery,
 		Validate: validateDQueryCommand(),
 		Execute:  executeDQueryCommand(),
-		IsWrite:  true,
 	})
 }
 
