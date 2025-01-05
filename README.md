@@ -97,6 +97,8 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 
 ## Commands 
 * `PING` - Replies with a `PONG`
+
+#### Key/Value Store 
 * `SET key value` - Sets a key value pair
 * `GET key` - Get a value for a key
 * `DEL key` - Delete a key
@@ -108,11 +110,12 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `SCANKEYS cursor prefix count` - Returns the count number of keys matching prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor
 * `SCANKVS cursor prefix count` - Returns the count number of keys/value pair in which keys match prefix starting from an index in lex order only present in Key/Value Store. Last element is the next cursor
 * `KEYS cursor regex count` - Returns count number of keys matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
-* `KEYSL cursor regex count` - Returns count number of keys in List Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
-* `KEYSH cursor regex count` - Returns count number of keys in Hash Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
-* `KEYSS cursor regex count` - Returns count number of keys in Set Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
-* `KEYSZ cursor regex count` - Returns count number of keys in Sorted Maps Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
 * `KVS cursor regex count` - Returns count number of keys/values in which keys match a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
+* `EXPIRE key seconds` - Expire key after given seconds
+* `TTL key` - Returns the time in seconds remaining before key expires. -1 if key has no expiry, -2 if key is not present.
+
+#### Sorted Maps Store
+* `KEYSZ cursor regex count` - Returns count number of keys in Sorted Maps Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
 * `ZADD key score member_key member_value [score member_key member_value ....]` - Add member_key with member value with score to a sorted map in key
 * `ZREM key member [member ...]` - Removes a member from sorted map in key
 * `ZCARD key` - Returns the count of key/value pairs in sorted map in key
@@ -125,6 +128,9 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `ZREVRANGELEXKVS key offset count withscore min max` - Returns the count number of key/value pair in which keys are >= min and <= max starting from an index in a sorted map in reverse lex order. WithScore can be true or false
 * `ZREVRANGESCOREKEYS key min max offset count withscore` - Returns the count number of keys with the score between min/max in reverser sorted order of score. WithScore can be true or false
 * `ZREVRANGESCOREKVS key min max offset count withscore` - Returns the count number of key/value pair with the score between min/max in reverse sorted order of score. WithScore can be true or false
+
+#### List Store
+* `KEYSL cursor regex count` - Returns count number of keys in List Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
 * `LPUSH key element [element ...]` - Adds elements to the left of list with key
 * `RPUSH key element [element ...]` - Adds elements to the right of list with key
 * `LPOP key count` - Removes count elements from left of list with key and returns the popped elements
@@ -134,6 +140,9 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `LRANGE key start stop` - Returns the elements from start index to stop index in the list with key
 * `LLEN key` - Returns the length of list with key
 * `LINDEX key index` - Returns the element at index of list with key
+
+#### Set Store
+* `KEYSS cursor regex count` - Returns count number of keys in Set Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
 * `SADD key member [member ...]` - Adds the members to a set with key
 * `SREM key member [member ...]` - Removes the members from a set with key
 * `SMEMBERS key` - Returns all members of a set with key
@@ -142,6 +151,9 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `SUNION key [key ...]` - Returns the union of sets with the give keys
 * `SINTER key [key ...]` - Returns the intersection of sets with the given keys
 * `SDIFF key [key ...]` - Returns the difference between the first set and all the successive sets.
+
+#### Hash Store
+* `KEYSH cursor regex count` - Returns count number of keys in Hash Store matching a regex in lex order starting with cursor. Count is optional. Last element is the next cursor
 * `HSET key field value [field value ...]` - Sets field value pairs in the hash with key 
 * `HGET key field` - Returns the value present at field inside the hash at key
 * `HGETALL key` - Returns all field value pairs inside the hash at the key
@@ -150,29 +162,34 @@ This graph shows the performance comparison between Treds - ScanKeys and Etcd ge
 * `HEXISTS key field` - Returns a true or false based on field is present in hash at key or not
 * `HKEYS key` - Returns all field present in the hash at key
 * `HVALS key` - Returns all values present in the hash at key
-* `FLUSHALL` - Deletes all keys
-* `EXPIRE key seconds` - Expire key after given seconds
-* `TTL key` - Returns the time in seconds remaining before key expires. -1 if key has no expiry, -2 if key is not present.
+
+#### Persistence
 * `SNAPSHOT` - Persist the Key Value Store data on disk immediately.
 * `RESTORE folder_path` - Restore the persisted snapshot on disk immediately.
+
+#### Server
+* `FLUSHALL` - Deletes all keys
+
+#### Transaction
 * `MULTI` - Starts a transaction
 * `EXEC` - Execute all commands in the transaction and close the transaction
 * `DISCARD` - Discard all commands in the transaction and close the transaction
+
+#### PubSub
 * `PUBLISH channel message` - Publish a message to a channel
 * `SUBSCRIBE channel [channel ...]` - Subscribe to channels
 * `UNSUBSCRIBE channel [channel ...]` - Unsubscribe to channels
 * `PSUBSCRIBE channel [channel ...]` - Subscription receives all messages published to channels whose names are prefixes of the given channels.
 * `PPUBLISH channel message` - This command publishes the message to all channels that have names with the given channel as their prefix.
 * `PUBSUBCHANNELS prefix` - Returns all active channels having one or more subscribers, a common prefix with the given prefix. Prefix is optional.
- 
-While `PUBLISH` and `SUBSCRIBE` are similar to Redis, `PSUBSCRIBE` and `PPUBLISH` are designed to work with channels having a common prefix.
 
+While `PUBLISH` and `SUBSCRIBE` are similar to Redis, `PSUBSCRIBE` and `PPUBLISH` are designed to work with channels having a common prefix.
 If a client subscribes to a channel named `NEWS-IND-KA-BLR` using `PSUBSCRIBE`, then the client will receive messages published
 to channels `NEWS-IND-KA-BLR`, `NEWS-IND-KA`, `NEWS-IND`, `NEWS` using `PPUBLISH`.
-
 In simple words - `PPUBLISH` publishes a message to all channels that have names with the given channel as their prefix and
 `PSUBSCRIBE` receives all messages published to channels whose names are prefixes of the given channels.
 
+#### Collection Store 
 * `DCREATE collectionname schemajson indexjson` - Create a collection with schema and index
 ```text
 DCREATE users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"float\", \"min\": 18}, \"salary\": {\"type\": \"float\"}}" "[{\"fields\": [\"age\"], \"type\": \"normal\"}, {\"fields\": [\"salary\"], \"type\": \"normal\"}]"
@@ -195,6 +212,22 @@ DQUERY users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14
 ```text
 DEXPLAIN users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
 ```
+
+#### Vector Store
+* `VCREATE vectorname maxNeighbor levelFactor efSearch` - Create a vector store with maxNeighbor, levelFactor and efSearch
+* `VDROP vectorname` - Drop a vector store
+* `VINSERT vectorname float [float...]` - Insert a vector in a vector store
+* `VSEARCH vectorname float [float...] k` - Search k nearest neighbors of a vector in a vector store
+* `VDELETE vectorname string` - Delete a vector from a vector store, input is the vector id returned in `VINSERT` or `VSEARCH`
+ 
+```text
+VCREATE vec
+VINSERT vec 1.0 2.0
+VINSERT vec 2.0 3.0
+VINSERT vec 3.0 4.0
+VSEARCH vec 1.5 2.5 2
+```
+
 
 ## Run Local 
 
