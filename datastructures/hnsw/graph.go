@@ -12,16 +12,18 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+type DistanceFunc func(a, b Vector) float64
+
 // HNSW represents the entire hierarchical graph.
 type HNSW struct {
 	Layers        []*GraphLayer
-	MaxNeighbors  int                       // Maximum number of neighbors (M)
-	MaxNeighbors0 int                       // Maximum neighbors at layer 0 (Mmax0)
-	LayerFactor   float64                   // Probability factor for creating higher layers
-	EfSearch      int                       // Number of candidates during search
-	DistFunc      func(a, b Vector) float64 // Distance function
-	lock          sync.Mutex                // Lock for thread-safe operations
-	EntryPoint    *Node                     // Entry point into the graph
+	MaxNeighbors  int          // Maximum number of neighbors (M)
+	MaxNeighbors0 int          // Maximum neighbors at layer 0 (Mmax0)
+	LayerFactor   float64      // Probability factor for creating higher layers
+	EfSearch      int          // Number of candidates during search
+	DistFunc      DistanceFunc // Distance function
+	lock          sync.Mutex   // Lock for thread-safe operations
+	EntryPoint    *Node        // Entry point into the graph
 }
 
 type SearchCandidate struct {
@@ -29,13 +31,13 @@ type SearchCandidate struct {
 	Distance float64
 }
 
-func NewHNSW(maxNeighbors int, layerFactor float64, efSearch int, distFunc func(a, b Vector) float64) *HNSW {
+func NewHNSW(maxNeighbors int, layerFactor float64, efSearch int, distanceFunc DistanceFunc) *HNSW {
 	return &HNSW{
 		Layers:       make([]*GraphLayer, 0),
 		MaxNeighbors: maxNeighbors,
 		LayerFactor:  layerFactor,
 		EfSearch:     efSearch,
-		DistFunc:     distFunc,
+		DistFunc:     distanceFunc,
 	}
 }
 
@@ -59,7 +61,6 @@ func (h *HNSW) Insert(vector Vector) {
 	defer h.lock.Unlock()
 
 	level := h.randomLevel()
-
 	node := &Node{
 		ID:        h.generateID(),
 		Value:     vector,
@@ -67,9 +68,16 @@ func (h *HNSW) Insert(vector Vector) {
 		Layer:     level,
 	}
 
-	// Step 2: Add new layers if needed
+	// Add new layers if needed
 	for len(h.Layers) <= node.Layer {
 		h.Layers = append(h.Layers, &GraphLayer{Nodes: make(map[string]*Node)})
+	}
+
+	// Set as EntryPoint if it's the first node
+	if h.EntryPoint == nil {
+		h.EntryPoint = node
+		h.Layers[node.Layer].Nodes[node.ID] = node
+		return
 	}
 
 	h.insertNode(node)
@@ -309,8 +317,10 @@ func (h *HNSW) searchLayer(entryPoint *Node, target Vector, ef int, layer int) [
 		// Get the current node
 		currentNodeLayer := h.Layers[layer]
 		graphLayerNodes := currentNodeLayer.Nodes
-		currentNode := graphLayerNodes[current.NodeID]
-
+		currentNode, exists := graphLayerNodes[current.NodeID]
+		if !exists || currentNode == nil {
+			continue
+		}
 		// Iterate over neighbors
 		for neighborID := range currentNode.Neighbors {
 			if visited[neighborID] {
