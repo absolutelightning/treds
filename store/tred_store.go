@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
 	"golang.org/x/sync/errgroup"
+	"treds/datastructures/hnsw"
 	radix_tree "treds/datastructures/radix"
 	kvstore "treds/store/proto"
 )
@@ -38,6 +39,7 @@ const (
 	SetStore
 	HashStore
 	DocumentStore
+	VectorStore
 )
 
 // TypeMapping maps schema type strings to their Go reflect.Type equivalents
@@ -96,6 +98,9 @@ type TredsStore struct {
 	// Document Store
 	collections map[string]*Collection
 
+	// Vector Store
+	vectors map[string]*hnsw.HNSW
+
 	// Expiry
 	expiry map[string]time.Time
 }
@@ -111,6 +116,7 @@ func NewTredsStore() *TredsStore {
 		hashes:          make(map[string]*hashmap.Map),
 		expiry:          make(map[string]time.Time),
 		collections:     make(map[string]*Collection),
+		vectors:         make(map[string]*hnsw.HNSW),
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 	"treds/store"
 )
 
-const DCreateCollection = "DCREATECOLLECTION"
+const DCreateCollection = "DCREATE"
 
 func RegisterDCreateCollection(r CommandRegistry) {
 	r.Add(&CommandRegistration{

@@ -173,12 +173,12 @@ to channels `NEWS-IND-KA-BLR`, `NEWS-IND-KA`, `NEWS-IND`, `NEWS` using `PPUBLISH
 In simple words - `PPUBLISH` publishes a message to all channels that have names with the given channel as their prefix and
 `PSUBSCRIBE` receives all messages published to channels whose names are prefixes of the given channels.
 
-* `DCREATECOLLECTION collectionname schemajson indexjson` - Create a collection with schema and index
+* `DCREATE collectionname schemajson indexjson` - Create a collection with schema and index
 ```text
-DCREATECOLLECTION users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"float\", \"min\": 18}, \"salary\": {\"type\": \"float\"}}" "[{\"fields\": [\"age\"], \"type\": \"normal\"}, {\"fields\": [\"salary\"], \"type\": \"normal\"}]"
-DCREATECOLLECTION users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"float\", \"min\": 18}, \"salary\": {\"type\": \"float\"}}" "[{\"fields\": [\"age\", \"salary\"], \"type\": \"normal\"}]"
+DCREATE users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"float\", \"min\": 18}, \"salary\": {\"type\": \"float\"}}" "[{\"fields\": [\"age\"], \"type\": \"normal\"}, {\"fields\": [\"salary\"], \"type\": \"normal\"}]"
+DCREATE users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"float\", \"min\": 18}, \"salary\": {\"type\": \"float\"}}" "[{\"fields\": [\"age\", \"salary\"], \"type\": \"normal\"}]"
 ```
-* `DROPCOLLECTION collectionname` - Drop a collection
+* `DDROP collectionname` - Drop a collection
 * `DINSERT collectionname json` - Insert a document in a collection
 ```text
 DINSERT users "{\"name\": \"Spiderman\", \"age\": 13, \"salary\": 500}"
