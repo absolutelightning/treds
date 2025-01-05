@@ -7,7 +7,7 @@ import (
 	"treds/store"
 )
 
-const DDropCollection = "DDROPCOLLECTION"
+const DDropCollection = "DDROP"
 
 func RegisterDDropCollection(r CommandRegistry) {
 	r.Add(&CommandRegistration{
