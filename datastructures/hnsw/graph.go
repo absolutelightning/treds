@@ -9,6 +9,7 @@ import (
 	"github.com/absolutelightning/gods/queues/priorityqueue"
 	"github.com/absolutelightning/gods/utils"
 	"github.com/google/uuid"
+	"golang.org/x/exp/maps"
 )
 
 // HNSW represents the entire hierarchical graph.
@@ -95,6 +96,94 @@ func (h *HNSW) Search(target Vector, k int) []string {
 
 	// Select top-k neighbors
 	return h.selectNeighborsHeuristic(&Node{Value: target}, candidates, k)
+}
+
+func (h *HNSW) Delete(nodeID string) bool {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	if len(h.Layers) == 0 {
+		return false
+	}
+
+	var deleted bool
+	for layer := len(h.Layers) - 1; layer >= 0; layer-- {
+		layerNodes := h.Layers[layer].Nodes
+		node, exists := layerNodes[nodeID]
+		if !exists {
+			continue
+		}
+
+		// Remove the node from the layer
+		delete(layerNodes, nodeID)
+
+		// Disconnect the node from its neighbors and restore neighborhood connectivity
+		h.isolateNode(node, layer)
+		deleted = true
+	}
+
+	// Update the entry point if the deleted node was the entry point
+	if h.EntryPoint != nil && h.EntryPoint.ID == nodeID {
+		h.updateEntryPoint()
+	}
+
+	return deleted
+}
+
+// isolateNode removes the node's connections and replenishes its neighbors.
+func (h *HNSW) isolateNode(node *Node, layer int) {
+	for neighborID := range node.Neighbors {
+		neighbor := h.Layers[layer].Nodes[neighborID]
+
+		// Remove bidirectional connection
+		delete(neighbor.Neighbors, node.ID)
+		h.replenishNode(neighbor, layer)
+	}
+}
+
+// replenishNode restores connectivity for a node by adding new neighbors up to the maxConnections limit.
+func (h *HNSW) replenishNode(node *Node, layer int) {
+	if len(node.Neighbors) >= h.maxConnections(layer) {
+		return
+	}
+
+	// Collect potential candidates from neighbors' neighbors
+	candidates := make(map[string]*Node)
+	for neighborID := range node.Neighbors {
+		neighbor := h.Layers[layer].Nodes[neighborID]
+		for candidateID := range neighbor.Neighbors {
+			// Skip if the candidate is already a neighbor or if the candidate is the node itself
+			if _, exists := node.Neighbors[candidateID]; exists {
+				continue
+			}
+			if candidateID == node.ID {
+				continue
+			}
+
+			// Add the candidate
+			candidates[candidateID] = h.Layers[layer].Nodes[candidateID]
+		}
+	}
+
+	// Select the best candidates
+	selected := h.selectNeighborsHeuristic(node, maps.Keys(candidates), h.maxConnections(layer))
+
+	// Add the selected neighbors
+	for _, neighborID := range selected {
+		neighbor := h.Layers[layer].Nodes[neighborID]
+		h.addBidirectionalConnection(node, neighbor, h.DistFunc(node.Value, neighbor.Value))
+	}
+}
+
+// updateEntryPoint updates the entry point for the HNSW graph.
+func (h *HNSW) updateEntryPoint() {
+	for layer := len(h.Layers) - 1; layer >= 0; layer-- {
+		for _, node := range h.Layers[layer].Nodes {
+			h.EntryPoint = node
+			return
+		}
+	}
+	h.EntryPoint = nil // No nodes left in the graph
 }
 
 func (h *HNSW) insertNode(node *Node) {
