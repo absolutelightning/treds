@@ -69,9 +69,10 @@ type Document struct {
 }
 
 type Collection struct {
-	Documents map[string]*Document
-	Indices   map[string]*Index
-	Schema    map[string]interface{}
+	Documents       map[string]*Document
+	Indices         map[string]*Index
+	Schema          map[string]interface{}
+	DocumentIdIndex map[string]map[string]struct{}
 }
 
 type TredsStore struct {
@@ -1929,9 +1930,10 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 		return fmt.Errorf("collection already exists")
 	}
 	collection := &Collection{
-		Documents: make(map[string]*Document),
-		Indices:   make(map[string]*Index),
-		Schema:    make(map[string]interface{}),
+		Documents:       make(map[string]*Document),
+		Indices:         make(map[string]*Index),
+		Schema:          make(map[string]interface{}),
+		DocumentIdIndex: make(map[string]map[string]struct{}),
 	}
 	if len(args) > 1 && args[1] != "" {
 		jsonStr := args[1]
@@ -2014,6 +2016,7 @@ func (rs *TredsStore) DInsert(args []string) (string, error) {
 	}
 	// Insert the document into the collection
 	collection.Documents[document.Id] = document
+	collection.DocumentIdIndex[document.Id] = make(map[string]struct{})
 	// Insert the document into the indices
 	for idx, index := range collection.Indices {
 		treeMapKey := IndexValues{
@@ -2030,6 +2033,7 @@ func (rs *TredsStore) DInsert(args []string) (string, error) {
 		storedRadixTree := radixTree.(*radix_tree.Tree)
 		storedRadixTree, _, _ = storedRadixTree.Insert([]byte(document.Id), treeMapKey)
 		index.indexer.Put(treeMapKey, storedRadixTree)
+		collection.DocumentIdIndex[document.Id][idx] = struct{}{}
 
 		// Linking the TreeMaps
 		_, radixTreeLower := index.indexer.Lower(treeMapKey)
