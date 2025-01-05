@@ -221,11 +221,11 @@ DEXPLAIN users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":
 * `VDELETE vectorname string` - Delete a vector from a vector store, input is the vector id returned in `VINSERT` or `VSEARCH`
  
 ```text
-VCREATE vec
+VCREATE vec 6 0.5 100
 VINSERT vec 1.0 2.0
 VINSERT vec 2.0 3.0
 VINSERT vec 3.0 4.0
-VSEARCH vec 1.5 2.5 2
+VSEARCH vec 1.5 2.5 2 // Returns 2 nearest neighbors
 ```
 
 
