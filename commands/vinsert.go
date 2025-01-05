@@ -29,10 +29,10 @@ func validateVInsert() ValidationHook {
 
 func executeVInsert() ExecutionHook {
 	return func(args []string, store store.Store) string {
-		err := store.VInsert(args)
+		id, err := store.VInsert(args)
 		if err != nil {
 			return resp.EncodeError(err.Error())
 		}
-		return resp.EncodeSimpleString("OK")
+		return resp.EncodeSimpleString(id)
 	}
 }
