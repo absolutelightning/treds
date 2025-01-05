@@ -3,6 +3,7 @@ package hnsw
 import (
 	"math"
 	"math/rand"
+	"sort"
 	"sync"
 
 	"github.com/absolutelightning/gods/queues/priorityqueue"
@@ -20,6 +21,11 @@ type HNSW struct {
 	DistFunc      func(a, b Vector) float64 // Distance function
 	lock          sync.Mutex                // Lock for thread-safe operations
 	EntryPoint    *Node                     // Entry point into the graph
+}
+
+type SearchCandidate struct {
+	NodeID   string
+	Distance float64
 }
 
 func NewHNSW(maxNeighbors int, layerFactor float64, efSearch int, distFunc func(a, b Vector) float64) *HNSW {
@@ -68,6 +74,29 @@ func (h *HNSW) Insert(vector Vector) {
 	h.insertNode(node)
 }
 
+func (h *HNSW) Search(target Vector, k int) []string {
+	// Start from the entry point
+	entryPoint := h.EntryPoint
+	if entryPoint == nil {
+		return nil
+	}
+
+	// Descend through the layers
+	for layer := len(h.Layers) - 1; layer > 0; layer-- {
+		// Refine the entry point at each layer
+		candidates := h.searchLayer(entryPoint, target, 1, layer)
+		if len(candidates) > 0 {
+			entryPoint = h.Layers[layer].Nodes[candidates[0]]
+		}
+	}
+
+	// Perform final search at the base layer (layer 0)
+	candidates := h.searchLayer(entryPoint, target, h.EfSearch, 0)
+
+	// Select top-k neighbors
+	return h.selectNeighborsHeuristic(&Node{Value: target}, candidates, k)
+}
+
 func (h *HNSW) insertNode(node *Node) {
 	// Add the node to the appropriate layer
 	// Ensure the slice has enough capacity for the new node's layer
@@ -99,43 +128,53 @@ func (h *HNSW) insertNode(node *Node) {
 	}
 
 	// 2. Insert into lower layers
+	// Insert into lower layers
 	for lc := int(math.Min(float64(node.Layer), float64(len(h.Layers)-1))); lc >= 0; lc-- {
-
 		// Search for the nearest neighbors in the current layer
 		candidates := h.searchLayer(entryPoint, node.Value, h.EfSearch, lc)
 
-		// Select the best neighbors based on distance
-		neighbors := h.selectNeighbors(node, candidates, h.maxConnections(lc))
+		// Use the heuristic neighbor selection
+		neighbors := h.selectNeighborsHeuristic(node, candidates, h.maxConnections(lc))
 
 		// Add bidirectional connections
 		for _, neighborID := range neighbors {
-			neighbor := graphLayer.Nodes[neighborID]
+			neighbor := h.Layers[lc].Nodes[neighborID]
 			h.addBidirectionalConnection(node, neighbor, h.DistFunc(node.Value, neighbor.Value))
 		}
 
 		// Shrink connections for each neighbor if needed
 		for _, neighborID := range neighbors {
-			neighbor := graphLayer.Nodes[neighborID]
+			neighbor := h.Layers[lc].Nodes[neighborID]
+
 			if len(neighbor.Neighbors) > h.maxConnections(lc) {
-				neighbor.Neighbors = h.selectNeighbors(neighbor, neighbor.Neighbors, h.maxConnections(lc))
+				// Convert map keys (neighbor IDs) to a slice of string
+				keys := make([]string, 0, len(neighbor.Neighbors))
+				for id := range neighbor.Neighbors {
+					keys = append(keys, id)
+				}
+
+				// Select the best neighbors using the heuristic
+				selected := h.selectNeighborsHeuristic(neighbor, keys, h.maxConnections(lc))
+
+				// Rebuild the map for selected neighbors
+				newNeighbors := make(map[string]float64)
+				for _, id := range selected {
+					newNeighbors[id] = neighbor.Neighbors[id] // Retain distances for selected neighbors
+				}
+				neighbor.Neighbors = newNeighbors
 			}
 		}
 
 		// Update the entry point for the next layer
 		if len(candidates) > 0 {
-			entryPoint = graphLayer.Nodes[candidates[0]]
+			entryPoint = h.Layers[lc].Nodes[candidates[0]]
 		}
 	}
 
-	// 3. Update the entry point if the new node is at a higher level
-	if node.Layer > h.Layers.Size()-1 {
+	// Update the entry point if the new node is at a higher level
+	if node.Layer > len(h.Layers)-1 {
 		h.EntryPoint = node
 	}
-}
-
-type SearchCandidate struct {
-	NodeID   string
-	Distance float64
 }
 
 func (h *HNSW) searchLayer(entryPoint *Node, target Vector, ef int, layer int) []string {
@@ -179,11 +218,8 @@ func (h *HNSW) searchLayer(entryPoint *Node, target Vector, ef int, layer int) [
 		}
 
 		// Get the current node
-		currentNodeLayer, found := h.Layers.Get(layer)
-		if !found {
-			continue
-		}
-		graphLayerNodes := currentNodeLayer.(*GraphLayer).Nodes
+		currentNodeLayer := h.Layers[layer]
+		graphLayerNodes := currentNodeLayer.Nodes
 		currentNode := graphLayerNodes[current.NodeID]
 
 		// Iterate over neighbors
@@ -194,11 +230,8 @@ func (h *HNSW) searchLayer(entryPoint *Node, target Vector, ef int, layer int) [
 			visited[neighborID] = true
 
 			// Calculate the distance
-			neighborNodeLayer, foundNeighbourLayer := h.Layers.Get(layer)
-			if !foundNeighbourLayer {
-				continue
-			}
-			neighborNode := neighborNodeLayer.(*GraphLayer).Nodes[neighborID]
+			neighborNodeLayer := h.Layers[layer]
+			neighborNode := neighborNodeLayer.Nodes[neighborID]
 			dist := h.DistFunc(target, neighborNode.Value)
 
 			// Get the current farthest element in results (if available)
@@ -238,4 +271,74 @@ func (h *HNSW) searchLayer(entryPoint *Node, target Vector, ef int, layer int) [
 	}
 
 	return finalResults
+}
+
+func (h *HNSW) selectNeighborsHeuristic(q *Node, candidates []string, M int) []string {
+
+	// Calculate distances for all candidates
+	candidateDistances := make([]SearchCandidate, 0, len(candidates))
+	for _, candidateID := range candidates {
+		candidateNode := h.Layers[q.Layer].Nodes[candidateID]
+		dist := h.DistFunc(q.Value, candidateNode.Value)
+		candidateDistances = append(candidateDistances, SearchCandidate{
+			NodeID:   candidateID,
+			Distance: dist,
+		})
+	}
+
+	// Sort candidates by distance to `q`
+	sort.Slice(candidateDistances, func(i, j int) bool {
+		return candidateDistances[i].Distance < candidateDistances[j].Distance
+	})
+
+	// Use a heuristic to select neighbors
+	selected := make([]string, 0, M)
+	for _, candidate := range candidateDistances {
+		if len(selected) >= M {
+			break
+		}
+
+		// Check if the candidate maintains diversity
+		isDiverse := true
+		for _, selectedID := range selected {
+			selectedNode := h.Layers[q.Layer].Nodes[selectedID]
+			distToSelected := h.DistFunc(
+				h.Layers[q.Layer].Nodes[candidate.NodeID].Value,
+				selectedNode.Value,
+			)
+
+			// Heuristic: ensure diversity by checking mutual distances
+			if distToSelected < candidate.Distance {
+				isDiverse = false
+				break
+			}
+		}
+
+		if isDiverse {
+			selected = append(selected, candidate.NodeID)
+		}
+	}
+
+	return selected
+}
+
+func (h *HNSW) maxConnections(layer int) int {
+	if layer == 0 {
+		return h.MaxNeighbors0 // Maximum connections for base layer
+	}
+	return h.MaxNeighbors // Maximum connections for higher layers
+}
+
+func (h *HNSW) addBidirectionalConnection(node1, node2 *Node, distance float64) {
+	// Add node2 as a neighbor of node1
+	if node1.Neighbors == nil {
+		node1.Neighbors = make(map[string]float64)
+	}
+	node1.Neighbors[node2.ID] = distance
+
+	// Add node1 as a neighbor of node2
+	if node2.Neighbors == nil {
+		node2.Neighbors = make(map[string]float64)
+	}
+	node2.Neighbors[node1.ID] = distance
 }
