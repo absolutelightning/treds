@@ -2,6 +2,7 @@ package hnsw
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"sort"
 	"sync"
@@ -25,6 +26,7 @@ type HNSW struct {
 	DistFunc      DistanceFunc // distance function
 	lock          sync.Mutex   // lock for thread-safe operations
 	EntryPoint    *Node        // top entry point into the graph
+	Rand          *rand.Rand   // random number generator
 }
 
 type SearchCandidate struct {
@@ -40,6 +42,7 @@ func NewHNSW(maxNeighbors int, layerFactor float64, efSearch int, distanceFunc D
 		LayerFactor:   layerFactor,
 		EfSearch:      efSearch,
 		DistFunc:      distanceFunc,
+		Rand:          defaultRand(),
 	}
 }
 
@@ -53,16 +56,42 @@ func defaultRand() *rand.Rand {
 	return rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
-// randomLevel simply returns len(h.Layers).
-// That means every new node is assigned to the "next new layer."
-// We'll fix code so the node also goes into layers 0..level.
-func (h *HNSW) randomLevel() int {
-	level := 0
-	// Cap at 32 to avoid unbounded levels (adjust as you wish)
-	for defaultRand().Float64() < h.LayerFactor && level < 32 {
-		level++
+// maxLevel returns an upper-bound on the number of levels in the graph
+// based on the size of the base layer.
+func maxLevel(ml float64, numNodes int) int {
+	if ml == 0 {
+		panic("ml must be greater than 0")
 	}
-	return level
+
+	if numNodes == 0 {
+		return 1
+	}
+
+	l := math.Log(float64(numNodes))
+	l /= math.Log(1 / ml)
+
+	m := int(math.Round(l)) + 1
+
+	return m
+}
+
+// randomLevel generates a random level for a new node.
+func (h *HNSW) randomLevel() int {
+	mx := 1
+	if len(h.Layers) > 0 {
+		mx = maxLevel(h.LayerFactor, len(h.Layers[0].Nodes))
+	}
+
+	for level := 0; level < mx; level++ {
+		if h.Rand == nil {
+			h.Rand = defaultRand()
+		}
+		if h.Rand.Float64() > h.LayerFactor {
+			return level
+		}
+	}
+
+	return mx
 }
 
 // Insert adds a new element `vector` into the HNSW graph.
@@ -150,7 +179,7 @@ func (h *HNSW) insertNode(node *Node) {
 }
 
 // Search returns up to k nearest neighbors for 'target'.
-func (h *HNSW) Search(target Vector, k int) []string {
+func (h *HNSW) Search(target Vector, k int) []*Node {
 	entryPoint := h.EntryPoint
 	if entryPoint == nil {
 		return nil
@@ -169,10 +198,20 @@ func (h *HNSW) Search(target Vector, k int) []string {
 
 	// If we have fewer than k results, return them all
 	if len(candidates) <= k {
-		return candidates
+		// Otherwise, pick the top k by distance
+		nodes := make([]*Node, 0, len(candidates))
+		for _, id := range candidates {
+			nodes = append(nodes, h.Layers[0].Nodes[id])
+		}
+		return nodes
 	}
 	// Otherwise, pick the top k by distance
-	return h.selectNeighborsHeuristic(&Node{Value: target, Layer: 0}, candidates, k)
+	selectedIds := h.selectNeighborsNormal(&Node{Value: target, Layer: 0}, candidates, k)
+	nodes := make([]*Node, 0, len(selectedIds))
+	for _, id := range selectedIds {
+		nodes = append(nodes, h.Layers[0].Nodes[id])
+	}
+	return nodes
 }
 
 // searchLayer is a best-first or greedy BFS in a single layer.
@@ -304,6 +343,15 @@ func (h *HNSW) DebugPrintGraph() {
 				id, node.Layer, neighbors)
 		}
 	}
+}
+
+// Topography returns the number of nodes in each layer of the graph.
+func (h *HNSW) Topography() []int {
+	var topography []int
+	for _, layer := range h.Layers {
+		topography = append(topography, len(layer.Nodes))
+	}
+	return topography
 }
 
 // isolateNode, replenishNode, delete, etc. can remain if you need them for other operations:

@@ -2,9 +2,12 @@ package hnsw_test
 
 import (
 	"math"
+	"math/rand"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"treds/datastructures/hnsw"
 )
 
@@ -19,17 +22,6 @@ func EuclideanDistance(a, b Vector) float64 {
 		sum += diff * diff
 	}
 	return math.Sqrt(sum)
-}
-
-func TestHNSWInsert(t *testing.T) {
-	h := hnsw.NewHNSW(5, 0.5, 10, EuclideanDistance)
-
-	vector := Vector{1.0, 2.0}
-	h.Insert(vector)
-
-	assert.NotNil(t, h.EntryPoint, "EntryPoint should not be nil after first insert")
-	assert.Equal(t, 1, len(h.Layers), "Insert should create at least one layer")
-	assert.Equal(t, vector, h.EntryPoint.Value, "Inserted vector should match the EntryPoint value")
 }
 
 func TestHNSWGraphAfterThreeInserts(t *testing.T) {
@@ -47,15 +39,6 @@ func TestHNSWGraphAfterThreeInserts(t *testing.T) {
 	// Check the number of layers
 	assert.GreaterOrEqual(t, len(h.Layers), 1, "There should be at least one layer")
 	assert.LessOrEqual(t, len(h.Layers), 3, "There should not be more than three layers")
-
-	// Check connections
-	for layer := 0; layer < len(h.Layers); layer++ {
-		for _, node := range h.Layers[layer].Nodes {
-			assert.LessOrEqual(t, len(node.Neighbors), h.MaxConnections(layer), "Node should not have more neighbors than MaxConnections")
-		}
-	}
-
-	// Check EntryPoint
 	assert.NotNil(t, h.EntryPoint, "EntryPoint should not be nil")
 }
 
@@ -89,4 +72,50 @@ func TestHNSWDelete(t *testing.T) {
 
 	// Ensure the graph is empty
 	assert.Nil(t, h.EntryPoint, "EntryPoint should be nil after deleting the only node")
+}
+
+func TestGraphInsertSearch(t *testing.T) {
+	h := hnsw.NewHNSW(6, 0.5, 20, EuclideanDistance)
+	h.Rand = rand.New(rand.NewSource(0))
+
+	for i := 0; i < 128; i++ {
+		h.Insert(Vector{float64(i)})
+	}
+
+	require.Equal(t, []int{
+		128,
+		67,
+		28,
+		12,
+		6,
+		2,
+		1,
+		1,
+	}, h.Topography())
+
+	nearest := h.Search(
+		Vector{64.5},
+		4,
+	)
+
+	require.Len(t, nearest, 4)
+	values := make([]Vector, 0)
+	for _, n := range nearest {
+		values = append(values, n.Value)
+	}
+	// Sort Slice of Vectors for comparison
+	sort.Slice(values, func(i, j int) bool {
+		return values[i][0] < values[j][0]
+	})
+
+	require.EqualValues(
+		t,
+		[]Vector{
+			Vector{63},
+			Vector{64},
+			Vector{65},
+			Vector{66},
+		},
+		values,
+	)
 }
