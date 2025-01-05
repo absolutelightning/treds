@@ -95,7 +95,7 @@ func (h *HNSW) randomLevel() int {
 }
 
 // Insert adds a new element `vector` into the HNSW graph.
-func (h *HNSW) Insert(vector Vector) {
+func (h *HNSW) Insert(vector Vector) string {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -124,6 +124,7 @@ func (h *HNSW) Insert(vector Vector) {
 
 	// Now integrate the node into the structure (neighbor linking, entry point updates)
 	h.insertNode(node)
+	return node.ID
 }
 
 // insertNode does top-down refinement of the entry point and connects neighbors.

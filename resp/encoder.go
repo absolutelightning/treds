@@ -3,6 +3,7 @@ package resp
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 )
 
 // EncodeSimpleString encodes a RESP simple string
@@ -13,6 +14,27 @@ func EncodeSimpleString(s string) string {
 // EncodeBulkString encodes a RESP bulk string, handling null values
 func EncodeBulkString(s string) string {
 	return fmt.Sprintf("$%d\r\n%s\r\n", len(s), s)
+}
+
+// Encode2DStringArrayRESP takes a 2D slice of strings and encodes
+// it in the Redis Serialization Protocol (RESP) format.
+func Encode2DStringArrayRESP(arr [][]string) string {
+	// Outer array length
+	output := "*" + strconv.Itoa(len(arr)) + "\r\n"
+
+	// For each sub-slice
+	for _, sub := range arr {
+		// 1) Mark this sub-slice as a RESP Array
+		output += "*" + strconv.Itoa(len(sub)) + "\r\n"
+
+		// 2) For each string in sub-slice
+		for _, s := range sub {
+			// Bulk string: length, then content
+			output += "$" + strconv.Itoa(len(s)) + "\r\n" +
+				s + "\r\n"
+		}
+	}
+	return output
 }
 
 // EncodeError encodes a RESP error string

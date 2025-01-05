@@ -42,6 +42,26 @@ const (
 	VectorStore
 )
 
+type Query struct {
+	Filters []QueryFilter
+	Sort    []Sort
+	Limit   int
+	Offset  int
+}
+
+type QueryFilter struct {
+	Field      string        // Field name (e.g., "age", "salary")
+	Operator   string        // Comparison operator (e.g., "$gt", "$lt", "$eq")
+	Value      interface{}   // Value for the operator
+	SubFilters []QueryFilter // Nested filters for logical operators
+	Logical    string        // Logical operator: "$and", "$or", "$not"
+}
+
+type Sort struct {
+	Field string // Field to sort by
+	Order string // "asc" for ascending, "desc" for descending
+}
+
 // TypeMapping maps schema type strings to their Go reflect.Type equivalents
 var TypeMapping = map[string]reflect.Type{
 	"string": reflect.TypeOf(""),
@@ -120,64 +140,64 @@ func NewTredsStore() *TredsStore {
 	}
 }
 
-func (rs *TredsStore) CleanUpExpiredKeys() {
-	for key, _ := range rs.expiry {
-		if rs.hasExpired(key) {
-			_ = rs.Delete(key)
+func (ts *TredsStore) CleanUpExpiredKeys() {
+	for key, _ := range ts.expiry {
+		if ts.hasExpired(key) {
+			_ = ts.Delete(key)
 		}
 	}
 }
 
-func (rs *TredsStore) hasExpired(key string) bool {
+func (ts *TredsStore) hasExpired(key string) bool {
 	expired := false
 	now := time.Now()
-	if exp, ok := rs.expiry[key]; ok {
+	if exp, ok := ts.expiry[key]; ok {
 		expired = now.After(exp)
 	}
 	return expired
 }
 
-func (rs *TredsStore) getKeyDetails(key string) Type {
-	if rs.hasExpired(key) {
-		_ = rs.Delete(key)
+func (ts *TredsStore) getKeyDetails(key string) Type {
+	if ts.hasExpired(key) {
+		_ = ts.Delete(key)
 		return -1
 	}
-	return rs.getKeyStore(key)
+	return ts.getKeyStore(key)
 }
 
-func (rs *TredsStore) getKeyStore(key string) Type {
-	_, found := rs.tree.Get([]byte(key))
+func (ts *TredsStore) getKeyStore(key string) Type {
+	_, found := ts.tree.Get([]byte(key))
 	if found {
 		return KeyValueStore
 	}
-	if _, ok := rs.sortedMaps[key]; ok {
+	if _, ok := ts.sortedMaps[key]; ok {
 		return SortedMapStore
 	}
-	if _, ok := rs.lists[key]; ok {
+	if _, ok := ts.lists[key]; ok {
 		return ListStore
 	}
-	if _, ok := rs.sets[key]; ok {
+	if _, ok := ts.sets[key]; ok {
 		return SetStore
 	}
-	if _, ok := rs.hashes[key]; ok {
+	if _, ok := ts.hashes[key]; ok {
 		return HashStore
 	}
 	return -1
 }
 
-func (rs *TredsStore) Get(k string) (string, error) {
-	storeType := rs.getKeyDetails(k)
+func (ts *TredsStore) Get(k string) (string, error) {
+	storeType := ts.getKeyDetails(k)
 	if storeType != KeyValueStore {
 		return NilResp, nil
 	}
-	v, ok := rs.tree.Get([]byte(k))
+	v, ok := ts.tree.Get([]byte(k))
 	if !ok {
 		return NilResp, nil
 	}
 	return v.(string), nil
 }
 
-func (rs *TredsStore) MSet(kvs []string) error {
+func (ts *TredsStore) MSet(kvs []string) error {
 	args := strings.Join(kvs, " ")
 	keyValues, err := splitCommandWithQuotes(args)
 	if err != nil {
@@ -192,7 +212,7 @@ func (rs *TredsStore) MSet(kvs []string) error {
 			if !validKey {
 				return fmt.Errorf("invalid key: %s", keyValues[itr])
 			}
-			err = rs.Set(keyValues[itr], keyValues[itr+1])
+			err = ts.Set(keyValues[itr], keyValues[itr+1])
 			mu.Unlock()
 			if err != nil {
 				return err
@@ -207,7 +227,7 @@ func (rs *TredsStore) MSet(kvs []string) error {
 	return nil
 }
 
-func (rs *TredsStore) MGet(args []string) ([]string, error) {
+func (ts *TredsStore) MGet(args []string) ([]string, error) {
 	results := make([]string, len(args))
 	var g errgroup.Group
 	var mu sync.Mutex
@@ -215,7 +235,7 @@ func (rs *TredsStore) MGet(args []string) ([]string, error) {
 		index := i
 		key := arg
 		g.Go(func() error {
-			res, err := rs.Get(key)
+			res, err := ts.Get(key)
 			if err != nil {
 				return err
 			}
@@ -236,8 +256,8 @@ func (rs *TredsStore) MGet(args []string) ([]string, error) {
 	return response, nil
 }
 
-func (rs *TredsStore) Set(k string, v string) error {
-	kd := rs.getKeyDetails(k)
+func (ts *TredsStore) Set(k string, v string) error {
+	kd := ts.getKeyDetails(k)
 	if kd != -1 && kd != KeyValueStore {
 		return fmt.Errorf("not key value store")
 	}
@@ -249,23 +269,23 @@ func (rs *TredsStore) Set(k string, v string) error {
 	if err != nil {
 		return err
 	}
-	rs.tree, _, _ = rs.tree.Insert([]byte(k), parsedArgs[0])
+	ts.tree, _, _ = ts.tree.Insert([]byte(k), parsedArgs[0])
 	return nil
 }
 
-func (rs *TredsStore) Delete(k string) error {
-	rs.tree, _, _ = rs.tree.Delete([]byte(k))
-	delete(rs.sortedMaps, k)
-	delete(rs.sortedMapsScore, k)
-	delete(rs.sortedMapsKeys, k)
-	delete(rs.lists, k)
-	delete(rs.sets, k)
-	delete(rs.hashes, k)
-	delete(rs.expiry, k)
+func (ts *TredsStore) Delete(k string) error {
+	ts.tree, _, _ = ts.tree.Delete([]byte(k))
+	delete(ts.sortedMaps, k)
+	delete(ts.sortedMapsScore, k)
+	delete(ts.sortedMapsKeys, k)
+	delete(ts.lists, k)
+	delete(ts.sets, k)
+	delete(ts.hashes, k)
+	delete(ts.expiry, k)
 	return nil
 }
 
-func (rs *TredsStore) PrefixScan(cursor, prefix, count string) ([]string, error) {
+func (ts *TredsStore) PrefixScan(cursor, prefix, count string) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return nil, err
@@ -274,7 +294,7 @@ func (rs *TredsStore) PrefixScan(cursor, prefix, count string) ([]string, error)
 	if err != nil {
 		return nil, err
 	}
-	iterator := rs.tree.Root().Iterator()
+	iterator := ts.tree.Root().Iterator()
 	iterator.SeekPrefix([]byte(prefix))
 
 	index := 0
@@ -293,7 +313,7 @@ func (rs *TredsStore) PrefixScan(cursor, prefix, count string) ([]string, error)
 		if !found {
 			break
 		}
-		if rs.hasExpired(string(key)) {
+		if ts.hasExpired(string(key)) {
 			continue
 		}
 		hashKey, herr := hash(string(key))
@@ -334,7 +354,7 @@ func hash(s string) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) ([]string, error) {
+func (ts *TredsStore) PrefixScanKeys(cursor, prefix, count string) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return nil, err
@@ -343,7 +363,7 @@ func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) ([]string, er
 	if err != nil {
 		return nil, err
 	}
-	iterator := rs.tree.Root().Iterator()
+	iterator := ts.tree.Root().Iterator()
 	iterator.SeekPrefix([]byte(prefix))
 
 	index := 0
@@ -362,7 +382,7 @@ func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) ([]string, er
 		if !found {
 			break
 		}
-		if rs.hasExpired(string(key)) {
+		if ts.hasExpired(string(key)) {
 			continue
 		}
 		hashKey, herr := hash(string(key))
@@ -393,18 +413,18 @@ func (rs *TredsStore) PrefixScanKeys(cursor, prefix, count string) ([]string, er
 	return result, nil
 }
 
-func (rs *TredsStore) DeletePrefix(prefix string) (int, error) {
-	newTree, _, numDel := rs.tree.DeletePrefix([]byte(prefix))
-	rs.tree = newTree
+func (ts *TredsStore) DeletePrefix(prefix string) (int, error) {
+	newTree, _, numDel := ts.tree.DeletePrefix([]byte(prefix))
+	ts.tree = newTree
 	return numDel, nil
 }
 
-func (rs *TredsStore) Keys(cursor, regex string, count int) ([]string, error) {
+func (ts *TredsStore) Keys(cursor, regex string, count int) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return nil, err
 	}
-	iterator := rs.tree.Root().Iterator()
+	iterator := ts.tree.Root().Iterator()
 	rx := regexp.MustCompile(regex)
 	iterator.PatternMatch(rx)
 
@@ -421,7 +441,7 @@ func (rs *TredsStore) Keys(cursor, regex string, count int) ([]string, error) {
 		if !found {
 			break
 		}
-		if rs.hasExpired(string(key)) {
+		if ts.hasExpired(string(key)) {
 			continue
 		}
 		hashKey, herr := hash(string(key))
@@ -451,7 +471,7 @@ func (rs *TredsStore) Keys(cursor, regex string, count int) ([]string, error) {
 	return result, nil
 }
 
-func (rs *TredsStore) KeysH(cursor, regex string, count int) ([]string, error) {
+func (ts *TredsStore) KeysH(cursor, regex string, count int) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return nil, err
@@ -467,7 +487,7 @@ func (rs *TredsStore) KeysH(cursor, regex string, count int) ([]string, error) {
 	result := make([]string, 0)
 
 	keys := make([]string, 0)
-	for key, _ := range rs.hashes {
+	for key, _ := range ts.hashes {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
@@ -478,7 +498,7 @@ func (rs *TredsStore) KeysH(cursor, regex string, count int) ([]string, error) {
 			continue
 		}
 
-		if rs.hasExpired(key) {
+		if ts.hasExpired(key) {
 			continue
 		}
 		hashKey, herr := hash(key)
@@ -508,7 +528,7 @@ func (rs *TredsStore) KeysH(cursor, regex string, count int) ([]string, error) {
 	return result, nil
 }
 
-func (rs *TredsStore) KeysL(cursor, regex string, count int) ([]string, error) {
+func (ts *TredsStore) KeysL(cursor, regex string, count int) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return nil, err
@@ -524,7 +544,7 @@ func (rs *TredsStore) KeysL(cursor, regex string, count int) ([]string, error) {
 	result := make([]string, 0)
 
 	keys := make([]string, 0)
-	for key, _ := range rs.lists {
+	for key, _ := range ts.lists {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
@@ -535,7 +555,7 @@ func (rs *TredsStore) KeysL(cursor, regex string, count int) ([]string, error) {
 			continue
 		}
 
-		if rs.hasExpired(key) {
+		if ts.hasExpired(key) {
 			continue
 		}
 		hashKey, herr := hash(key)
@@ -565,7 +585,7 @@ func (rs *TredsStore) KeysL(cursor, regex string, count int) ([]string, error) {
 	return result, nil
 }
 
-func (rs *TredsStore) KeysS(cursor, regex string, count int) ([]string, error) {
+func (ts *TredsStore) KeysS(cursor, regex string, count int) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return nil, err
@@ -581,7 +601,7 @@ func (rs *TredsStore) KeysS(cursor, regex string, count int) ([]string, error) {
 	result := make([]string, 0)
 
 	keys := make([]string, 0)
-	for key, _ := range rs.sets {
+	for key, _ := range ts.sets {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
@@ -592,7 +612,7 @@ func (rs *TredsStore) KeysS(cursor, regex string, count int) ([]string, error) {
 			continue
 		}
 
-		if rs.hasExpired(key) {
+		if ts.hasExpired(key) {
 			continue
 		}
 		hashKey, herr := hash(key)
@@ -622,7 +642,7 @@ func (rs *TredsStore) KeysS(cursor, regex string, count int) ([]string, error) {
 	return result, nil
 }
 
-func (rs *TredsStore) KeysZ(cursor, regex string, count int) ([]string, error) {
+func (ts *TredsStore) KeysZ(cursor, regex string, count int) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return nil, err
@@ -638,7 +658,7 @@ func (rs *TredsStore) KeysZ(cursor, regex string, count int) ([]string, error) {
 	result := make([]string, 0)
 
 	keys := make([]string, 0)
-	for key, _ := range rs.sortedMapsScore {
+	for key, _ := range ts.sortedMapsScore {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
@@ -649,7 +669,7 @@ func (rs *TredsStore) KeysZ(cursor, regex string, count int) ([]string, error) {
 			continue
 		}
 
-		if rs.hasExpired(key) {
+		if ts.hasExpired(key) {
 			continue
 		}
 		hashKey, herr := hash(key)
@@ -679,12 +699,12 @@ func (rs *TredsStore) KeysZ(cursor, regex string, count int) ([]string, error) {
 	return result, nil
 }
 
-func (rs *TredsStore) KVS(cursor, regex string, count int) ([]string, error) {
+func (ts *TredsStore) KVS(cursor, regex string, count int) ([]string, error) {
 	startHash, err := strconv.Atoi(cursor)
 	if err != nil {
 		return nil, err
 	}
-	iterator := rs.tree.Root().Iterator()
+	iterator := ts.tree.Root().Iterator()
 	rx := regexp.MustCompile(regex)
 	iterator.PatternMatch(rx)
 
@@ -700,7 +720,7 @@ func (rs *TredsStore) KVS(cursor, regex string, count int) ([]string, error) {
 		if !found {
 			break
 		}
-		if rs.hasExpired(string(key)) {
+		if ts.hasExpired(string(key)) {
 			continue
 		}
 		hashKey, herr := hash(string(key))
@@ -731,13 +751,13 @@ func (rs *TredsStore) KVS(cursor, regex string, count int) ([]string, error) {
 	return result, nil
 }
 
-func (rs *TredsStore) Size() (int, error) {
-	size := rs.tree.Len() + len(rs.sortedMaps) + len(rs.lists) + len(rs.sets) + len(rs.hashes)
+func (ts *TredsStore) Size() (int, error) {
+	size := ts.tree.Len() + len(ts.sortedMaps) + len(ts.lists) + len(ts.sets) + len(ts.hashes)
 	return size, nil
 }
 
-func (rs *TredsStore) ZAdd(args []string) error {
-	kd := rs.getKeyDetails(args[0])
+func (ts *TredsStore) ZAdd(args []string) error {
+	kd := ts.getKeyDetails(args[0])
 	if kd != -1 && kd != SortedMapStore {
 		return fmt.Errorf("not sorted map store")
 	}
@@ -750,14 +770,14 @@ func (rs *TredsStore) ZAdd(args []string) error {
 		return fmt.Errorf("invalid key")
 	}
 	tm := treemap.NewWith(utils.Float64Comparator)
-	if storedTm, ok := rs.sortedMaps[args[0]]; ok {
+	if storedTm, ok := ts.sortedMaps[args[0]]; ok {
 		tm = storedTm
 	}
 	sm := make(map[string]float64)
-	if storedSm, ok := rs.sortedMapsScore[args[0]]; ok {
+	if storedSm, ok := ts.sortedMapsScore[args[0]]; ok {
 		sm = storedSm
 	}
-	sortedKeyMap, ok := rs.sortedMapsKeys[args[0]]
+	sortedKeyMap, ok := ts.sortedMapsKeys[args[0]]
 	if !ok {
 		sortedKeyMap = radix_tree.New()
 	}
@@ -806,24 +826,24 @@ func (rs *TredsStore) ZAdd(args []string) error {
 			}
 		}
 	}
-	rs.sortedMaps[args[0]] = tm
-	rs.sortedMapsScore[args[0]] = sm
-	rs.sortedMapsKeys[args[0]] = sortedKeyMap
+	ts.sortedMaps[args[0]] = tm
+	ts.sortedMapsScore[args[0]] = sm
+	ts.sortedMapsKeys[args[0]] = sortedKeyMap
 	return nil
 }
 
-func (rs *TredsStore) ZRem(args []string) error {
-	kd := rs.getKeyDetails(args[0])
+func (ts *TredsStore) ZRem(args []string) error {
+	kd := ts.getKeyDetails(args[0])
 	if kd != -1 && kd != SortedMapStore {
 		return fmt.Errorf("not sorted map store")
 	}
-	storedTm, ok := rs.sortedMaps[args[0]]
+	storedTm, ok := ts.sortedMaps[args[0]]
 	if !ok {
 		return nil
 	}
 	for itr := 1; itr < len(args); itr += 1 {
 		key := []byte(args[itr])
-		score, found := rs.sortedMapsScore[args[0]]
+		score, found := ts.sortedMapsScore[args[0]]
 		if !found {
 			continue
 		}
@@ -864,20 +884,20 @@ func (rs *TredsStore) ZRem(args []string) error {
 			}
 		}
 	}
-	rs.sortedMaps[args[0]] = storedTm
+	ts.sortedMaps[args[0]] = storedTm
 	for _, arg := range args[1:] {
-		delete(rs.sortedMapsScore[args[0]], arg)
-		rs.sortedMapsKeys[args[0]], _, _ = rs.sortedMapsKeys[args[0]].Delete([]byte(arg))
+		delete(ts.sortedMapsScore[args[0]], arg)
+		ts.sortedMapsKeys[args[0]], _, _ = ts.sortedMapsKeys[args[0]].Delete([]byte(arg))
 	}
 	return nil
 }
 
-func (rs *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withScore bool) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withScore bool) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return nil, fmt.Errorf("not sorted map store")
 	}
-	radixTree, ok := rs.sortedMapsKeys[key]
+	radixTree, ok := ts.sortedMapsKeys[key]
 	if !ok {
 		return nil, nil
 	}
@@ -891,7 +911,7 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withSc
 		return nil, err
 	}
 	index := 0
-	sortedMapKey := rs.sortedMapsScore[key]
+	sortedMapKey := ts.sortedMapsScore[key]
 	result := make([]string, 0)
 	for {
 		storedKey, value, found := iterator.Next()
@@ -925,12 +945,12 @@ func (rs *TredsStore) ZRangeByLexKVS(key, cursor, min, max, count string, withSc
 	return result, nil
 }
 
-func (rs *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withScore bool) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withScore bool) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return nil, fmt.Errorf("not sorted map store")
 	}
-	radixTree, ok := rs.sortedMapsKeys[key]
+	radixTree, ok := ts.sortedMapsKeys[key]
 	if !ok {
 		return nil, nil
 	}
@@ -945,7 +965,7 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withS
 	}
 	index := 0
 	result := make([]string, 0)
-	sortedMapKey := rs.sortedMapsScore[key]
+	sortedMapKey := ts.sortedMapsScore[key]
 	for {
 		storedKey, _, found := iterator.Next()
 		if !found {
@@ -976,12 +996,12 @@ func (rs *TredsStore) ZRangeByLexKeys(key, cursor, min, max, count string, withS
 	return result, nil
 }
 
-func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, withScore bool) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, withScore bool) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return nil, fmt.Errorf("not sorted map store")
 	}
-	sortedMap := rs.sortedMaps[key]
+	sortedMap := ts.sortedMaps[key]
 	if sortedMap == nil {
 		return nil, nil
 	}
@@ -1008,7 +1028,7 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 		return nil, nil
 	}
 	minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
-	sortedMapKey := rs.sortedMapsScore[key]
+	sortedMapKey := ts.sortedMapsScore[key]
 	for minKV != nil {
 		if countInt == 0 {
 			break
@@ -1039,12 +1059,12 @@ func (rs *TredsStore) ZRangeByScoreKVS(key, min, max, offset, count string, with
 	return result, nil
 }
 
-func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, withScore bool) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, withScore bool) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return nil, fmt.Errorf("not sorted map store")
 	}
-	sortedMap := rs.sortedMaps[key]
+	sortedMap := ts.sortedMaps[key]
 	if sortedMap == nil {
 		return nil, nil
 	}
@@ -1071,7 +1091,7 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 		return nil, nil
 	}
 	minKV, _ := radixTree.(*radix_tree.Tree).Root().MinimumLeaf()
-	sortedMapKey := rs.sortedMapsScore[key]
+	sortedMapKey := ts.sortedMapsScore[key]
 	for minKV != nil {
 		if countInt == 0 {
 			break
@@ -1100,12 +1120,12 @@ func (rs *TredsStore) ZRangeByScoreKeys(key, min, max, offset, count string, wit
 	return result, nil
 }
 
-func (rs *TredsStore) ZScore(args []string) (string, error) {
-	kd := rs.getKeyDetails(args[0])
+func (ts *TredsStore) ZScore(args []string) (string, error) {
+	kd := ts.getKeyDetails(args[0])
 	if kd != -1 && kd != SortedMapStore {
 		return "", fmt.Errorf("not sorted map store")
 	}
-	store, ok := rs.sortedMapsScore[args[0]]
+	store, ok := ts.sortedMapsScore[args[0]]
 	if !ok {
 		return "", nil
 	}
@@ -1115,24 +1135,24 @@ func (rs *TredsStore) ZScore(args []string) (string, error) {
 	return "", nil
 }
 
-func (rs *TredsStore) ZCard(key string) (int, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) ZCard(key string) (int, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return 0, fmt.Errorf("not sorted map store")
 	}
-	store, ok := rs.sortedMapsKeys[key]
+	store, ok := ts.sortedMapsKeys[key]
 	if !ok {
 		return 0, nil
 	}
 	return store.Len(), nil
 }
 
-func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, withScore bool) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, withScore bool) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return nil, fmt.Errorf("not sorted map store")
 	}
-	radixTree, ok := rs.sortedMapsKeys[key]
+	radixTree, ok := ts.sortedMapsKeys[key]
 	if !ok {
 		return nil, nil
 	}
@@ -1147,7 +1167,7 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, wit
 	}
 	index := 0
 	result := make([]string, 0)
-	sortedMapKey := rs.sortedMapsScore[key]
+	sortedMapKey := ts.sortedMapsScore[key]
 	for {
 		storedKey, value, found := iterator.Previous()
 		if !found {
@@ -1174,12 +1194,12 @@ func (rs *TredsStore) ZRevRangeByLexKVS(key, cursor, min, max, count string, wit
 	return result, nil
 }
 
-func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, withScore bool) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, withScore bool) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return nil, fmt.Errorf("not sorted map store")
 	}
-	radixTree, ok := rs.sortedMapsKeys[key]
+	radixTree, ok := ts.sortedMapsKeys[key]
 	if !ok {
 		return nil, nil
 	}
@@ -1194,7 +1214,7 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, wi
 	}
 	index := 0
 	result := make([]string, 0)
-	sortedMapKey := rs.sortedMapsScore[key]
+	sortedMapKey := ts.sortedMapsScore[key]
 	for {
 		storedKey, _, found := iterator.Previous()
 		if !found {
@@ -1222,12 +1242,12 @@ func (rs *TredsStore) ZRevRangeByLexKeys(key, cursor, min, max, count string, wi
 	return result, nil
 }
 
-func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, withScore bool) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, withScore bool) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return nil, fmt.Errorf("not sorted map store")
 	}
-	sortedMap := rs.sortedMaps[key]
+	sortedMap := ts.sortedMaps[key]
 	if sortedMap == nil {
 		return nil, nil
 	}
@@ -1254,7 +1274,7 @@ func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, w
 		return nil, nil
 	}
 	maxKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
-	sortedMapKey := rs.sortedMapsScore[key]
+	sortedMapKey := ts.sortedMapsScore[key]
 	for maxKV != nil {
 		if countInt == 0 {
 			break
@@ -1284,12 +1304,12 @@ func (rs *TredsStore) ZRevRangeByScoreKVS(key, min, max, offset, count string, w
 	return result, nil
 }
 
-func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, withScore bool) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, withScore bool) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SortedMapStore {
 		return nil, fmt.Errorf("not sorted map store")
 	}
-	sortedMap := rs.sortedMaps[key]
+	sortedMap := ts.sortedMaps[key]
 	if sortedMap == nil {
 		return nil, nil
 	}
@@ -1316,7 +1336,7 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 		return nil, nil
 	}
 	maxKV, _ := radixTree.(*radix_tree.Tree).Root().MaximumLeaf()
-	sortedMapKey := rs.sortedMapsScore[key]
+	sortedMapKey := ts.sortedMapsScore[key]
 	for maxKV != nil {
 		if countInt == 0 {
 			break
@@ -1345,21 +1365,21 @@ func (rs *TredsStore) ZRevRangeByScoreKeys(key, min, max, offset, count string, 
 	return result, nil
 }
 
-func (rs *TredsStore) FlushAll() error {
-	rs.tree = radix_tree.New()
-	rs.sortedMaps = make(map[string]*treemap.Map)
-	rs.sortedMapsScore = make(map[string]map[string]float64)
-	rs.sortedMapsKeys = make(map[string]*radix_tree.Tree)
-	rs.lists = make(map[string]*doublylinkedlist.List)
-	rs.sets = make(map[string]*hashset.Set)
-	rs.hashes = make(map[string]*hashmap.Map)
-	rs.expiry = make(map[string]time.Time)
+func (ts *TredsStore) FlushAll() error {
+	ts.tree = radix_tree.New()
+	ts.sortedMaps = make(map[string]*treemap.Map)
+	ts.sortedMapsScore = make(map[string]map[string]float64)
+	ts.sortedMapsKeys = make(map[string]*radix_tree.Tree)
+	ts.lists = make(map[string]*doublylinkedlist.List)
+	ts.sets = make(map[string]*hashset.Set)
+	ts.hashes = make(map[string]*hashmap.Map)
+	ts.expiry = make(map[string]time.Time)
 	return nil
 }
 
-func (rs *TredsStore) LPush(args []string) error {
+func (ts *TredsStore) LPush(args []string) error {
 	key := args[0]
-	kd := rs.getKeyDetails(key)
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
 		return fmt.Errorf("not list store")
 	}
@@ -1367,7 +1387,7 @@ func (rs *TredsStore) LPush(args []string) error {
 	if !validKey {
 		return fmt.Errorf("invalid key")
 	}
-	storedList, ok := rs.lists[key]
+	storedList, ok := ts.lists[key]
 	if !ok {
 		storedList = doublylinkedlist.New()
 	}
@@ -1378,13 +1398,13 @@ func (rs *TredsStore) LPush(args []string) error {
 	for _, arg := range parsedArgs {
 		storedList.Prepend(arg)
 	}
-	rs.lists[key] = storedList
+	ts.lists[key] = storedList
 	return nil
 }
 
-func (rs *TredsStore) RPush(args []string) error {
+func (ts *TredsStore) RPush(args []string) error {
 	key := args[0]
-	kd := rs.getKeyDetails(key)
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
 		return fmt.Errorf("not list store")
 	}
@@ -1392,7 +1412,7 @@ func (rs *TredsStore) RPush(args []string) error {
 	if !validKey {
 		return fmt.Errorf("invalid key")
 	}
-	storedList, ok := rs.lists[key]
+	storedList, ok := ts.lists[key]
 	if !ok {
 		storedList = doublylinkedlist.New()
 	}
@@ -1403,17 +1423,17 @@ func (rs *TredsStore) RPush(args []string) error {
 	for _, arg := range parsedArgs {
 		storedList.Append(arg)
 	}
-	rs.lists[key] = storedList
+	ts.lists[key] = storedList
 	return nil
 }
 
-func (rs *TredsStore) LIndex(args []string) (string, error) {
+func (ts *TredsStore) LIndex(args []string) (string, error) {
 	key := args[0]
-	kd := rs.getKeyDetails(key)
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
 		return "", fmt.Errorf("not list store")
 	}
-	storedList, ok := rs.lists[key]
+	storedList, ok := ts.lists[key]
 	if !ok {
 		return "", nil
 	}
@@ -1431,24 +1451,24 @@ func (rs *TredsStore) LIndex(args []string) (string, error) {
 	return value.(string), nil
 }
 
-func (rs *TredsStore) LLen(key string) (int, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) LLen(key string) (int, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
 		return 0, fmt.Errorf("not list store")
 	}
-	storedList, ok := rs.lists[key]
+	storedList, ok := ts.lists[key]
 	if !ok {
 		return 0, nil
 	}
 	return storedList.Size(), nil
 }
 
-func (rs *TredsStore) LRange(key string, start, stop int) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) LRange(key string, start, stop int) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
 		return nil, fmt.Errorf("not list store")
 	}
-	storedList, ok := rs.lists[key]
+	storedList, ok := ts.lists[key]
 	if !ok {
 		return nil, nil
 	}
@@ -1469,12 +1489,12 @@ func (rs *TredsStore) LRange(key string, start, stop int) ([]string, error) {
 	return result, nil
 }
 
-func (rs *TredsStore) LSet(key string, index int, element string) error {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) LSet(key string, index int, element string) error {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
 		return fmt.Errorf("not list store")
 	}
-	storedList, ok := rs.lists[key]
+	storedList, ok := ts.lists[key]
 	if !ok {
 		return nil
 	}
@@ -1485,12 +1505,12 @@ func (rs *TredsStore) LSet(key string, index int, element string) error {
 	return nil
 }
 
-func (rs *TredsStore) LRem(key string, index int) error {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) LRem(key string, index int) error {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
 		return fmt.Errorf("not list store")
 	}
-	storedList, ok := rs.lists[key]
+	storedList, ok := ts.lists[key]
 	if !ok {
 		return nil
 	}
@@ -1501,13 +1521,13 @@ func (rs *TredsStore) LRem(key string, index int) error {
 	return nil
 }
 
-func (rs *TredsStore) LPop(key string, count int) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) LPop(key string, count int) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
 		return nil, fmt.Errorf("not list store")
 	}
 	res := make([]string, 0)
-	storedList, ok := rs.lists[key]
+	storedList, ok := ts.lists[key]
 	if !ok {
 		return nil, nil
 	}
@@ -1524,13 +1544,13 @@ func (rs *TredsStore) LPop(key string, count int) ([]string, error) {
 	return res, nil
 }
 
-func (rs *TredsStore) RPop(key string, count int) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) RPop(key string, count int) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != ListStore {
 		return nil, fmt.Errorf("not list store")
 	}
 	res := make([]string, 0)
-	storedList, ok := rs.lists[key]
+	storedList, ok := ts.lists[key]
 	if !ok {
 		return nil, nil
 	}
@@ -1549,8 +1569,8 @@ func (rs *TredsStore) RPop(key string, count int) ([]string, error) {
 	return res, nil
 }
 
-func (rs *TredsStore) SAdd(key string, members []string) error {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) SAdd(key string, members []string) error {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SetStore {
 		return fmt.Errorf("not set store")
 	}
@@ -1562,10 +1582,10 @@ func (rs *TredsStore) SAdd(key string, members []string) error {
 	if err != nil {
 		return err
 	}
-	storedSet, ok := rs.sets[key]
+	storedSet, ok := ts.sets[key]
 	if !ok {
 		storedSet = hashset.New()
-		rs.sets[key] = storedSet
+		ts.sets[key] = storedSet
 	}
 	for _, member := range parsedArgs {
 		storedSet.Add(member)
@@ -1573,8 +1593,8 @@ func (rs *TredsStore) SAdd(key string, members []string) error {
 	return nil
 }
 
-func (rs *TredsStore) SRem(key string, members []string) error {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) SRem(key string, members []string) error {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SetStore {
 		return fmt.Errorf("not set store")
 	}
@@ -1582,7 +1602,7 @@ func (rs *TredsStore) SRem(key string, members []string) error {
 	if err != nil {
 		return err
 	}
-	storedSet, ok := rs.sets[key]
+	storedSet, ok := ts.sets[key]
 	if !ok {
 		return nil
 	}
@@ -1592,12 +1612,12 @@ func (rs *TredsStore) SRem(key string, members []string) error {
 	return nil
 }
 
-func (rs *TredsStore) SMembers(key string) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) SMembers(key string) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SetStore {
 		return nil, fmt.Errorf("not set store")
 	}
-	storedSet, ok := rs.sets[key]
+	storedSet, ok := ts.sets[key]
 	if !ok {
 		return nil, nil
 	}
@@ -1609,40 +1629,40 @@ func (rs *TredsStore) SMembers(key string) ([]string, error) {
 	return res, nil
 }
 
-func (rs *TredsStore) SIsMember(key string, member string) (bool, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) SIsMember(key string, member string) (bool, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SetStore {
 		return false, fmt.Errorf("not set store")
 	}
-	storedSet, ok := rs.sets[key]
+	storedSet, ok := ts.sets[key]
 	if !ok {
 		return false, nil
 	}
 	return storedSet.Contains(member), nil
 }
 
-func (rs *TredsStore) SCard(key string) (int, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) SCard(key string) (int, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != SetStore {
 		return 0, fmt.Errorf("not set store")
 	}
-	storedSet, ok := rs.sets[key]
+	storedSet, ok := ts.sets[key]
 	if !ok {
 		return 0, nil
 	}
 	return storedSet.Size(), nil
 }
 
-func (rs *TredsStore) SUnion(keys []string) ([]string, error) {
+func (ts *TredsStore) SUnion(keys []string) ([]string, error) {
 	for _, key := range keys {
-		kd := rs.getKeyDetails(key)
+		kd := ts.getKeyDetails(key)
 		if kd != -1 && kd != SetStore {
 			return nil, fmt.Errorf("not set store")
 		}
 	}
 	unionSet := hashset.New()
 	for _, key := range keys {
-		storedSet, ok := rs.sets[key]
+		storedSet, ok := ts.sets[key]
 		if !ok {
 			continue
 		}
@@ -1656,16 +1676,16 @@ func (rs *TredsStore) SUnion(keys []string) ([]string, error) {
 	return res, nil
 }
 
-func (rs *TredsStore) SInter(keys []string) ([]string, error) {
+func (ts *TredsStore) SInter(keys []string) ([]string, error) {
 	for _, key := range keys {
-		kd := rs.getKeyDetails(key)
+		kd := ts.getKeyDetails(key)
 		if kd != -1 && kd != SetStore {
 			return nil, fmt.Errorf("not set store")
 		}
 	}
 	intersectionSet := hashset.New()
 	for _, key := range keys {
-		storedSet, ok := rs.sets[key]
+		storedSet, ok := ts.sets[key]
 		if !ok {
 			continue
 		}
@@ -1673,7 +1693,7 @@ func (rs *TredsStore) SInter(keys []string) ([]string, error) {
 		break
 	}
 	for _, key := range keys {
-		storedSet, ok := rs.sets[key]
+		storedSet, ok := ts.sets[key]
 		if !ok {
 			continue
 		}
@@ -1687,19 +1707,19 @@ func (rs *TredsStore) SInter(keys []string) ([]string, error) {
 	return res, nil
 }
 
-func (rs *TredsStore) SDiff(keys []string) ([]string, error) {
+func (ts *TredsStore) SDiff(keys []string) ([]string, error) {
 	for _, key := range keys {
-		kd := rs.getKeyDetails(key)
+		kd := ts.getKeyDetails(key)
 		if kd != -1 && kd != SetStore {
 			return nil, fmt.Errorf("not set store")
 		}
 	}
-	diffSet, ok := rs.sets[keys[0]]
+	diffSet, ok := ts.sets[keys[0]]
 	if !ok {
 		return nil, nil
 	}
 	for _, key := range keys[1:] {
-		storedSet, found := rs.sets[key]
+		storedSet, found := ts.sets[key]
 		if !found {
 			continue
 		}
@@ -1713,8 +1733,8 @@ func (rs *TredsStore) SDiff(keys []string) ([]string, error) {
 	return res, nil
 }
 
-func (rs *TredsStore) HSet(key string, args []string) error {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) HSet(key string, args []string) error {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
 		return fmt.Errorf("not hash store")
 	}
@@ -1722,10 +1742,10 @@ func (rs *TredsStore) HSet(key string, args []string) error {
 	if !validKey {
 		return fmt.Errorf("invalid key")
 	}
-	storedMap, ok := rs.hashes[key]
+	storedMap, ok := ts.hashes[key]
 	if !ok {
 		storedMap = hashmap.New()
-		rs.hashes[key] = storedMap
+		ts.hashes[key] = storedMap
 	}
 	parsedArgs, err := splitCommandWithQuotes(strings.Join(args, " "))
 	if err != nil {
@@ -1743,12 +1763,12 @@ func (rs *TredsStore) HSet(key string, args []string) error {
 	return nil
 }
 
-func (rs *TredsStore) HGet(key string, field string) (string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) HGet(key string, field string) (string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
 		return "", fmt.Errorf("not hash store")
 	}
-	storedMap, ok := rs.hashes[key]
+	storedMap, ok := ts.hashes[key]
 	if !ok {
 		return NilResp, nil
 	}
@@ -1759,12 +1779,12 @@ func (rs *TredsStore) HGet(key string, field string) (string, error) {
 	return val.(string), nil
 }
 
-func (rs *TredsStore) HGetAll(key string) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) HGetAll(key string) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
 		return nil, fmt.Errorf("not hash store")
 	}
-	storedMap, ok := rs.hashes[key]
+	storedMap, ok := ts.hashes[key]
 	if !ok {
 		return nil, nil
 	}
@@ -1776,24 +1796,24 @@ func (rs *TredsStore) HGetAll(key string) ([]string, error) {
 	}
 	return res, nil
 }
-func (rs *TredsStore) HLen(key string) (int, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) HLen(key string) (int, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
 		return 0, fmt.Errorf("not hash store")
 	}
-	storedMap, ok := rs.hashes[key]
+	storedMap, ok := ts.hashes[key]
 	if !ok {
 		return 0, nil
 	}
 	return storedMap.Size(), nil
 }
 
-func (rs *TredsStore) HDel(key string, fields []string) error {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) HDel(key string, fields []string) error {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
 		return fmt.Errorf("not hash store")
 	}
-	storedMap, ok := rs.hashes[key]
+	storedMap, ok := ts.hashes[key]
 	if !ok {
 		return nil
 	}
@@ -1803,12 +1823,12 @@ func (rs *TredsStore) HDel(key string, fields []string) error {
 	return nil
 }
 
-func (rs *TredsStore) HExists(key string, field string) (bool, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) HExists(key string, field string) (bool, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
 		return false, fmt.Errorf("not hash store")
 	}
-	storedMap, ok := rs.hashes[key]
+	storedMap, ok := ts.hashes[key]
 	if !ok {
 		return false, nil
 	}
@@ -1816,12 +1836,12 @@ func (rs *TredsStore) HExists(key string, field string) (bool, error) {
 	return found, nil
 }
 
-func (rs *TredsStore) HKeys(key string) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) HKeys(key string) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
 		return nil, fmt.Errorf("not hash store")
 	}
-	storedMap, ok := rs.hashes[key]
+	storedMap, ok := ts.hashes[key]
 	if !ok {
 		return nil, nil
 	}
@@ -1833,12 +1853,12 @@ func (rs *TredsStore) HKeys(key string) ([]string, error) {
 	return res, nil
 }
 
-func (rs *TredsStore) HVals(key string) ([]string, error) {
-	kd := rs.getKeyDetails(key)
+func (ts *TredsStore) HVals(key string) ([]string, error) {
+	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != HashStore {
 		return nil, fmt.Errorf("not hash store")
 	}
-	storedMap, ok := rs.hashes[key]
+	storedMap, ok := ts.hashes[key]
 	if !ok {
 		return nil, nil
 	}
@@ -1850,14 +1870,14 @@ func (rs *TredsStore) HVals(key string) ([]string, error) {
 	return res, nil
 }
 
-func (rs *TredsStore) Expire(key string, expiration time.Time) error {
-	rs.expiry[key] = expiration
+func (ts *TredsStore) Expire(key string, expiration time.Time) error {
+	ts.expiry[key] = expiration
 	return nil
 }
 
-func (rs *TredsStore) Ttl(key string) int {
-	if rs.getKeyStore(key) != -1 {
-		if expiryTime, ok := rs.expiry[key]; ok {
+func (ts *TredsStore) Ttl(key string) int {
+	if ts.getKeyStore(key) != -1 {
+		if expiryTime, ok := ts.expiry[key]; ok {
 			return int(expiryTime.Sub(time.Now()).Seconds())
 		}
 		return -1
@@ -1865,9 +1885,9 @@ func (rs *TredsStore) Ttl(key string) int {
 	return -2
 }
 
-func (rs *TredsStore) LongestPrefix(prefix string) ([]string, error) {
+func (ts *TredsStore) LongestPrefix(prefix string) ([]string, error) {
 	res := make([]string, 0)
-	key, val, found := rs.tree.Root().LongestPrefix([]byte(prefix))
+	key, val, found := ts.tree.Root().LongestPrefix([]byte(prefix))
 	if found {
 		res = append(res, string(key))
 		res = append(res, val.(string))
@@ -1884,13 +1904,13 @@ func convertToString(value interface{}) (string, error) {
 	return str, nil
 }
 
-func (rs *TredsStore) Snapshot() ([]byte, error) {
+func (ts *TredsStore) Snapshot() ([]byte, error) {
 	// For now just persisting the root level key value store
 	// That is tree *radix_tree.Tree in the Store
 	store := &kvstore.KeyValueStore{
 		Pairs: make([]*kvstore.KeyValue, 0),
 	}
-	minLeaf, found := rs.tree.Root().MinimumLeaf()
+	minLeaf, found := ts.tree.Root().MinimumLeaf()
 	if !found {
 		return []byte{}, nil
 	}
@@ -1913,7 +1933,7 @@ func (rs *TredsStore) Snapshot() ([]byte, error) {
 	return data, nil
 }
 
-func (rs *TredsStore) Restore(data []byte) error {
+func (ts *TredsStore) Restore(data []byte) error {
 	var deserializedStore kvstore.KeyValueStore
 	err := proto.Unmarshal(data, &deserializedStore)
 	if err != nil {
@@ -1921,17 +1941,17 @@ func (rs *TredsStore) Restore(data []byte) error {
 		return err
 	}
 	// Print the deserialized key-value pairs
-	rs.tree = radix_tree.New()
+	ts.tree = radix_tree.New()
 	fmt.Println("Deserialized KeyValueStore:")
 	for _, pair := range deserializedStore.Pairs {
-		rs.tree, _, _ = rs.tree.Insert([]byte(pair.Key), pair.Value)
+		ts.tree, _, _ = ts.tree.Insert([]byte(pair.Key), pair.Value)
 	}
 	return nil
 }
 
-func (rs *TredsStore) DCreateCollection(args []string) error {
+func (ts *TredsStore) DCreateCollection(args []string) error {
 	collectionName := args[0]
-	_, found := rs.collections[collectionName]
+	_, found := ts.collections[collectionName]
 	if found {
 		return fmt.Errorf("collection already exists")
 	}
@@ -1978,23 +1998,23 @@ func (rs *TredsStore) DCreateCollection(args []string) error {
 			}
 		}
 	}
-	rs.collections[collectionName] = collection
+	ts.collections[collectionName] = collection
 	return nil
 }
 
-func (rs *TredsStore) DDropCollection(args []string) error {
+func (ts *TredsStore) DDropCollection(args []string) error {
 	collectionName := args[0]
-	_, found := rs.collections[collectionName]
+	_, found := ts.collections[collectionName]
 	if !found {
 		return fmt.Errorf("collection does not exists")
 	}
-	delete(rs.collections, collectionName)
+	delete(ts.collections, collectionName)
 	return nil
 }
 
-func (rs *TredsStore) DInsert(args []string) (string, error) {
+func (ts *TredsStore) DInsert(args []string) (string, error) {
 	collectionName := args[0]
-	collection, foundCollection := rs.collections[collectionName]
+	collection, foundCollection := ts.collections[collectionName]
 	if !foundCollection {
 		return "", fmt.Errorf("collection not found")
 	}
@@ -2075,29 +2095,9 @@ func (rs *TredsStore) DInsert(args []string) (string, error) {
 	return document.Id, nil
 }
 
-type Query struct {
-	Filters []QueryFilter
-	Sort    []Sort
-	Limit   int
-	Offset  int
-}
-
-type QueryFilter struct {
-	Field      string        // Field name (e.g., "age", "salary")
-	Operator   string        // Comparison operator (e.g., "$gt", "$lt", "$eq")
-	Value      interface{}   // Value for the operator
-	SubFilters []QueryFilter // Nested filters for logical operators
-	Logical    string        // Logical operator: "$and", "$or", "$not"
-}
-
-type Sort struct {
-	Field string // Field to sort by
-	Order string // "asc" for ascending, "desc" for descending
-}
-
-func (rs *TredsStore) DExplain(query []string) (string, error) {
+func (ts *TredsStore) DExplain(query []string) (string, error) {
 	collectionName := query[0]
-	collection, foundCollection := rs.collections[collectionName]
+	collection, foundCollection := ts.collections[collectionName]
 	if !foundCollection {
 		return "", fmt.Errorf("collection not found")
 	}
@@ -2124,9 +2124,9 @@ func (rs *TredsStore) DExplain(query []string) (string, error) {
 	return string(resultStr), nil
 }
 
-func (rs *TredsStore) DQuery(query []string) ([]string, error) {
+func (ts *TredsStore) DQuery(query []string) ([]string, error) {
 	collectionName := query[0]
-	collection, foundCollection := rs.collections[collectionName]
+	collection, foundCollection := ts.collections[collectionName]
 	if !foundCollection {
 		return nil, fmt.Errorf("collection not found")
 	}
@@ -2176,4 +2176,95 @@ func (rs *TredsStore) DQuery(query []string) ([]string, error) {
 		jsonDocuments = append(jsonDocuments, document.StringData)
 	}
 	return jsonDocuments, nil
+}
+
+func (ts *TredsStore) VCreate(args []string) error {
+	vectorName := args[0]
+	_, found := ts.vectors[vectorName]
+	if found {
+		return fmt.Errorf("vector already exists")
+	}
+	maxNeighbor := 6
+	levelFactor := 0.5
+	efSearch := 20
+	if len(args) > 1 {
+		maxNeighbor, _ = strconv.Atoi(args[1])
+	}
+	if len(args) > 2 {
+		parseLevelFactor, err := strconv.ParseFloat(args[2], 64)
+		if err != nil {
+			return err
+		}
+		levelFactor = parseLevelFactor
+	}
+	if len(args) > 3 {
+		effectiveSearch, err := strconv.Atoi(args[3])
+		if err != nil {
+			return err
+		}
+		efSearch = effectiveSearch
+	}
+	ts.vectors[vectorName] = hnsw.NewHNSW(maxNeighbor, levelFactor, efSearch, hnsw.EuclideanDistance)
+	return nil
+}
+
+func (ts *TredsStore) VInsert(args []string) (string, error) {
+	vectorName := args[0]
+	vector, found := ts.vectors[vectorName]
+	if !found {
+		return "", fmt.Errorf("vector not found")
+	}
+	vectorData := make([]float64, 0)
+	for _, data := range args[1:] {
+		vectorDataFloat, err := strconv.ParseFloat(data, 64)
+		if err != nil {
+			return "", err
+		}
+		vectorData = append(vectorData, vectorDataFloat)
+	}
+	return vector.Insert(vectorData), nil
+}
+
+func (ts *TredsStore) VSearch(args []string) ([][]string, error) {
+	vectorName := args[0]
+	vector, found := ts.vectors[vectorName]
+	if !found {
+		return nil, fmt.Errorf("vector not found")
+	}
+	vectorData := make([]float64, 0)
+	for _, data := range args[1 : len(args)-1] {
+		vectorDataFloat, err := strconv.ParseFloat(data, 64)
+		if err != nil {
+			return nil, err
+		}
+		vectorData = append(vectorData, vectorDataFloat)
+	}
+	k, err := strconv.Atoi(args[len(args)-1])
+	if err != nil {
+		return nil, err
+	}
+	results := vector.Search(vectorData, k)
+	res := make([][]string, 0)
+	for _, result := range results {
+		resData := make([]string, 0)
+		resData = append(resData, result.ID)
+		for _, vecData := range result.Value {
+			resData = append(resData, strconv.FormatFloat(vecData, 'f', -1, 64))
+		}
+		res = append(res, resData)
+	}
+	return res, nil
+}
+
+func (ts *TredsStore) VDelete(args []string) (bool, error) {
+	vectorName := args[0]
+	vector, found := ts.vectors[vectorName]
+	if !found {
+		return false, fmt.Errorf("vector not found")
+	}
+	if len(args) < 2 {
+		return false, fmt.Errorf("vector data not provided")
+	}
+	nodeId := args[1]
+	return vector.Delete(nodeId), nil
 }

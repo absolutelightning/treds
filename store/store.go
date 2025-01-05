@@ -67,4 +67,8 @@ type Store interface {
 	DInsert([]string) (string, error)
 	DQuery([]string) ([]string, error)
 	DExplain([]string) (string, error)
+	VCreate([]string) error
+	VInsert([]string) (string, error)
+	VSearch([]string) ([][]string, error)
+	VDelete([]string) (bool, error)
 }

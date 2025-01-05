@@ -388,3 +388,19 @@ func (rs *MockStore) DQuery(args []string) ([]string, error) {
 func (rs *MockStore) DExplain(args []string) (string, error) {
 	return "", nil
 }
+
+func (rs *MockStore) VCreate(args []string) error {
+	return nil
+}
+
+func (rs *MockStore) VInsert(args []string) (string, error) {
+	return "", nil
+}
+
+func (rs *MockStore) VSearch(args []string) ([][]string, error) {
+	return nil, nil
+}
+
+func (rs *MockStore) VDelete(args []string) (bool, error) {
+	return false, nil
+}
