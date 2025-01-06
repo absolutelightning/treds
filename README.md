@@ -217,7 +217,7 @@ DEXPLAIN users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":
 * `VCREATE vectorname maxNeighbor levelFactor efSearch` - Create a vector store with maxNeighbor, levelFactor and efSearch
 * `VDROP vectorname` - Drop a vector store
 * `VINSERT vectorname float [float...]` - Insert a vector in a vector store
-* `VSEARCH vectorname float [float...] k` - Search k nearest neighbors of a vector in a vector store
+* `VSEARCH vectorname float [float...] k` - Search k nearest neighbors of a vector in a vector store using [HNSW algorithm](https://arxiv.org/pdf/1603.09320)
 * `VDELETE vectorname string` - Delete a vector from a vector store, input is the vector id returned in `VINSERT` or `VSEARCH`
  
 ```text
