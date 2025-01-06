@@ -191,26 +191,20 @@ In simple words - `PPUBLISH` publishes a message to all channels that have names
 
 #### Collection Store 
 * `DCREATE collectionname schemajson indexjson` - Create a collection with schema and index
+* `DDROP collectionname` - Drop a collection
+* `DINSERT collectionname json` - Insert a document in a collection
+* `DQUERY collectionname json` - Query a collection
+* `DEXPLAIN collectionname json` - Explain a query - Returns the query plan - index with which query is executed
 ```text
 DCREATE users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"float\", \"min\": 18}, \"salary\": {\"type\": \"float\"}}" "[{\"fields\": [\"age\"], \"type\": \"normal\"}, {\"fields\": [\"salary\"], \"type\": \"normal\"}]"
 DCREATE users "{\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"float\", \"min\": 18}, \"salary\": {\"type\": \"float\"}}" "[{\"fields\": [\"age\", \"salary\"], \"type\": \"normal\"}]"
-```
-* `DDROP collectionname` - Drop a collection
-* `DINSERT collectionname json` - Insert a document in a collection
-```text
 DINSERT users "{\"name\": \"Spiderman\", \"age\": 13, \"salary\": 500}"
 DINSERT users "{\"name\": \"Heman\", \"age\": 14, \"salary\": 600}"
 DINSERT users "{\"name\": \"Superman\", \"age\": 15, \"salary\": 300}"
 DINSERT users "{\"name\": \"Batman\", \"age\": 18, \"salary\": 900}"
 DINSERT users "{\"name\": \"Antman\", \"age\": 25, \"salary\": 800}"
-```
-* `DQUERY collectionname json` - Query a collection
-```text
-DQUERY users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
-```
-* `DEXPLAIN collectionname json` - Explain a query - Returns the query plan - index with which query is executed
-```text
 DEXPLAIN users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
+DQUERY users "{\"filters\":[{\"field\":\"age\",\"operator\":\"$gt\",\"value\":14},{\"field\":\"salary\",\"operator\":\"$lt\",\"value\":900}]}"
 ```
 
 #### Vector Store
