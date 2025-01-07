@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/hashicorp/raft"
@@ -22,7 +21,6 @@ type TredsFsm struct {
 	cmdRegistry commands.CommandRegistry
 	tredsStore  store.Store
 	conn        gnet.Conn
-	storeLock   *sync.Mutex
 }
 
 func (t *TredsFsm) Apply(log *raft.Log) interface{} {
@@ -34,10 +32,6 @@ func (t *TredsFsm) Apply(log *raft.Log) interface{} {
 	commandReg, err := t.cmdRegistry.Retrieve(strings.ToUpper(command))
 	if err != nil {
 		return err
-	}
-	if commandReg.IsWrite {
-		t.storeLock.Lock()
-		defer t.storeLock.Unlock()
 	}
 	currentStore := t.tredsStore
 	if currentStore != nil {
@@ -85,8 +79,6 @@ func (t *TredsFsm) Restore(old io.ReadCloser) error {
 		return err
 	}
 	ts := store.NewTredsStore()
-	t.storeLock.Lock()
-	defer t.storeLock.Unlock()
 	err = ts.Restore(data)
 	t.tredsStore = ts
 	if err != nil {
@@ -96,5 +88,5 @@ func (t *TredsFsm) Restore(old io.ReadCloser) error {
 }
 
 func NewTredsFsm(registry commands.CommandRegistry, store store.Store) *TredsFsm {
-	return &TredsFsm{cmdRegistry: registry, tredsStore: store, storeLock: &sync.Mutex{}}
+	return &TredsFsm{cmdRegistry: registry, tredsStore: store}
 }

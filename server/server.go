@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	wal "github.com/hashicorp/raft-wal"
@@ -39,10 +38,8 @@ type Server struct {
 	tredsCommandRegistry       commands.CommandRegistry
 	tredsServerCommandRegistry ServerCommandRegistry
 	clientTransaction          map[string][]string
-	clientTransactionLock      *sync.Mutex
 
 	channelSubscriptionData *radix.Tree
-	channelSubscriptionLock *sync.Mutex
 	connectionSubscription  map[string]map[string]struct{}
 
 	connectionMap map[string]gnet.Conn
@@ -206,10 +203,8 @@ func New(port, segmentSize int, bindAddr, advertiseAddr, serverId string, applyT
 		id:                         config.LocalID,
 		raftApplyTimeout:           applyTimeout,
 		clientTransaction:          make(map[string][]string),
-		clientTransactionLock:      &sync.Mutex{},
 		connP:                      connPool.NewConnPool(time.Second * 5),
 		channelSubscriptionData:    radix.New(),
-		channelSubscriptionLock:    &sync.Mutex{},
 		connectionSubscription:     make(map[string]map[string]struct{}),
 		connectionMap:              make(map[string]gnet.Conn),
 	}, nil
@@ -276,22 +271,6 @@ func (ts *Server) GetRaftApplyTimeout() time.Duration {
 	return ts.raftApplyTimeout
 }
 
-func (ts *Server) LockClientTransaction() {
-	ts.clientTransactionLock.Lock()
-}
-
-func (ts *Server) UnlockClientTransaction() {
-	ts.clientTransactionLock.Unlock()
-}
-
-func (ts *Server) LockChannelSubs() {
-	ts.channelSubscriptionLock.Lock()
-}
-
-func (ts *Server) UnlockChannelSubs() {
-	ts.channelSubscriptionLock.Unlock()
-}
-
 func (ts *Server) SetChannelSubscriptionData(data *radix.Tree) {
 	ts.channelSubscriptionData = data
 }
@@ -323,8 +302,6 @@ func (ts *Server) OnTraffic(c gnet.Conn) gnet.Action {
 
 	// Check for transaction first, if transaction just enqueue the command
 	if _, ok := ts.clientTransaction[c.RemoteAddr().String()]; ok {
-		ts.clientTransactionLock.Lock()
-		defer ts.clientTransactionLock.Unlock()
 		ts.clientTransaction[c.RemoteAddr().String()] = append(ts.clientTransaction[c.RemoteAddr().String()], inp)
 		res := "QUEUED"
 		_, errConn := c.Write([]byte(resp.EncodeSimpleString(res)))
@@ -428,14 +405,10 @@ func (ts *Server) OnClose(c gnet.Conn, _ error) gnet.Action {
 }
 
 func (ts *Server) CleanUpClientTransaction(c gnet.Conn) {
-	ts.clientTransactionLock.Lock()
-	defer ts.clientTransactionLock.Unlock()
 	delete(ts.clientTransaction, c.RemoteAddr().String())
 }
 
 func (ts *Server) CleanUpChannelSubscriptions(c gnet.Conn) {
-	ts.channelSubscriptionLock.Lock()
-	defer ts.channelSubscriptionLock.Unlock()
 	// use connectionSubscription map to delete all subscriptions for this connection
 	if _, ok := ts.connectionSubscription[c.RemoteAddr().String()]; ok {
 		for channel := range ts.connectionSubscription[c.RemoteAddr().String()] {

@@ -35,8 +35,6 @@ func executeDiscard() ExecutionHook {
 			return gnet.None
 		}
 
-		ts.LockClientTransaction()
-		defer ts.UnlockClientTransaction()
 		delete(ts.GetClientTransaction(), c.RemoteAddr().String())
 
 		res := "OK"
