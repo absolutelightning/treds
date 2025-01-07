@@ -36,9 +36,6 @@ func executeExec() ExecutionHook {
 			return gnet.None
 		}
 
-		ts.LockClientTransaction()
-		defer ts.UnlockClientTransaction()
-
 		clientTransaction, ok := ts.GetClientTransaction()[c.RemoteAddr().String()]
 		if !ok {
 			ts.RespondErr(c, fmt.Errorf("no transaction started"))
