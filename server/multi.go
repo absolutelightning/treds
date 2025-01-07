@@ -44,9 +44,6 @@ func executeMulti() ExecutionHook {
 			return gnet.None
 		}
 
-		ts.LockClientTransaction()
-		defer ts.UnlockClientTransaction()
-
 		ts.GetClientTransaction()[c.RemoteAddr().String()] = make([]string, 0)
 
 		res := "OK"

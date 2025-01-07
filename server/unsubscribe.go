@@ -52,8 +52,6 @@ func executeUnsubscribeCommand() ExecutionHook {
 
 		subscriptionData := ts.GetChannelSubscriptionData()
 
-		ts.LockChannelSubs()
-		defer ts.UnlockChannelSubs()
 		for _, channel := range args {
 			prevData, ok := subscriptionData.Get([]byte(channel))
 			if !ok {

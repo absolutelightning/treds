@@ -5,7 +5,6 @@ import (
 	"math"
 	"math/rand"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/absolutelightning/gods/queues/priorityqueue"
@@ -24,7 +23,6 @@ type HNSW struct {
 	LayerFactor   float64      // Probability factor, but we won't use it with the current randomLevel
 	EfSearch      int          // number of candidates during search
 	DistFunc      DistanceFunc // distance function
-	lock          sync.Mutex   // lock for thread-safe operations
 	EntryPoint    *Node        // top entry point into the graph
 	Rand          *rand.Rand   // random number generator
 }
@@ -96,9 +94,6 @@ func (h *HNSW) randomLevel() int {
 
 // Insert adds a new element `vector` into the HNSW graph.
 func (h *HNSW) Insert(vector Vector) string {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-
 	level := h.randomLevel()
 
 	// Create the new node
@@ -440,9 +435,6 @@ func min(a, b int) int {
 }
 
 func (h *HNSW) Delete(nodeID string) bool {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-
 	if len(h.Layers) == 0 {
 		return false
 	}

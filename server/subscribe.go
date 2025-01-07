@@ -57,8 +57,6 @@ func executeSubscribeCommandName() ExecutionHook {
 			allChannels[channel] = struct{}{}
 		}
 
-		ts.LockChannelSubs()
-		defer ts.UnlockChannelSubs()
 		for channel := range allChannels {
 			prevData, ok := subscriptionData.Get([]byte(channel))
 			if !ok {
