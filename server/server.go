@@ -500,8 +500,6 @@ func (ts *Server) ForwardRequest(data []byte) (bool, string, error) {
 
 	tredsAddr, err := ts.convertRaftToTredsAddress(string(addr))
 
-	fmt.Println("Treds Leader Address", tredsAddr)
-
 	if err != nil {
 		fmt.Println("Error occurred converting raft to treds address", addr)
 		return false, "", err
