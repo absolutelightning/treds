@@ -12,6 +12,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.18.0
+	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91
 	golang.org/x/sync v0.8.0
 )
 
@@ -37,7 +38,6 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
