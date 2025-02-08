@@ -9,6 +9,7 @@ require (
 	github.com/hashicorp/raft v1.7.1
 	github.com/hashicorp/raft-wal v0.4.1
 	github.com/panjf2000/gnet/v2 v2.5.7
+	github.com/absolutelightning/bloom v1.0.0
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.18.0

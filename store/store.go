@@ -71,4 +71,5 @@ type Store interface {
 	VInsert([]string) (string, error)
 	VSearch([]string) ([][]string, error)
 	VDelete([]string) (bool, error)
+	BFAdd(string, string) (int, error)
 }

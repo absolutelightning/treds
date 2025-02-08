@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/absolutelightning/bloom"
 	"github.com/absolutelightning/gods/lists/doublylinkedlist"
 	"github.com/absolutelightning/gods/maps/hashmap"
 	"github.com/absolutelightning/gods/maps/treemap"
@@ -2267,4 +2268,18 @@ func (ts *TredsStore) VDelete(args []string) (bool, error) {
 	}
 	nodeId := args[1]
 	return vector.Delete(nodeId), nil
+}
+
+func (ts *TredsStore) BFAdd(key, field string) error {
+	kd := ts.getKeyDetails(key)
+	if kd != -1 && kd != BloomFilterStore {
+		return fmt.Errorf("not bloom filter store")
+	}
+	bf, ok := ts.bloomFilters[key]
+	if !ok {
+		bf = bloom.NewWithEstimates(100000, 0.01)
+	}
+	bf.Add([]byte(field))
+	ts.bloomFilters[key] = bf
+	return nil
 }
