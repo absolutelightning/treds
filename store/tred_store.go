@@ -2274,10 +2274,10 @@ func (ts *TredsStore) VDelete(args []string) (bool, error) {
 	return vector.Delete(nodeId), nil
 }
 
-func (ts *TredsStore) BFAdd(key, field string) error {
+func (ts *TredsStore) BFAdd(key, field string) (int, error) {
 	kd := ts.getKeyDetails(key)
 	if kd != -1 && kd != BloomFilterStore {
-		return fmt.Errorf("not bloom filter store")
+		return 0, fmt.Errorf("not bloom filter store")
 	}
 	bf, ok := ts.bloomFilters[key]
 	if !ok {
@@ -2285,5 +2285,5 @@ func (ts *TredsStore) BFAdd(key, field string) error {
 	}
 	bf.Add([]byte(field))
 	ts.bloomFilters[key] = bf
-	return nil
+	return 1, nil
 }
