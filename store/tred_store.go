@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/absolutelightning/bloom"
 	"github.com/absolutelightning/gods/lists/doublylinkedlist"
 	"github.com/absolutelightning/gods/maps/hashmap"
 	"github.com/absolutelightning/gods/maps/treemap"
@@ -40,6 +41,7 @@ const (
 	HashStore
 	DocumentStore
 	VectorStore
+	BloomFilterStore
 )
 
 type Query struct {
@@ -120,6 +122,9 @@ type TredsStore struct {
 
 	// Vector Store
 	vectors map[string]*hnsw.HNSW
+
+	// Bloom Filter Store
+	bloomFilters map[string]*bloom.BloomFilter
 
 	// Expiry
 	expiry map[string]time.Time
@@ -2267,4 +2272,18 @@ func (ts *TredsStore) VDelete(args []string) (bool, error) {
 	}
 	nodeId := args[1]
 	return vector.Delete(nodeId), nil
+}
+
+func (ts *TredsStore) BFAdd(key, field string) (int, error) {
+	kd := ts.getKeyDetails(key)
+	if kd != -1 && kd != BloomFilterStore {
+		return 0, fmt.Errorf("not bloom filter store")
+	}
+	bf, ok := ts.bloomFilters[key]
+	if !ok {
+		bf = bloom.NewWithEstimates(100000, 0.01)
+	}
+	bf.Add([]byte(field))
+	ts.bloomFilters[key] = bf
+	return 1, nil
 }

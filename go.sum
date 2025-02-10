@@ -1,4 +1,8 @@
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
+github.com/absolutelightning/bitset v1.0.0 h1:RN58+HQQS1dKZGnxb9PTBt4J7/nKI/J8vJuYwpnkXA0=
+github.com/absolutelightning/bitset v1.0.0/go.mod h1:shAqBGDoxID0Q+gFu9Y1WDocAzvpN1eij6NdB8vWhaw=
+github.com/absolutelightning/bloom v1.0.0 h1:xpsB8bAJ5quAmgDiAz4S7WNWKAX0yXC+/7R5CoGG5n8=
+github.com/absolutelightning/bloom v1.0.0/go.mod h1:uwi2nRfDQE9BoK7AqKYfWLuPJXOfI1c0OVu6Xb2zGuk=
 github.com/absolutelightning/gods v1.18.3 h1:Hzjeq/E5/Cp+290TGohRrIpvrClNr12+T0PtwcPS+9I=
 github.com/absolutelightning/gods v1.18.3/go.mod h1:y0EQ4IGxBlz131kIlZy2qFUhl6/GpOUnIWJhMNPo+wE=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -131,6 +135,8 @@ github.com/tidwall/match v1.1.1/go.mod h1:eRSPERbgtNPcGhD8UCthc6PmLEQXEWd3PRB5JT
 github.com/tidwall/pretty v1.2.0 h1:RWIZEg2iJ8/g6fDDYzMpobmaoGh5OLl4AXtGUGPcqCs=
 github.com/tidwall/pretty v1.2.0/go.mod h1:ITEVvHYasfjBbM0u2Pg8T2nJnzm8xPwvNhhsoaGGjNU=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
+github.com/twmb/murmur3 v1.1.6 h1:mqrRot1BRxm+Yct+vavLMou2/iJt0tNVTTC0QoIjaZg=
+github.com/twmb/murmur3 v1.1.6/go.mod h1:Qq/R7NUyOfr65zD+6Q5IHKsJLwP7exErjN6lyyq3OSQ=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=

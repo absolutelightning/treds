@@ -404,3 +404,7 @@ func (rs *MockStore) VSearch(args []string) ([][]string, error) {
 func (rs *MockStore) VDelete(args []string) (bool, error) {
 	return false, nil
 }
+
+func (rs *MockStore) BFAdd(key, element string) (int, error) {
+	return 0, nil
+}
