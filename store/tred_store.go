@@ -41,6 +41,7 @@ const (
 	HashStore
 	DocumentStore
 	VectorStore
+	BloomFilterStore
 )
 
 type Query struct {
@@ -121,6 +122,9 @@ type TredsStore struct {
 
 	// Vector Store
 	vectors map[string]*hnsw.HNSW
+
+	// Bloom Filter Store
+	bloomFilters map[string]*bloom.BloomFilter
 
 	// Expiry
 	expiry map[string]time.Time
