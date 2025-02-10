@@ -3,13 +3,13 @@ module treds
 go 1.22
 
 require (
+	github.com/absolutelightning/bloom v1.0.0
 	github.com/absolutelightning/gods v1.18.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/raft v1.7.1
 	github.com/hashicorp/raft-wal v0.4.1
 	github.com/panjf2000/gnet/v2 v2.5.7
-	github.com/absolutelightning/bloom v1.0.0
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.18.0
@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/absolutelightning/bitset v1.0.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/benbjohnson/immutable v0.4.0 // indirect
 	github.com/coreos/etcd v3.3.27+incompatible // indirect
